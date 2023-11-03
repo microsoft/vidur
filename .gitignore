@@ -1,0 +1,17 @@
+env
+env_2
+env_pypy
+cache
+cache_lr
+env_cpython
+.vscode
+# data
+simulator_output
+wandb
+
+# python files
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints
+*.log
