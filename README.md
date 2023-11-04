@@ -1,14 +1,44 @@
-# Project
+# LLM Inference Simulator
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+## Overview
 
-As the maintainer of this project, please make a few updates:
+LLM inference system simulator.
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+## Setup
+
+To run the simulator, create a conda environment with the given dependency file.
+
+```
+conda env create -p ./env -f ./environment.yml
+```
+
+## Formatting Code
+
+To run the code formatters execute the following command,
+
+```
+make format
+```
+
+## Setting up wandb
+
+First, setup your account on https://microsoft-research.wandb.io/, obtain the api key and then run the following command,
+
+```
+wandb login --host https://microsoft-research.wandb.io
+```
+
+If you wish to skip wandb setup, simply comment out `wandb_project` and `wandb_group` in `simulator/config/default.yml`.
+
+## Running simulator
+
+To run the simulator, simply execute the following command from the repository root,
+
+```
+python -m simulator.main
+```
+
+The metrics will be logged to wandb directly and copy will be stored in `simulator_output` directory along with the chrome trace. Description of all the logged metrics can be found [here](docs/simulator_metrics.md).
 
 ## Contributing
 

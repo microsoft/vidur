@@ -1,0 +1,176 @@
+seed: 42
+log_level: info
+output_dir: ./simulator_output/
+cache_dir: ./cache
+write_json_trace: false
+write_chrome_trace: true
+write_metrics: true
+
+cluster:
+  num_replicas: 1
+
+replica:
+  # memory management
+  block_size: 16
+  memory_margin_fraction: 0.1
+  # parallelism
+  num_pipeline_stages: 1
+  num_tensor_parallel_workers: 1
+  # Model Specs
+  # GPT-3
+  # num_layers: 96
+  # num_q_heads: 96
+  # num_kv_heads: 96
+  # embedding_dim: 12288
+  # mlp_hidden_dim: 49152
+  # use_gated_mlp: false
+  # vocab_size: 50257 
+  # Falcon-180B
+  # num_layers: 80
+  # num_q_heads: 232
+  # num_kv_heads: 8
+  # embedding_dim: 14848
+  # mlp_hidden_dim: 59392
+  # use_gated_mlp: false
+  # vocab_size: 65024 
+  # LLama2 7b
+  num_layers: 32
+  num_q_heads: 32
+  num_kv_heads: 32
+  embedding_dim: 4096
+  mlp_hidden_dim: 11008
+  use_gated_mlp: true
+  vocab_size: 32768 
+  # A100
+  # fp16_tflops: 312
+  # total_memory_gb: 80
+  # A40
+  fp16_tflops: 150
+  total_memory_gb: 45
+
+request_generator:
+  provider: synthetic
+  max_tokens: 4096
+
+synthetic_request_generator:
+  length_provider: zipf
+  interval_provider: static
+  min_tokens: 2048
+  prefill_to_decode_ratio: 10
+  num_requests: 100
+  # duration: 100
+
+trace_request_generator:
+  trace_file: ./data/processed_traces/sydney_enterprise.csv
+  date: '2023-08-21'
+  prefill_scale_factor: 0.3
+  decode_scale_factor:  1
+  time_scale_factor: 0.04
+
+# Config for synthetic trace generator
+trace_request_length_generator:
+  trace_file: ./data/processed_traces/lmsys_chat_1m_conversation_stats_llama2_tokenizer.csv
+  prefill_scale_factor: 0.3
+  decode_scale_factor:  1
+
+trace_request_interval_generator:
+  trace_file: ./data/processed_traces/AzureFunctionsInvocationTraceForTwoWeeksJan2021Processed.csv
+  start_time: "1970-01-04 12:00:00"
+  end_time: "1970-01-04 15:00:00"
+  time_scale_factor: 0.3
+
+poisson_request_interval_generator:
+  qps: 0.2
+
+gamma_request_interval_generator:
+  cv: 0.5
+  qps: 0.2
+
+zipf_request_length_generator:
+  theta: 0.4
+  scramble: false
+
+execution_time_predictor:
+  provider: random_forrest
+  # provider: linear_regression
+
+sklearn_execution_time_predictor:
+  compute_input_file: ./data/profiling/a40/mlp.csv
+  attention_input_file: ./data/profiling/a40/mixed_attention.csv
+  all_reduce_input_file: ./data/profiling/a40/all_reduce.csv
+  send_recv_input_file: ./data/profiling/a40/p2p_inter_node.csv
+  k_fold_cv_splits: 5
+  no_cache: false
+  kv_cache_prediction_granularity: 8
+  prediction_max_prefill_chunk_size: 4096
+  prediction_max_batch_size: 100
+  prediction_max_tokens_per_request: 4096
+
+random_forrest_execution_time_predictor:
+  num_estimators:
+    - 500
+    - 750
+  max_depth:
+    - 8
+    - 16
+    - 32
+  min_samples_split:
+    - 2
+    - 5
+    - 10
+
+linear_regression_execution_time_predictor:
+  polynomial_degree:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+  polynomial_include_bias:
+    - true
+    - false
+  polynomial_interaction_only:
+    - true
+    - false
+  fit_intercept:
+    - true
+    - false
+
+simulator:
+  time_limit: null
+
+global_scheduler:
+  provider: lor
+
+replica_scheduler:
+  provider: vllm
+  batch_size_cap: 5
+
+orca_scheduler:
+  use_single_prefill_per_batch: false
+
+sarathi_scheduler:
+  chunk_size: 1024
+  enable_rolling_prefills: true
+  prefill_fitting_tolerance: 0.2
+
+vllm_scheduler:
+  watermark_blocks_fraction: 0.01
+  max_tokens_in_batch: 4096
+  max_batch_size_amplification_factor: 2
+
+dsarathi_scheduler:
+  chunk_size: 1024
+  enable_rolling_prefills: true
+  prefill_fitting_tolerance: 0.2
+  watermark_blocks_fraction: 0.01
+  max_batch_size_amplification_factor: 2
+
+metrics_store:
+  wandb_project: "llm-simulator"
+  wandb_group: "vllm-benchmark-test"
+  wandb_run_name: ""
+  subsamples: 500
+  save_table_to_wandb: false
+  # min_batch_idx: 2000
+  # max_batch_idx: 5000

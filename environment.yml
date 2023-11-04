@@ -1,0 +1,25 @@
+name: llm_inference_simulator
+channels:
+  - conda-forge
+  - plotly
+dependencies:
+  - python
+  # - pypy
+  - setuptools
+  - pip
+  - numpy
+  - plotly_express
+  - jupyterlab
+  - matplotlib
+  - pyyaml
+  - black
+  - autopep8
+  - isort
+  - flake8
+  - make
+  - snakeviz
+  - scikit-learn
+  - python-kaleido
+  - wandb
+  - pip:
+    - kaleido
