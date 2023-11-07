@@ -3,7 +3,7 @@ import itertools
 import os
 
 import ray
-import torch.backends.cudnn as cudnn
+from torch.backends import cudnn
 import pandas as pd
 from tqdm import tqdm
 

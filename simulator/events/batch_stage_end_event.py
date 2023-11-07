@@ -42,7 +42,6 @@ class BatchStageEndEvent(BaseEvent):
         from simulator.events.replica_stage_schedule_event import (
             ReplicaStageScheduleEvent,
         )
-
         scheduler.get_replica_stage_scheduler(
             self._replica_id, self._stage_id
         ).on_stage_end()

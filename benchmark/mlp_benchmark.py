@@ -4,7 +4,7 @@ import os
 
 import ray
 import torch
-import torch.backends.cudnn as cudnn
+from torch.backends import cudnn
 import pandas as pd
 from tqdm import tqdm
 
@@ -150,7 +150,7 @@ def run_benchmark():
             NUM_TOKENS,
             NUM_TENSOR_PARALLEL_WORKERS,
         )
-    
+
         for (
             num_tokens,
             num_tensor_parallel_workers,

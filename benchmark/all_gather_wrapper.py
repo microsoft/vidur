@@ -89,7 +89,7 @@ class AllGatherWrapper:
             self._run_all_reduce()
 
         TimerStatsStore.clear_stats()
-        
+
         for _ in range(ACTIVE_STEPS):
             self._run_all_reduce()
 

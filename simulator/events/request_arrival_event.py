@@ -6,6 +6,7 @@ from simulator.events.base_event import BaseEvent
 from simulator.plotting import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
+from simulator.events.global_schedule_event import GlobalScheduleEvent
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,6 @@ class RequestArrivalEvent(BaseEvent):
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
     ) -> List[BaseEvent]:
-        from simulator.events.global_schedule_event import GlobalScheduleEvent
 
         logger.debug(f"Request: {self._request.id} arrived at {self.time}")
         scheduler.add_request(self._request)

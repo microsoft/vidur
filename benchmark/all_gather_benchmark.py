@@ -5,7 +5,7 @@ import random
 from tqdm import tqdm
 
 import ray
-import torch.backends.cudnn as cudnn
+from torch.backends import cudnn
 import pandas as pd
 
 from benchmark.all_gather_wrapper import AllGatherWrapper
@@ -99,7 +99,7 @@ def run_benchmark():
 
     df = pd.DataFrame(all_results)
     # the time_stats column is a dict, so we need to expand it into columns recursively and add prefix
-    
+
     df = pd.json_normalize(df["time_stats"]).add_prefix("time_stats.").join(df.drop(columns=["time_stats"]))
 
     # write results to a csv file

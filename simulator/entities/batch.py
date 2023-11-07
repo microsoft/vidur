@@ -99,7 +99,7 @@ class Batch(BaseEntity):
         return [request.id for request in self._requests]
 
     @property
-    def completed(self) -> bool:
+    def allcompleted(self) -> bool:
         return all([request.completed for request in self._requests])
 
     def on_schedule(

@@ -5,7 +5,7 @@ import random
 from tqdm import tqdm
 
 import ray
-import torch.backends.cudnn as cudnn
+from torch.backends import  cudnn
 import pandas as pd
 
 from benchmark.p2p_wrapper import P2PWrapper
@@ -36,7 +36,7 @@ EMBEDDING_DIMS = [4096, 5120, 6656, 8192]
 NUM_TOKENS = \
     list(range(0, 128, 1)) + \
     list(range(128, 1536, 4)) + \
-    slist(range(1536, 98 * 1024, 256)) 
+    list(range(1536, 98 * 1024, 256))
     # + \
     # list(range(98 * 1024, 196 * 1024, 512))
 NUM_TENSOR_PARALLEL_WORKERS = [1, 2, 4]
@@ -103,11 +103,11 @@ def run_benchmark():
             if result and rank == 0:
                 all_results.append(result)
             if not result:
-                runner_pool[rank] = ModelRunner.remote()            
+                runner_pool[rank] = ModelRunner.remote()
 
     df = pd.DataFrame(all_results)
     # the time_stats column is a dict, so we need to expand it into columns recursively and add prefix
-    
+
     df = pd.json_normalize(df["time_stats"]).add_prefix("time_stats.").join(df.drop(columns=["time_stats"]))
 
     # write results to a csv file

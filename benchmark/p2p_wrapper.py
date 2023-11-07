@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 from benchmark.cuda_timer import CudaTimer
 from benchmark.timer_stats_store import TimerStatsStore
@@ -78,7 +79,6 @@ class P2PWrapper:
 
         self._cuda_timer = CudaTimer("send_recv", aggregation_fn=np.median, filter_str="ncclKernel")
 
-
     def _init_communication(self, rank, comm_id):
         # skip if already initialized
         if torch.distributed.is_initialized():
@@ -92,7 +92,7 @@ class P2PWrapper:
             # init_method=f"tcp://node-0:{comm_id}",
             init_method=f"file:///tmp/sing_comm_{comm_id}",
         )
-        print(f"Initialized process group.")
+        print("Initialized process group.")
 
     def _run_send_recv(self):
         torch.cuda.synchronize()

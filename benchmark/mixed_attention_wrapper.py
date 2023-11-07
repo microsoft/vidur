@@ -3,7 +3,7 @@ from math import ceil
 
 import torch
 
-from benchmark.cuda_timer import CudaTimer
+#from benchmark.cuda_timer import CudaTimer
 from benchmark.timer_stats_store import TimerStatsStore
 from benchmark.vllm_attention import PagedAttentionWithRoPE, InputMetadata
 
@@ -57,7 +57,7 @@ class MixedAttentionWrapper:
 
         self._attn_base = 10000 # default from vllm
         self._max_position = 8192 # default from vllm
-            
+
         self.attn = PagedAttentionWithRoPE(
             self._n_worker_q_heads,
             self._head_dim,
@@ -68,7 +68,7 @@ class MixedAttentionWrapper:
             num_kv_heads=self._n_worker_kv_heads,
         ).to(dtype=torch.float16).cuda().eval()
             # .to(dtype=torch.float16).cuda()
-  
+
         self._blocks_per_sequence = ceil(max_context_len / block_size)
         self._total_num_blocks = max(10000, 1 + batch_size * self._blocks_per_sequence)
         self._k_cache_split_factor = 16 // torch.tensor([], dtype=torch.float16).element_size()
