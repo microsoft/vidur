@@ -170,7 +170,7 @@ disable=abstract-method,
         access-member-before-definition,
         use-dict-literal,
         consider-using-generator,
-        unnecessary-dunder-cal
+        unnecessary-dunder-call
 
 
 
