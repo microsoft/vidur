@@ -167,7 +167,10 @@ disable=abstract-method,
         unidiomatic-typecheck,
         invalid-name,
         singleton-comparison,
-        access-member-before-definition
+        access-member-before-definition,
+        use-dict-literal,
+        consider-using-generator,
+        unnecessary-dunder-cal
 
 
 
