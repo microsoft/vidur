@@ -170,7 +170,8 @@ disable=abstract-method,
         access-member-before-definition,
         use-dict-literal,
         consider-using-generator,
-        unnecessary-dunder-call
+        unnecessary-dunder-call,
+	import-outside-toplevel
 
 
 
