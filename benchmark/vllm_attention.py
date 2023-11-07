@@ -1,8 +1,8 @@
 """Multi-head attention."""
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import torch
-import torch.nn as nn
+from torch import nn
 from xformers import ops as xops
 from xformers.ops.fmha.attn_bias import (
     BlockDiagonalCausalFromBottomRightMask,

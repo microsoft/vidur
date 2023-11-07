@@ -77,7 +77,7 @@ class MetricsStore:
                 metric_name.value,
                 self._subsamples,
                 self._save_table_to_wandb,
-            )        
+            )
 
         self._req_metrics_histogram: Dict[RequestMetricsHistogram, DataSeries] = {}
         for metric_name in RequestMetricsHistogram:

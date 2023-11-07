@@ -183,7 +183,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             return
 
         logger.info(f"Found model {model_name} in cache")
-        model = pickle.load(open(cache_file, "rb"))
+        with open(cache_file, "rb") as fd:
+            model = pickle.load(fd)
         return model
 
     def _store_model_in_cache(self, model_name: str, model: BaseEstimator) -> None:
@@ -191,7 +192,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         # store model in cache
         cache_file = f"{self._cache_dir}/{model_name_hash}.pkl"
-        pickle.dump(model, open(cache_file, "wb"))
+        with open(cache_file, "wb") as fd:
+            pickle.dump(model, fd)
 
     def _store_training_prediction_data(
         self,
@@ -264,10 +266,12 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         model_name_hash = self._get_model_name_hash(model_name)
         cache_file = f"{self._cache_dir}/{model_name_hash}_predictions.pkl"
         json_file = f"{self._cache_dir}/{model_name}_{model_name_hash}_predictions.json"
-        pickle.dump(predictions, open(cache_file, "wb"))
+        with open(cache_file, "wb") as fd:
+            pickle.dump(predictions, fd)
         # convert keys from tuple to string
         json_serializable_predictions = {str(x): y for x, y in predictions.items()}
-        json.dump(json_serializable_predictions, open(json_file, "w"))
+        with open(json_file, "w") as fd:
+            json.dump(json_serializable_predictions, fd)
 
     def _load_model_predication_cache(self, model_name: str) -> Dict[Tuple, float]:
         if self._no_cache:
@@ -279,7 +283,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         if not os.path.exists(cache_file):
             return
 
-        predictions = pickle.load(open(cache_file, "rb"))
+        with open(cache_file, "rb") as fd:
+            predictions = pickle.load(fd)
         return predictions
 
     def _get_model_prediction(

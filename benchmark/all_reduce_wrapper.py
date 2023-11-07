@@ -1,11 +1,12 @@
 import torch
 
+import os
 import numpy as np
 
 from benchmark.cuda_timer import CudaTimer
 from benchmark.timer_stats_store import TimerStatsStore
 
-from vllm.all_reduce_ops import init_nccl, all_reduce
+#from vllm.all_reduce_ops import init_nccl, all_reduce
 
 
 WARMUP_STEPS = 5
@@ -85,7 +86,6 @@ class AllReduceWrapper:
         if torch.distributed.is_initialized():
             return
 
-        import os
         print(f"Rank: {self._rank}, num_workers: {self._num_workers}, comm_id: {comm_id}")
         print("CUDA_VISIBLE_DEVICES: ", os.environ["CUDA_VISIBLE_DEVICES"])
         os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"

@@ -7,13 +7,13 @@ https://github.com/openai/gpt-2/blob/master/src/model.py
 https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
 """
 
-import math
-import inspect
+#import math
+#import inspect
 from dataclasses import dataclass
 from math import ceil
 
 import torch
-import torch.nn as nn
+from torch import nn
 from torch.nn import functional as F
 
 from benchmark.cuda_timer import CudaTimer
@@ -86,7 +86,7 @@ class CausalSelfAttention(nn.Module):
 
         self.n_head = config.n_head
         self.n_embd = config.n_embd
-    
+
         self.attn_pre_proj_timer = CudaTimer("attn_pre_proj")
         self.attn_post_proj_timer = CudaTimer("attn_post_proj")
 
@@ -125,11 +125,11 @@ class MLP(nn.Module):
         self.mlp_up_proj_timer = CudaTimer("mlp_up_proj")
         self.mlp_act_timer = CudaTimer("mlp_act")
         self.mlp_down_proj_timer = CudaTimer("mlp_down_proj")
-            
+
     def forward(self, x):
         with self.mlp_up_proj_timer:
             x = self.c_fc(x)
-        
+
         with self.mlp_act_timer:
             x = self.act(x)
 
@@ -153,9 +153,9 @@ class Block(nn.Module):
         self.emb_timer = CudaTimer("emb")
         self.layer_norm_timer = CudaTimer("layer_norm")
         self.rms_norm_timer = CudaTimer("rms_norm")
-        self.deemb_timer = CudaTimer("deemb")        
+        self.deemb_timer = CudaTimer("deemb")
         self.add_norm_timer = CudaTimer("add_norm")
-            
+
     def forward(self, x):
         with self.emb_timer:
             x = self.emb(x)

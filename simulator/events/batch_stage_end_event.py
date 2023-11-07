@@ -8,6 +8,12 @@ from simulator.plotting import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
 
+from simulator.events.batch_end_event import BatchEndEvent
+from simulator.events.batch_stage_arrival_event import BatchStageArrivalEvent
+from simulator.events.replica_stage_schedule_event import (
+    ReplicaStageScheduleEvent,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,11 +43,6 @@ class BatchStageEndEvent(BaseEvent):
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
     ) -> List[BaseEvent]:
-        from simulator.events.batch_end_event import BatchEndEvent
-        from simulator.events.batch_stage_arrival_event import BatchStageArrivalEvent
-        from simulator.events.replica_stage_schedule_event import (
-            ReplicaStageScheduleEvent,
-        )
 
         scheduler.get_replica_stage_scheduler(
             self._replica_id, self._stage_id

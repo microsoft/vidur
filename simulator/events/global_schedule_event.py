@@ -5,6 +5,7 @@ from simulator.events import BaseEvent
 from simulator.plotting import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
+from simulator.events.replica_schedule_event import ReplicaScheduleEvent
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,6 @@ class GlobalScheduleEvent(BaseEvent):
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
     ) -> List[BaseEvent]:
-        from simulator.events.replica_schedule_event import ReplicaScheduleEvent
 
         self._replica_set = set()
         self._request_mapping = scheduler.schedule()
