@@ -61,14 +61,15 @@ python -m simulator.main \
 --replica_total_memory_gb 80 \
 --sklearn_execution_time_predictor_compute_input_file ./data/profiling/a100/mlp.csv \
 --sklearn_execution_time_predictor_attention_input_file ./data/profiling/a100/mixed_attention.csv \
---sklearn_execution_time_predictor_all_reduce_input_file ./data/profiling/a100/all_reduce.csv \ --sklearn_execution_time_predictor_send_recv_input_file ./data/profiling/a100/p2p_intra_node.csv \
+--sklearn_execution_time_predictor_all_reduce_input_file ./data/profiling/a100/all_reduce.csv \
+--sklearn_execution_time_predictor_send_recv_input_file ./data/profiling/a100/p2p_intra_node.csv \
 --sklearn_execution_time_predictor_cpu_overhead_input_file ./data/profiling/a100/cpu_overheads.csv \
 --cluster_num_replicas 1 \
 --replica_num_tensor_parallel_workers 1 \
 --request_generator_provider synthetic \
---request_generator_request_length_generator_provider trace \
+--synthetic_request_generator_length_provider trace \
 --trace_request_length_generator_trace_file ./data/processed_traces/cnn_dailymail_stats_llama2_tokenizer.csv \
---request_generator_request_interval_generator_provider poisson \
+--synthetic_request_generator_interval_provider poisson \
 --poisson_request_interval_generator_qps 0.75 \
 --synthetic_request_generator_num_requests 256 \
 --replica_scheduler_provider vllm \

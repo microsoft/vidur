@@ -1,7 +1,7 @@
 seed: 42
 log_level: info
 output_dir: ./simulator_output/
-cache_dir: ./tmpfs_cache
+cache_dir: ./.cache
 write_json_trace: false
 write_chrome_trace: false
 write_metrics: true
@@ -42,7 +42,7 @@ replica:
   mlp_hidden_dim: 11008
   use_gated_mlp: true
   vocab_size: 32768 
-  # LLama2 70b
+  # # LLama2 70b
   # num_layers: 80
   # num_q_heads: 64
   # num_kv_heads: 8
@@ -53,7 +53,7 @@ replica:
   # a100
   fp16_tflops: 312
   total_memory_gb: 80
-  # a100
+  # a40
   # fp16_tflops: 150
   # total_memory_gb: 45
 
@@ -104,19 +104,10 @@ execution_time_predictor:
   # provider: linear_regression
 
 sklearn_execution_time_predictor:
-  # compute_input_file: ./data/profiling/a100/mlp.csv
   compute_input_file: ./data/profiling/a100/mlp.csv
-  # compute_input_file: ./llama7b_mlp_results_4.csv
-  # compute_input_file: ./llama70b_mlp_results.csv
-  # attention_input_file: ./data/profiling/a100/mixed_attention.csv
   attention_input_file: ./data/profiling/a100/mixed_attention.csv
-  # attention_input_file: ./llama7b_attention_pav2_results.csv
-  # attention_input_file: ./llama70b_attention_pav2_results.csv
-  # all_reduce_input_file: ./data/profiling/a100/all_reduce.csv
   all_reduce_input_file: ./data/profiling/a100/all_reduce.csv
-  # send_recv_input_file: ./data/profiling/a100/p2p_intra_node.csv
   send_recv_input_file: ./data/profiling/a100/p2p_intra_node.csv
-  # cpu_overhead_input_file: ./data/profiling/a100/cpu_overheads.csv
   cpu_overhead_input_file: ./data/profiling/a100/cpu_overheads.csv
   k_fold_cv_splits: 10
   no_cache: false

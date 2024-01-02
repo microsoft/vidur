@@ -8,6 +8,7 @@ env_cpython
 # data
 simulator_output
 wandb
+.cache
 
 # python files
 __pycache__/
