@@ -3,16 +3,13 @@ import logging
 import numpy as np
 import pandas as pd
 import plotly_express as px
-
 import wandb
-
 from ddsketch.ddsketch import DDSketch
 
 logger = logging.getLogger(__name__)
 
 
 class CDFSketch:
-
     def __init__(
         self,
         metric_name: str,
@@ -57,28 +54,30 @@ class CDFSketch:
             f" 75th percentile: {self._sketch.get_quantile_value(0.75)},"
             f" 95th percentile: {self._sketch.get_quantile_value(0.95)},"
             f" 99th percentile: {self._sketch.get_quantile_value(0.99)}"
-            f" 99.9th percentile: {self._sketch.get_quantile_value(0.999)}")
+            f" 99.9th percentile: {self._sketch.get_quantile_value(0.999)}"
+        )
         if wandb.run:
             wandb.log(
                 {
-                    f"{plot_name}_min":
-                    self._sketch._min,
-                    f"{plot_name}_max":
-                    self._sketch._max,
-                    f"{plot_name}_mean":
-                    self._sketch.avg,
-                    f"{plot_name}_25th_percentile":
-                    self._sketch.get_quantile_value(0.25),
-                    f"{plot_name}_median":
-                    self._sketch.get_quantile_value(0.5),
-                    f"{plot_name}_75th_percentile":
-                    self._sketch.get_quantile_value(0.75),
-                    f"{plot_name}_95th_percentile":
-                    self._sketch.get_quantile_value(0.95),
-                    f"{plot_name}_99th_percentile":
-                    self._sketch.get_quantile_value(0.99),
-                    f"{plot_name}_99.9th_percentile":
-                    self._sketch.get_quantile_value(0.999),
+                    f"{plot_name}_min": self._sketch._min,
+                    f"{plot_name}_max": self._sketch._max,
+                    f"{plot_name}_mean": self._sketch.avg,
+                    f"{plot_name}_25th_percentile": self._sketch.get_quantile_value(
+                        0.25
+                    ),
+                    f"{plot_name}_median": self._sketch.get_quantile_value(0.5),
+                    f"{plot_name}_75th_percentile": self._sketch.get_quantile_value(
+                        0.75
+                    ),
+                    f"{plot_name}_95th_percentile": self._sketch.get_quantile_value(
+                        0.95
+                    ),
+                    f"{plot_name}_99th_percentile": self._sketch.get_quantile_value(
+                        0.99
+                    ),
+                    f"{plot_name}_99.9th_percentile": self._sketch.get_quantile_value(
+                        0.999
+                    ),
                 },
                 step=0,
             )
@@ -87,14 +86,9 @@ class CDFSketch:
         # get quantiles at 1% intervals
         quantiles = np.linspace(0, 1, 101)
         # get quantile values
-        quantile_values = [
-            self._sketch.get_quantile_value(q) for q in quantiles
-        ]
+        quantile_values = [self._sketch.get_quantile_value(q) for q in quantiles]
         # create dataframe
-        df = pd.DataFrame({
-            "cdf": quantiles,
-            self._metric_name: quantile_values
-        })
+        df = pd.DataFrame({"cdf": quantiles, self._metric_name: quantile_values})
 
         return df
 
@@ -103,18 +97,13 @@ class CDFSketch:
         return self._sketch.sum
 
     def _save_df(self, df: pd.DataFrame, path: str, plot_name: str) -> None:
-
         df.to_csv(f"{path}/{plot_name}.csv")
 
         if wandb.run and self._save_table_to_wandb:
             wand_table = wandb.Table(dataframe=df)
             wandb.log({f"{plot_name}_table": wand_table}, step=0)
 
-    def plot_cdf(self,
-                 path: str,
-                 plot_name: str,
-                 x_axis_label: str = None) -> None:
-
+    def plot_cdf(self, path: str, plot_name: str, x_axis_label: str = None) -> None:
         if self._sketch._count == 0:
             return
 
@@ -125,23 +114,19 @@ class CDFSketch:
 
         self.print_distribution_stats(plot_name)
 
-        fig = px.line(df,
-                      x=self._metric_name,
-                      y="cdf",
-                      markers=True,
-                      labels={"x": x_axis_label})
+        fig = px.line(
+            df, x=self._metric_name, y="cdf", markers=True, labels={"x": x_axis_label}
+        )
         fig.update_traces(marker=dict(color="red", size=2))
 
         if wandb.run:
             wandb_df = df.copy()
             # rename the self._metric_name column to x_axis_label
-            wandb_df = wandb_df.rename(
-                columns={self._metric_name: x_axis_label})
+            wandb_df = wandb_df.rename(columns={self._metric_name: x_axis_label})
 
             wandb.log(
                 {
-                    f"{plot_name}_cdf":
-                    wandb.plot.line(
+                    f"{plot_name}_cdf": wandb.plot.line(
                         wandb.Table(dataframe=wandb_df),
                         "cdf",
                         x_axis_label,

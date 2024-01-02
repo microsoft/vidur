@@ -101,7 +101,9 @@ class BatchStage(BaseEntity):
         self._completed_at = time
 
         for request in self._requests:
-            request.on_batch_stage_end(time, self._execution_time, self._model_execution_time)
+            request.on_batch_stage_end(
+                time, self._execution_time, self._model_execution_time
+            )
 
     def to_dict(self) -> dict:
         return {

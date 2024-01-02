@@ -31,11 +31,17 @@ class ExecutionTime(BaseEntity):
 
         self._num_blocks_per_pipeline_stage = num_blocks_per_pipeline_stage
         self._attention_rope_execution_time = attention_rope_execution_time
-        self._attention_kv_cache_save_execution_time = attention_kv_cache_save_execution_time
+        self._attention_kv_cache_save_execution_time = (
+            attention_kv_cache_save_execution_time
+        )
         self._attention_decode_execution_time = attention_decode_execution_time
-        self._attention_prefill_kv_cache_prep_execution_time = attention_prefill_kv_cache_prep_execution_time
+        self._attention_prefill_kv_cache_prep_execution_time = (
+            attention_prefill_kv_cache_prep_execution_time
+        )
         self._attention_prefill_execution_time = attention_prefill_execution_time
-        self._attention_prefill_output_reshape_copy_execution_time = attention_prefill_output_reshape_copy_execution_time
+        self._attention_prefill_output_reshape_copy_execution_time = (
+            attention_prefill_output_reshape_copy_execution_time
+        )
         self._attention_layer_pre_proj_execution_time = (
             attention_layer_pre_proj_execution_time
         )
@@ -67,7 +73,7 @@ class ExecutionTime(BaseEntity):
             + self._rms_norm_time
             + self._add_time
         )
-    
+
     def _get_attention_layer_execution_time(self) -> float:
         return (
             self._attention_layer_pre_proj_execution_time
@@ -88,7 +94,7 @@ class ExecutionTime(BaseEntity):
             self._get_attention_layer_execution_time()
             + self._get_mlp_layer_execution_time()
         )
-    
+
     def _get_cpu_overhead(self) -> float:
         return (
             self._schedule_time
@@ -192,7 +198,7 @@ class ExecutionTime(BaseEntity):
         return self._add_time
 
     @property
-    def model_time(self) ->float:
+    def model_time(self) -> float:
         # we are not counting the execution time for the embedding layer and last softmax layer
         block_execution_time = self._get_block_execution_time()
         pipeline_stage_execution_time = (
@@ -206,7 +212,4 @@ class ExecutionTime(BaseEntity):
     @property
     def total_time(self) -> float:
         # return in seconds
-        return (
-            self.model_time
-            + self._get_cpu_overhead() * 1e-3
-        )
+        return self.model_time + self._get_cpu_overhead() * 1e-3

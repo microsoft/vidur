@@ -75,7 +75,9 @@ class BaseExecutionTimePredictor(ABC):
         pass
 
     @abstractmethod
-    def _get_attention_prefill_kv_cache_prep_execution_time(self, batch: Batch) -> float:
+    def _get_attention_prefill_kv_cache_prep_execution_time(
+        self, batch: Batch
+    ) -> float:
         pass
 
     @abstractmethod
@@ -83,7 +85,9 @@ class BaseExecutionTimePredictor(ABC):
         pass
 
     @abstractmethod
-    def _get_attention_prefill_output_reshape_copy_execution_time(self, batch: Batch) -> float:
+    def _get_attention_prefill_output_reshape_copy_execution_time(
+        self, batch: Batch
+    ) -> float:
         pass
 
     @abstractmethod

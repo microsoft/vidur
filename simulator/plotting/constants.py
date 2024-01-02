@@ -10,7 +10,7 @@ class OperationMetrics(enum.Enum):
     MLP_DOWN_PROJ_ALL_REDUCE = "mlp_down_proj_all_reduce"
     ATTN_PRE_PROJ = "attn_pre_proj"
     ATTN_POST_PROJ = "attn_post_proj"
-    ATTN_POST_PROJ_ALL_REDUCE = "attn_post_proj_all_reduce"    
+    ATTN_POST_PROJ_ALL_REDUCE = "attn_post_proj_all_reduce"
     ATTN_PREFILL_KV_CACHE_PREP = "attn_prefill_kv_cache_prep"
     ATTN_PREFILL_QKV_RESHAPE = "attn_prefill_qkv_reshape"
     ATTN_PREFILL_OUTPUT_RESHAPE_COPY = "attn_prefill_output_reshape_copy"
@@ -54,7 +54,9 @@ class RequestMetricsTimeDistributions(enum.Enum):
 
 
 class TokenMetricsTimeDistribution(enum.Enum):
-    DECODE_TOKEN_EXECUTION_PLUS_PREMPTION_TIME = "decode_token_execution_plus_preemption_time"
+    DECODE_TOKEN_EXECUTION_PLUS_PREMPTION_TIME = (
+        "decode_token_execution_plus_preemption_time"
+    )
 
 
 class RequestMetricsHistogram(enum.Enum):
@@ -77,6 +79,7 @@ class BatchMetricsTimeDistribution(enum.Enum):
     BATCH_EXECUTION_TIME = "batch_execution_time"
     # this is match with the CpuOperationMetrics.MODEL_EXECUTION_E2E in llm-batching code
     MODEL_EXECUTION_E2E = "model_execution_e2e_execution_time"
+
 
 class CompletionMetricsTimeSeries(enum.Enum):
     REQUEST_ARRIVAL = "request_arrival"

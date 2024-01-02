@@ -39,7 +39,11 @@ class ReplicaStageScheduleEvent(BaseEvent):
 
         self._batch_stage.on_schedule(self.time)
         metrics_store.on_replica_stage_schedule(
-            self.time, self._replica_id, self._stage_id, self._batch_stage, execution_time
+            self.time,
+            self._replica_id,
+            self._stage_id,
+            self._batch_stage,
+            execution_time,
         )
 
         self._is_last_stage = stage_scheduler.is_last_stage

@@ -1,4 +1,3 @@
-import fasteners
 import hashlib
 import json
 import logging
@@ -8,6 +7,7 @@ from abc import abstractmethod
 from itertools import product
 from typing import Any, Dict, List, Tuple
 
+import fasteners
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -96,9 +96,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             config.sklearn_execution_time_predictor_prediction_max_prefill_chunk_size
         )
 
-        self._device_memory = (
-            config.replica_total_memory_gb
-        )
+        self._device_memory = config.replica_total_memory_gb
 
         self._models = self._train_models()
         self._predictions = self._predict_from_models()
@@ -112,8 +110,10 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         logger.info(f"self._mlp_hidden_dim: {self._mlp_hidden_dim}")
         logger.info(f"self._use_gated_mlp: {self._use_gated_mlp}")
         logger.info(f"self._vocab_size: {self._vocab_size}")
-        logger.info(f"self._num_tensor_parallel_workers: {self._num_tensor_parallel_workers}")
-            
+        logger.info(
+            f"self._num_tensor_parallel_workers: {self._num_tensor_parallel_workers}"
+        )
+
         return df[
             (df["n_head"] == self._num_q_heads)
             & (df["n_kv_head"] == self._num_kv_heads)
@@ -175,8 +175,12 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
     def _get_attention_df_with_derived_features(self, df: pd.DataFrame) -> pd.DataFrame:
         df_with_derived_features = df.copy()
-        df_with_derived_features["num_tokens"] = df_with_derived_features[["prefill_chunk_size", "batch_size"]].max(axis=1)
-        df_with_derived_features["is_decode"] = df_with_derived_features["prefill_chunk_size"] == 0
+        df_with_derived_features["num_tokens"] = df_with_derived_features[
+            ["prefill_chunk_size", "batch_size"]
+        ].max(axis=1)
+        df_with_derived_features["is_decode"] = (
+            df_with_derived_features["prefill_chunk_size"] == 0
+        )
         return df_with_derived_features
 
     def _get_all_reduce_df_with_derived_features(
@@ -189,7 +193,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         df_with_derived_features = df.copy()
         return df_with_derived_features
 
-    def _get_cpu_overhead_df_with_derived_features(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _get_cpu_overhead_df_with_derived_features(
+        self, df: pd.DataFrame
+    ) -> pd.DataFrame:
         df_with_derived_features = df.copy()
         return df_with_derived_features
 
@@ -202,8 +208,14 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         # For non-zero true values, calculate the absolute percentage error
         error = np.zeros_like(y_true, dtype=float)  # using float instead of np.float
-        error[non_zero_true_mask] = np.abs((y_true[non_zero_true_mask] - y_pred[non_zero_true_mask]) / y_true[non_zero_true_mask]) * 100
-        
+        error[non_zero_true_mask] = (
+            np.abs(
+                (y_true[non_zero_true_mask] - y_pred[non_zero_true_mask])
+                / y_true[non_zero_true_mask]
+            )
+            * 100
+        )
+
         # For zero true values, if prediction is also 0, error is 0, else it is 100
         error[zero_true_mask] = np.where(y_pred[zero_true_mask] == 0, 0, 100)
 
@@ -231,7 +243,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         return hashlib.md5(model_name).hexdigest()
 
     def _load_model_from_cache(self, model_name: str) -> BaseEstimator:
-        with fasteners.InterProcessReaderWriterLock(f"{self._cache_dir}/{model_name}_model_lock.file").read_lock():
+        with fasteners.InterProcessReaderWriterLock(
+            f"{self._cache_dir}/{model_name}_model_lock.file"
+        ).read_lock():
             if self._no_cache:
                 return
 
@@ -248,7 +262,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             return model
 
     def _store_model_in_cache(self, model_name: str, model: BaseEstimator) -> None:
-        with fasteners.InterProcessReaderWriterLock(f"{self._cache_dir}/{model_name}_model_lock.file").write_lock():
+        with fasteners.InterProcessReaderWriterLock(
+            f"{self._cache_dir}/{model_name}_model_lock.file"
+        ).write_lock():
             model_name_hash = self._get_model_name_hash(model_name)
 
             # store model in cache
@@ -280,7 +296,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         df: pd.DataFrame,
         feature_cols: List[str],
         target_col: str,
-    ) -> BaseEstimator:        
+    ) -> BaseEstimator:
         cached_model = self._load_model_from_cache(model_name)
         if cached_model:
             return cached_model
@@ -327,17 +343,23 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
     def _store_model_predication_cache(
         self, model_name: str, predictions: Dict[Tuple, float]
     ) -> None:
-        with fasteners.InterProcessReaderWriterLock(f"{self._cache_dir}/{model_name}_prediction_lock.file").write_lock():
+        with fasteners.InterProcessReaderWriterLock(
+            f"{self._cache_dir}/{model_name}_prediction_lock.file"
+        ).write_lock():
             model_name_hash = self._get_model_name_hash(model_name)
             cache_file = f"{self._cache_dir}/{model_name_hash}_predictions.pkl"
-            json_file = f"{self._cache_dir}/{model_name}_{model_name_hash}_predictions.json"
+            json_file = (
+                f"{self._cache_dir}/{model_name}_{model_name_hash}_predictions.json"
+            )
             pickle.dump(predictions, open(cache_file, "wb"))
             # convert keys from tuple to string
             json_serializable_predictions = {str(x): y for x, y in predictions.items()}
             json.dump(json_serializable_predictions, open(json_file, "w"))
 
     def _load_model_predication_cache(self, model_name: str) -> Dict[Tuple, float]:
-        with fasteners.InterProcessReaderWriterLock(f"{self._cache_dir}/{model_name}_prediction_lock.file").read_lock():
+        with fasteners.InterProcessReaderWriterLock(
+            f"{self._cache_dir}/{model_name}_prediction_lock.file"
+        ).read_lock():
             if self._no_cache:
                 return
 
@@ -346,7 +368,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
             if not os.path.exists(cache_file):
                 return
-            
+
             logger.info(f"Found model {model_name} predictions in cache")
 
             predictions = pickle.load(open(cache_file, "rb"))
@@ -395,7 +417,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         ]
 
         for model_name in model_names:
-            logger.info(f"Training model {model_name}, size of training data: {len(compute_df)}")
+            logger.info(
+                f"Training model {model_name}, size of training data: {len(compute_df)}"
+            )
             models[model_name] = self._train_model(
                 model_name=model_name,
                 df=compute_df,
@@ -450,11 +474,13 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             "PREPARE_INPUTS_E2E",
             "PROCESS_MODEL_OUTPUTS",
             "POST_PREPARE_INPUTS_BARRIER",
-            "RAY_COMM_TIME"
+            "RAY_COMM_TIME",
         ]
 
         cpu_overhead_df = self._load_cpu_overhead_df(self._cpu_overhead_input_file)
-        cpu_overhead_df = self._get_cpu_overhead_df_with_derived_features(cpu_overhead_df)
+        cpu_overhead_df = self._get_cpu_overhead_df_with_derived_features(
+            cpu_overhead_df
+        )
 
         print(len(cpu_overhead_df))
 
@@ -485,7 +511,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         chunked_prefill_df = prefill_df[prefill_df["kv_cache_size"] > 0].copy()
         chunked_prefill_df["total_prefill_tokens"] = (
-            chunked_prefill_df["kv_cache_size"] + chunked_prefill_df["prefill_chunk_size"]
+            chunked_prefill_df["kv_cache_size"]
+            + chunked_prefill_df["prefill_chunk_size"]
         )
 
         models["attn_prefill_kv_cache_prep"] = self._train_model(
@@ -494,7 +521,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             feature_cols=["total_prefill_tokens"],
             target_col="time_stats.attn_prefill_kv_cache_prep.median",
         )
-    
+
         models["attn_prefill"] = self._train_model(
             model_name="attn_prefill",
             df=prefill_df,
@@ -556,7 +583,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             "PREPARE_INPUTS_E2E",
             "PROCESS_MODEL_OUTPUTS",
             "POST_PREPARE_INPUTS_BARRIER",
-            "RAY_COMM_TIME"
+            "RAY_COMM_TIME",
         ]
 
         batch_size_range = np.arange(1, self._max_batch_size + 1)
@@ -576,14 +603,13 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             0, self._max_tokens_per_request + 1, self._kv_cache_prediction_granularity
         )
         decode_prefill_chunk_size_range = [0]
-        decode_batch_size, decode_kv_cache_size, decode_prefill_chunk_size = \
-            zip(
-                *product(
-                    decode_batch_size_range,
-                    decode_kv_cache_size_range,
-                    decode_prefill_chunk_size_range
-                )
+        decode_batch_size, decode_kv_cache_size, decode_prefill_chunk_size = zip(
+            *product(
+                decode_batch_size_range,
+                decode_kv_cache_size_range,
+                decode_prefill_chunk_size_range,
             )
+        )
 
         prefill_batch_size_range = [1]
         prefill_kv_cache_size_range = np.arange(
@@ -592,55 +618,58 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         prefill_prefill_chunk_size_range = np.arange(
             1, self._prediction_max_prefill_chunk_size + 1
         )
-        prefill_batch_size, prefill_kv_cache_size, prefill_prefill_chunk_size = \
-            zip(
-                *product(
-                    prefill_batch_size_range,
-                    prefill_kv_cache_size_range,
-                    prefill_prefill_chunk_size_range
-                )
+        prefill_batch_size, prefill_kv_cache_size, prefill_prefill_chunk_size = zip(
+            *product(
+                prefill_batch_size_range,
+                prefill_kv_cache_size_range,
+                prefill_prefill_chunk_size_range,
             )
+        )
 
         attention_df = pd.DataFrame(
             {
                 "batch_size": decode_batch_size + prefill_batch_size,
                 "kv_cache_size": decode_kv_cache_size + prefill_kv_cache_size,
-                "prefill_chunk_size": decode_prefill_chunk_size + prefill_prefill_chunk_size,
+                "prefill_chunk_size": decode_prefill_chunk_size
+                + prefill_prefill_chunk_size,
             }
         )
 
         attention_df["is_decode"] = attention_df["prefill_chunk_size"] == 0
-        attention_df["num_tokens"] = attention_df[["prefill_chunk_size", "batch_size"]].max(axis=1)    
+        attention_df["num_tokens"] = attention_df[
+            ["prefill_chunk_size", "batch_size"]
+        ].max(axis=1)
 
         prefill_df = attention_df[~attention_df["is_decode"]]
         decode_df = attention_df[attention_df["is_decode"]]
         chunked_prefill_df = prefill_df[prefill_df["kv_cache_size"] > 0].copy()
         chunked_prefill_df["total_prefill_tokens"] = (
-            chunked_prefill_df["kv_cache_size"] + chunked_prefill_df["prefill_chunk_size"]
+            chunked_prefill_df["kv_cache_size"]
+            + chunked_prefill_df["prefill_chunk_size"]
         )
-    
+
         predictions["attn_prefill_output_reshape_copy"] = self._get_model_prediction(
-            "attn_prefill_output_reshape_copy", 
+            "attn_prefill_output_reshape_copy",
             self._models["attn_prefill_output_reshape_copy"],
-            prefill_df[["num_tokens"]]
+            prefill_df[["num_tokens"]],
         )
 
         predictions["attn_prefill_kv_cache_prep"] = self._get_model_prediction(
-            "attn_prefill_kv_cache_prep", 
+            "attn_prefill_kv_cache_prep",
             self._models["attn_prefill_kv_cache_prep"],
-            chunked_prefill_df[["total_prefill_tokens"]]
+            chunked_prefill_df[["total_prefill_tokens"]],
         )
 
         predictions["attn_prefill"] = self._get_model_prediction(
-            "attn_prefill", 
+            "attn_prefill",
             self._models["attn_prefill"],
-            prefill_df[["kv_cache_size", "prefill_chunk_size"]]
+            prefill_df[["kv_cache_size", "prefill_chunk_size"]],
         )
 
         predictions["attn_decode"] = self._get_model_prediction(
-            "attn_decode", 
+            "attn_decode",
             self._models["attn_decode"],
-            decode_df[["batch_size", "kv_cache_size"]]
+            decode_df[["batch_size", "kv_cache_size"]],
         )
 
         return predictions
@@ -685,7 +714,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         return (decode_batch_size, decode_avg_kv_cache_size)
 
-    def _get_batch_prefill_attention_params(self, batch: Batch) -> List[Tuple[int, int]]:
+    def _get_batch_prefill_attention_params(
+        self, batch: Batch
+    ) -> List[Tuple[int, int]]:
         if hasattr(batch, "_prefill_params"):
             return batch._prefill_params
 
@@ -697,8 +728,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
             prefill_chunk_size = num_tokens_to_process
             kv_cache_size = (
-                request.num_processed_tokens
-                // self._kv_cache_prediction_granularity
+                request.num_processed_tokens // self._kv_cache_prediction_granularity
             ) * self._kv_cache_prediction_granularity
 
             prefill_params.append((kv_cache_size, prefill_chunk_size))
@@ -740,7 +770,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         return (
             self._predictions["all_reduce"][(num_tokens,)]
             + self._nccl_cpu_launch_overhead_ms
-            + self._nccl_cpu_skew_overhead_per_device_ms  * self._num_tensor_parallel_workers ** 1.25
+            + self._nccl_cpu_skew_overhead_per_device_ms
+            * self._num_tensor_parallel_workers**1.25
         )
 
     def _get_pipeline_parallel_communication_time(self, batch: Batch) -> float:
@@ -759,24 +790,31 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         num_tokens = sum(batch.num_tokens)
 
         # special case A40 llama 7b TP1 for now
-        if self._device_memory == 45 and self._num_layers == 32 and self._num_kv_heads == 32 and self._num_tensor_parallel_workers == 1:
+        if (
+            self._device_memory == 45
+            and self._num_layers == 32
+            and self._num_kv_heads == 32
+            and self._num_tensor_parallel_workers == 1
+        ):
             return self._predictions["attn_kv_cache_save"][(num_tokens,)] * 0.3
 
         return self._predictions["attn_kv_cache_save"][(num_tokens,)]
 
     def _get_attention_decode_execution_time(self, batch: Batch) -> float:
-        decode_batch_size, decode_avg_kv_cache_size = self._get_batch_decode_attention_params(
-            batch
-        )
+        (
+            decode_batch_size,
+            decode_avg_kv_cache_size,
+        ) = self._get_batch_decode_attention_params(batch)
         if decode_batch_size == 0:
             return 0
 
-        return (
-            self._predictions["attn_decode"][(decode_batch_size, decode_avg_kv_cache_size)]
-            * (1 + self._attention_decode_overhead_percentage)
-        )
+        return self._predictions["attn_decode"][
+            (decode_batch_size, decode_avg_kv_cache_size)
+        ] * (1 + self._attention_decode_overhead_percentage)
 
-    def _get_attention_prefill_kv_cache_prep_execution_time(self, batch: Batch) -> float:
+    def _get_attention_prefill_kv_cache_prep_execution_time(
+        self, batch: Batch
+    ) -> float:
         prefill_params = self._get_batch_prefill_attention_params(batch)
 
         total_time = 0
@@ -787,7 +825,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
             total_time += self._predictions["attn_prefill_kv_cache_prep"][
                 (kv_cache_size + prefill_chunk_size,)
-            ]            
+            ]
 
         return total_time
 
@@ -803,7 +841,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         return total_time
 
-    def _get_attention_prefill_output_reshape_copy_execution_time(self, batch: Batch) -> float:
+    def _get_attention_prefill_output_reshape_copy_execution_time(
+        self, batch: Batch
+    ) -> float:
         prefill_params = self._get_batch_prefill_attention_params(batch)
         total_current_prefill_tokens = sum([x[1] for x in prefill_params])
 
@@ -811,13 +851,13 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             return 0
 
         if total_current_prefill_tokens > self._prediction_max_prefill_chunk_size:
-            return self._predictions["attn_prefill_output_reshape_copy"][(
-                self._prediction_max_prefill_chunk_size,
-            )] * (total_current_prefill_tokens / self._prediction_max_prefill_chunk_size)
+            return self._predictions["attn_prefill_output_reshape_copy"][
+                (self._prediction_max_prefill_chunk_size,)
+            ] * (total_current_prefill_tokens / self._prediction_max_prefill_chunk_size)
 
-        return self._predictions["attn_prefill_output_reshape_copy"][(
-            total_current_prefill_tokens,
-        )]
+        return self._predictions["attn_prefill_output_reshape_copy"][
+            (total_current_prefill_tokens,)
+        ]
 
     def _get_schedule_time(self, batch: Batch) -> float:
         return self._predictions["SCHEDULE"][(batch.size,)]

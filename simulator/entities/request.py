@@ -121,7 +121,9 @@ class Request(BaseEntity):
     @property
     @check_scheduled
     def e2e_time_piecewise_normalized(self) -> float:
-        return self._scheduling_delay + ((self._execution_time + self._preempted_time) / self.num_decode_tokens)
+        return self._scheduling_delay + (
+            (self._execution_time + self._preempted_time) / self.num_decode_tokens
+        )
 
     @property
     @check_scheduled

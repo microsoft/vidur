@@ -5,24 +5,23 @@ from typing import Dict, List
 
 import pandas as pd
 import plotly_express as px
-
 import wandb
 
 from simulator.config import Config
-from simulator.entities import Batch, BatchStage, Request, ExecutionTime
+from simulator.entities import Batch, BatchStage, ExecutionTime, Request
+from simulator.plotting.cdf_sketch import CDFSketch
 from simulator.plotting.constants import (
     BatchMetricsCountDistribution,
     BatchMetricsTimeDistribution,
     CompletionMetricsTimeSeries,
-    TokenMetricsTimeDistribution,
+    CpuOperationMetrics,
+    OperationMetrics,
     RequestMetricsHistogram,
     RequestMetricsTimeDistributions,
-    OperationMetrics,
-    CpuOperationMetrics,
+    TokenMetricsTimeDistribution,
 )
 from simulator.plotting.data_series import DataSeries
 from simulator.plotting.series_average_meter import SeriesAverageMeter
-from simulator.plotting.cdf_sketch import CDFSketch
 from simulator.utils.mfu_calculator import MFUCalculator
 
 logger = logging.getLogger(__name__)
@@ -82,7 +81,7 @@ class MetricsStore:
             self._token_metrics_time_distribution[metric_name] = CDFSketch(
                 metric_name.value,
                 self._save_table_to_wandb,
-            )        
+            )
 
         self._request_metrics_histogram: Dict[RequestMetricsHistogram, DataSeries] = {}
         for metric_name in RequestMetricsHistogram:
@@ -210,22 +209,29 @@ class MetricsStore:
         )
         merged_request_df.to_csv(f"{base_path}/{file_name}.csv", index=False)
 
-    def _store_bar_plot(self, base_path: str, plot_name: str, x_label: str,
-                        y_label: str, data: Dict[str, float]):
-        fig = px.bar(x=list(data.keys()),
-                     y=list(data.values()),
-                     labels={
-                         "x": x_label,
-                         "y": y_label
-                     })
+    def _store_bar_plot(
+        self,
+        base_path: str,
+        plot_name: str,
+        x_label: str,
+        y_label: str,
+        data: Dict[str, float],
+    ):
+        fig = px.bar(
+            x=list(data.keys()),
+            y=list(data.values()),
+            labels={"x": x_label, "y": y_label},
+        )
 
         if wandb.run:
             wandb.log(
                 {
-                    plot_name:
-                    wandb.plot.bar(
-                        wandb.Table(dataframe=pd.DataFrame(
-                            data=data.items(), columns=[x_label, y_label])),
+                    plot_name: wandb.plot.bar(
+                        wandb.Table(
+                            dataframe=pd.DataFrame(
+                                data=data.items(), columns=[x_label, y_label]
+                            )
+                        ),
                         x_label,
                         y_label,
                         title=plot_name,
@@ -241,31 +247,37 @@ class MetricsStore:
 
         total_operation_runtimes["model_execution_e2e"] = 0
         for dataseries in self._operation_metrics.values():
-            dataseries.plot_cdf(base_plot_path,
-                                f"{dataseries._metric_name}_execution_time",
-                                TIME_STR_MS)
+            dataseries.plot_cdf(
+                base_plot_path, f"{dataseries._metric_name}_execution_time", TIME_STR_MS
+            )
             total_operation_runtimes[dataseries._metric_name] = dataseries.sum
             total_operation_runtimes["model_execution_e2e"] += dataseries.sum
 
         total_operation_runtimes["cpu"] = 0
         for dataseries in self._cpu_operation_metrics.values():
-            dataseries.plot_cdf(base_plot_path,
-                                f"{dataseries._metric_name}_execution_time",
-                                TIME_STR_MS)
+            dataseries.plot_cdf(
+                base_plot_path, f"{dataseries._metric_name}_execution_time", TIME_STR_MS
+            )
             total_operation_runtimes[dataseries._metric_name] = dataseries.sum
             if dataseries._metric_name != "ray_comm_time":
                 total_operation_runtimes["cpu"] += dataseries.sum
 
-        total_operation_runtimes["cpu"] += total_operation_runtimes["model_execution_e2e"]
+        total_operation_runtimes["cpu"] += total_operation_runtimes[
+            "model_execution_e2e"
+        ]
 
-        self._store_bar_plot(base_plot_path, "total_operation_runtimes",
-                             OPERATION_STR, TIME_STR_MS,
-                             total_operation_runtimes)
+        self._store_bar_plot(
+            base_plot_path,
+            "total_operation_runtimes",
+            OPERATION_STR,
+            TIME_STR_MS,
+            total_operation_runtimes,
+        )
 
     def _store_request_metrics(self, base_plot_path: str):
         all_request_metrics = list(
-            self._request_metrics_time_distributions.values()) + list(
-                self._request_metrics_histogram.values())
+            self._request_metrics_time_distributions.values()
+        ) + list(self._request_metrics_histogram.values())
 
         self._save_as_csv(
             dataseries_list=all_request_metrics,
@@ -282,22 +294,19 @@ class MetricsStore:
 
     def _store_batch_metrics(self, base_plot_path: str):
         for dataseries in self._batch_metrics_time_distribution.values():
-            dataseries.plot_cdf(base_plot_path, dataseries._metric_name,
-                                TIME_STR)
+            dataseries.plot_cdf(base_plot_path, dataseries._metric_name, TIME_STR)
 
         for dataseries in self._batch_metrics_count_distribution.values():
-            dataseries.plot_cdf(base_plot_path, dataseries._metric_name,
-                                COUNT_STR)
+            dataseries.plot_cdf(base_plot_path, dataseries._metric_name, COUNT_STR)
 
     def _store_completion_metrics(self, base_plot_path: str):
         for dataseries in self._token_metrics_time_distribution.values():
-            dataseries.plot_cdf(base_plot_path, dataseries._metric_name,
-                                TIME_STR)
+            dataseries.plot_cdf(base_plot_path, dataseries._metric_name, TIME_STR)
 
         for dataseries in self._completion_metrics_time_series.values():
-            dataseries.plot_step(base_plot_path,
-                                 f"{dataseries._y_name}_time_series",
-                                 COUNT_STR)
+            dataseries.plot_step(
+                base_plot_path, f"{dataseries._y_name}_time_series", COUNT_STR
+            )
 
     def _store_utilization_metrics(self):
         for replica_idx in range(self._num_replicas):
@@ -331,12 +340,12 @@ class MetricsStore:
         self._request_metrics_histogram[RequestMetricsHistogram.REQUEST_NUM_TOKENS].put(
             request.id, request.total_tokens
         )
-        self._request_metrics_histogram[RequestMetricsHistogram.REQUEST_PREFILL_TOKENS].put(
-            request.id, request.num_prefill_tokens
-        )
-        self._request_metrics_histogram[RequestMetricsHistogram.REQUEST_DECODE_TOKENS].put(
-            request.id, request.num_decode_tokens
-        )
+        self._request_metrics_histogram[
+            RequestMetricsHistogram.REQUEST_PREFILL_TOKENS
+        ].put(request.id, request.num_prefill_tokens)
+        self._request_metrics_histogram[
+            RequestMetricsHistogram.REQUEST_DECODE_TOKENS
+        ].put(request.id, request.num_decode_tokens)
         self._request_metrics_histogram[RequestMetricsHistogram.REQUEST_PD_RATIO].put(
             request.id, request.pd_ratio
         )
@@ -400,9 +409,9 @@ class MetricsStore:
             / request.num_decode_tokens,
         )
 
-        self._request_metrics_histogram[RequestMetricsHistogram.REQUEST_NUM_RESTARTS].put(
-            request.id, request.num_restarts
-        )
+        self._request_metrics_histogram[
+            RequestMetricsHistogram.REQUEST_NUM_RESTARTS
+        ].put(request.id, request.num_restarts)
 
     def _update_per_token_execution_times(
         self, time: float, request: Request, batch: Batch
@@ -479,7 +488,12 @@ class MetricsStore:
 
     @if_write_metrics
     def on_replica_stage_schedule(
-        self, time: float, replica_id: int, stage_id: int, batch_stage: BatchStage, execution_time: ExecutionTime
+        self,
+        time: float,
+        replica_id: int,
+        stage_id: int,
+        batch_stage: BatchStage,
+        execution_time: ExecutionTime,
     ) -> None:
         pass
         self._replica_busy_time[replica_id - 1][stage_id - 1].put(time, 100)
@@ -511,9 +525,9 @@ class MetricsStore:
             self._operation_metrics[OperationMetrics.ATTN_PREFILL_KV_CACHE_PREP].put(
                 execution_time.attention_prefill_kv_cache_prep_execution_time
             )
-            self._operation_metrics[OperationMetrics.ATTN_PREFILL_OUTPUT_RESHAPE_COPY].put(
-                execution_time.attention_prefill_output_reshape_copy_execution_time
-            )
+            self._operation_metrics[
+                OperationMetrics.ATTN_PREFILL_OUTPUT_RESHAPE_COPY
+            ].put(execution_time.attention_prefill_output_reshape_copy_execution_time)
             self._operation_metrics[OperationMetrics.ATTN_PREFILL].put(
                 execution_time.attention_prefill_execution_time
             )
@@ -548,9 +562,9 @@ class MetricsStore:
         self._cpu_operation_metrics[CpuOperationMetrics.PROCESS_MODEL_OUTPUTS].put(
             execution_time.process_model_outputs_time
         )
-        self._cpu_operation_metrics[CpuOperationMetrics.POST_PREPARE_INPUTS_BARRIER].put(
-            execution_time.post_prepare_inputs_barrier_time
-        )
+        self._cpu_operation_metrics[
+            CpuOperationMetrics.POST_PREPARE_INPUTS_BARRIER
+        ].put(execution_time.post_prepare_inputs_barrier_time)
         self._cpu_operation_metrics[CpuOperationMetrics.RAY_COMM_TIME].put(
             execution_time.ray_comm_time
         )

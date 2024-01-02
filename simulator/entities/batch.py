@@ -112,8 +112,8 @@ class Batch(BaseEntity):
         for request in self._requests:
             request.on_batch_schedule(time)
 
-        # if self._id % 1000 == 0:
-            # logger.info(f"Finished scheduling {self._id} batches.")
+        if self._id % 1000 == 0:
+            logger.info(f"Finished scheduling {self._id} batches.")
 
     def on_batch_end(self, time: float):
         self._completed = True
