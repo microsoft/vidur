@@ -1,30 +1,37 @@
-# LLM Inference Simulator
-
-## Overview
-
-LLM inference system simulator.
+# VIDUR: LLM Inference Simulator
 
 ## Setup
 
+### Using `mamba`
+
+To run the simulator, create a mamba environment with the given dependency file.
+
+```sh
+mamba env create -p ./env -f ./environment.yml
+```
+
+### Using `venv`
+
+1. Ensure that you have python 3.10 installed on your system. Refer <https://www.bitecode.dev/p/installing-python-the-bare-minimum>
+2. `cd` into the repository root
+3. Create a virtual environment using `venv` module using `python3.10 -m venv .venv`
+4. Activate the virtual environment using `source .venv/bin/activate`
+5. Install the dependencies using `python -m pip install -r requirements.txt`
+6. Run `deactivate` to deactivate the virtual environment
+
+### Using `conda` (Least recommended)
+
 To run the simulator, create a conda environment with the given dependency file.
 
-```
+```sh
 conda env create -p ./env -f ./environment.yml
 ```
 
-## Formatting Code
+## Setting up wandb (Optional)
 
-To run the code formatters execute the following command,
+First, setup your account on <https://microsoft-research.wandb.io/>, obtain the api key and then run the following command,
 
-```
-make format
-```
-
-## Setting up wandb
-
-First, setup your account on https://microsoft-research.wandb.io/, obtain the api key and then run the following command,
-
-```
+```sh
 wandb login --host https://microsoft-research.wandb.io
 ```
 
@@ -34,11 +41,52 @@ If you wish to skip wandb setup, simply comment out `wandb_project` and `wandb_g
 
 To run the simulator, simply execute the following command from the repository root,
 
-```
+```sh
 python -m simulator.main
 ```
 
+or a big example with all the parameters,
+
+```sh
+python -m simulator.main \
+--replica_model_name codellama/CodeLlama-34b-Instruct-hf \
+--replica_num_layers 48 \
+--replica_num_q_heads 64 \
+--replica_num_kv_heads 8 \
+--replica_embedding_dim 8192 \
+--replica_mlp_hidden_dim 22016 \
+--replica_vocab_size 32768 \
+--replica_use_gated_mlp \
+--replica_fp16_tflops 312 \
+--replica_total_memory_gb 80 \
+--sklearn_execution_time_predictor_compute_input_file ./data/profiling/a100/mlp.csv \
+--sklearn_execution_time_predictor_attention_input_file ./data/profiling/a100/mixed_attention.csv \
+--sklearn_execution_time_predictor_all_reduce_input_file ./data/profiling/a100/all_reduce.csv \ --sklearn_execution_time_predictor_send_recv_input_file ./data/profiling/a100/p2p_intra_node.csv \
+--sklearn_execution_time_predictor_cpu_overhead_input_file ./data/profiling/a100/cpu_overheads.csv \
+--cluster_num_replicas 1 \
+--replica_num_tensor_parallel_workers 1 \
+--request_generator_provider synthetic \
+--request_generator_request_length_generator_provider trace \
+--trace_request_length_generator_trace_file ./data/processed_traces/cnn_dailymail_stats_llama2_tokenizer.csv \
+--request_generator_request_interval_generator_provider poisson \
+--poisson_request_interval_generator_qps 0.75 \
+--synthetic_request_generator_num_requests 256 \
+--replica_scheduler_provider vllm \
+--replica_scheduler_batch_size_cap 128
+```
+
+The simulator supports a plethora of parameters for the simulation description of which can be found [here](docs/simulator_params.md).
+
 The metrics will be logged to wandb directly and copy will be stored in `simulator_output` directory along with the chrome trace. Description of all the logged metrics can be found [here](docs/simulator_metrics.md).
+
+## Formatting Code
+
+To run the code formatters execute the following command,
+
+```sh
+make format
+```
+
 
 ## Contributing
 
