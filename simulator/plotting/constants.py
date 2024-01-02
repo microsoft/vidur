@@ -3,9 +3,43 @@
 import enum
 
 
+class OperationMetrics(enum.Enum):
+    MLP_UP_PROJ = "mlp_up_proj"
+    MLP_ACTIVATION = "mlp_activation"
+    MLP_DOWN_PROJ = "mlp_down_proj"
+    MLP_DOWN_PROJ_ALL_REDUCE = "mlp_down_proj_all_reduce"
+    ATTN_PRE_PROJ = "attn_pre_proj"
+    ATTN_POST_PROJ = "attn_post_proj"
+    ATTN_POST_PROJ_ALL_REDUCE = "attn_post_proj_all_reduce"    
+    ATTN_PREFILL_KV_CACHE_PREP = "attn_prefill_kv_cache_prep"
+    ATTN_PREFILL_QKV_RESHAPE = "attn_prefill_qkv_reshape"
+    ATTN_PREFILL_OUTPUT_RESHAPE_COPY = "attn_prefill_output_reshape_copy"
+    ATTN_PREFILL = "attn_prefill"
+    ATTN_KV_CACHE_SAVE = "attn_kv_cache_save"
+    ATTN_DECODE = "attn_decode"
+    ATTN_ROPE = "attn_rope"
+    PIPELINE_SEND_RECV = "pipeline_send_recv"
+    ADD = "add"
+    RMS_NORM = "rms_norm"
+
+
+class CpuOperationMetrics(enum.Enum):
+    SCHEDULE = "schedule"
+    SAMPLER_E2E = "sample_e2e"
+    PREPARE_INPUTS_E2E = "prepare_inputs_e2e"
+    PROCESS_MODEL_OUTPUTS = "process_model_outputs"
+    POST_PREPARE_INPUTS_BARRIER = "post_prepare_inputs_barrier"
+    RAY_COMM_TIME = "ray_comm_time"
+
+
 class RequestMetricsTimeDistributions(enum.Enum):
     REQUEST_E2E_TIME = "request_e2e_time"
+    REQUEST_E2E_TIME_NORMALIZED = "request_e2e_time_normalized"
+    REQUEST_E2E_TIME_PIECEWISE_NORMALIZED = "request_e2e_time_piecewise_normalized"
     REQUEST_EXECUTION_TIME = "request_execution_time"
+    REQUEST_EXECUTION_TIME_NORMALIZED = "request_execution_time_normalized"
+    REQUEST_MODEL_EXECUTION_TIME = "request_model_execution_time"
+    REQUEST_MODEL_EXECUTION_TIME_NORMALIZED = "request_model_execution_time_normalized"
     REQUEST_PREEMPTION_TIME = "request_preemption_time"
     REQUEST_SCHEDULING_DELAY = "request_scheduling_delay"
     REQUEST_EXECUTION_PLUS_PREEMPTION_TIME = "request_execution_plus_preemption_time"
@@ -19,7 +53,7 @@ class RequestMetricsTimeDistributions(enum.Enum):
     )
 
 
-class DecodeTimeDistribution(enum.Enum):
+class TokenMetricsTimeDistribution(enum.Enum):
     DECODE_TOKEN_EXECUTION_PLUS_PREMPTION_TIME = "decode_token_execution_plus_preemption_time"
 
 
@@ -41,6 +75,8 @@ class BatchMetricsCountDistribution(enum.Enum):
 
 class BatchMetricsTimeDistribution(enum.Enum):
     BATCH_EXECUTION_TIME = "batch_execution_time"
+    # this is match with the CpuOperationMetrics.MODEL_EXECUTION_E2E in llm-batching code
+    MODEL_EXECUTION_E2E = "model_execution_e2e_execution_time"
 
 class CompletionMetricsTimeSeries(enum.Enum):
     REQUEST_ARRIVAL = "request_arrival"

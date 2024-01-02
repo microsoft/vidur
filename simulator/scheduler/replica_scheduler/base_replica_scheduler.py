@@ -32,9 +32,12 @@ class BaseReplicaScheduler(ABC):
 
         memory_planner = MemoryPlanner(config, replica)
 
-        self._num_total_blocks = (
-            self._max_blocks_per_sequence * memory_planner.get_max_request_slots()
-        )
+        self._num_total_blocks = config.replica_scheduler_num_blocks
+
+        if not self._num_total_blocks:
+            self._num_total_blocks = (
+                self._max_blocks_per_sequence * memory_planner.get_max_request_slots()
+            )
         self._max_batch_size = min(
             memory_planner.get_max_batch_size(),
             config.replica_scheduler_batch_size_cap,

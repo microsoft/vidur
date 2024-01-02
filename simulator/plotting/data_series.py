@@ -18,7 +18,7 @@ class DataSeries:
         save_table_to_wandb: bool = True,
     ) -> None:
         # metrics are a data series of two-dimensional (x, y) datapoints
-        self._data_series = []
+        self._data_series = list()
         # column names of x, y datatpoints for data collection
         self._x_name = x_name
         self._y_name = y_name

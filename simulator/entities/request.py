@@ -41,6 +41,7 @@ class Request(BaseEntity):
 
         self._scheduled_at = 0
         self._execution_time = 0
+        self._model_execution_time = 0
         self._scheduling_delay = 0
         self._preempted_time = 0
         self._completed_at = 0
@@ -114,8 +115,38 @@ class Request(BaseEntity):
 
     @property
     @check_scheduled
+    def e2e_time(self) -> float:
+        return self._completed_at - self._arrived_at
+
+    @property
+    @check_scheduled
+    def e2e_time_piecewise_normalized(self) -> float:
+        return self._scheduling_delay + ((self._execution_time + self._preempted_time) / self.num_decode_tokens)
+
+    @property
+    @check_scheduled
+    def e2e_time_normalized(self) -> float:
+        return self.e2e_time / self.num_decode_tokens
+
+    @property
+    @check_scheduled
     def execution_time(self) -> float:
         return self._execution_time
+
+    @property
+    @check_scheduled
+    def execution_time_normalized(self) -> float:
+        return self._execution_time / self.num_decode_tokens
+
+    @property
+    @check_scheduled
+    def model_execution_time(self) -> float:
+        return self._model_execution_time
+
+    @property
+    @check_scheduled
+    def model_execution_time_normalized(self) -> float:
+        return self._model_execution_time / self.num_decode_tokens
 
     @property
     def arrived_at(self) -> float:
@@ -218,7 +249,7 @@ class Request(BaseEntity):
         if self._num_processed_tokens == self.total_tokens:
             self._completed_at = time
             self._completed = True
-            logger.info(f"Request {self._id} completed at {self._completed_at}")
+            # logger.info(f"Request {self._id} completed at {self._completed_at}")
 
     def on_batch_stage_schedule(
         self,
@@ -235,8 +266,10 @@ class Request(BaseEntity):
         self,
         time: float,
         execution_time: float,
+        model_execution_time: float,
     ) -> None:
         self._execution_time += execution_time
+        self._model_execution_time += model_execution_time
         self._latest_stage_completed_at = time
         self._preempted = True
 
@@ -245,6 +278,7 @@ class Request(BaseEntity):
             "id": self._id,
             "arrived_at": self._arrived_at,
             "execution_time": self._execution_time,
+            "model_execution_time": self._model_execution_time,
             "scheduled_at": self._scheduled_at,
             "scheduling_delay": self._scheduling_delay,
             "preempted_time": self._preempted_time,

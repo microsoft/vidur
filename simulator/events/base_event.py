@@ -39,12 +39,12 @@ class BaseEvent(ABC):
         pass
 
     def __lt__(self, other):
-        if self.time == other.time:
+        if self._time == other._time:
             if self.event_type == other.event_type:
                 return self.id < other.id
             return self.event_type < other.event_type
         else:
-            return self.time < other.time
+            return self._time < other._time
 
     def __eq__(self, other):
         return (

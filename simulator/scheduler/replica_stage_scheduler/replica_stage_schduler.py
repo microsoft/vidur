@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from simulator.entities import Batch, BatchStage
+from simulator.entities import Batch, BatchStage, ExecutionTime
 from simulator.execution_time_predictor import BaseExecutionTimePredictor
 
 
@@ -33,9 +33,9 @@ class ReplicaStageScheduler:
     def on_stage_end(self) -> None:
         self._is_busy = False
 
-    def on_schedule(self) -> Tuple[Batch, BatchStage]:
+    def on_schedule(self) -> Tuple[Batch, BatchStage, ExecutionTime]:
         if self._is_busy or not self._batch_queue:
-            return None, None
+            return None, None, None
 
         self._is_busy = True
         batch = self._batch_queue.pop(0)
@@ -43,13 +43,16 @@ class ReplicaStageScheduler:
             batch,
             self._stage_id,
         )
+        total_execution_time = execution_time.total_time
+        model_execution_time = execution_time.model_time
         batch_stage = BatchStage(
             batch.id,
             self._replica_id,
             self._stage_id,
-            execution_time,
+            total_execution_time,
+            model_execution_time,
             batch.requests,
             batch.num_tokens,
         )
 
-        return batch, batch_stage
+        return batch, batch_stage, execution_time
