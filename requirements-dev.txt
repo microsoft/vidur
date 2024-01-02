@@ -1,0 +1,5 @@
+black
+autopep8
+isort
+flake8
+make
