@@ -7,9 +7,9 @@ from abc import abstractmethod
 from itertools import product
 from typing import Any, Dict, List, Tuple
 
-import fasteners
 import numpy as np
 import pandas as pd
+from fasteners import InterProcessReaderWriterLock
 from sklearn.base import BaseEstimator
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
@@ -243,7 +243,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         return hashlib.md5(model_name).hexdigest()
 
     def _load_model_from_cache(self, model_name: str) -> BaseEstimator:
-        with fasteners.InterProcessReaderWriterLock(
+        with InterProcessReaderWriterLock(
             f"{self._cache_dir}/{model_name}_model_lock.file"
         ).read_lock():
             if self._no_cache:
@@ -263,7 +263,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             return model
 
     def _store_model_in_cache(self, model_name: str, model: BaseEstimator) -> None:
-        with fasteners.InterProcessReaderWriterLock(
+        with InterProcessReaderWriterLock(
             f"{self._cache_dir}/{model_name}_model_lock.file"
         ).write_lock():
             model_name_hash = self._get_model_name_hash(model_name)
@@ -345,7 +345,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
     def _store_model_predication_cache(
         self, model_name: str, predictions: Dict[Tuple, float]
     ) -> None:
-        with fasteners.InterProcessReaderWriterLock(
+        with InterProcessReaderWriterLock(
             f"{self._cache_dir}/{model_name}_prediction_lock.file"
         ).write_lock():
             model_name_hash = self._get_model_name_hash(model_name)
@@ -361,7 +361,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
                 json.dump(json_serializable_predictions, f)
 
     def _load_model_predication_cache(self, model_name: str) -> Dict[Tuple, float]:
-        with fasteners.InterProcessReaderWriterLock(
+        with InterProcessReaderWriterLock(
             f"{self._cache_dir}/{model_name}_prediction_lock.file"
         ).read_lock():
             if self._no_cache:

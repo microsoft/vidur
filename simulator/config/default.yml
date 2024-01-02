@@ -55,7 +55,7 @@ replica:
   total_memory_gb: 80
   # a40
   # fp16_tflops: 150
-  # total_memory_gb: 45
+  # total_memory_gb: 48
 
 request_generator:
   provider: synthetic

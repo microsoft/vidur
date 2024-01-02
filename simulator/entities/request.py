@@ -251,7 +251,7 @@ class Request(BaseEntity):
         if self._num_processed_tokens == self.total_tokens:
             self._completed_at = time
             self._completed = True
-            # logger.info(f"Request {self._id} completed at {self._completed_at}")
+            logger.info(f"Request {self._id} completed at {self._completed_at}")
 
     def on_batch_stage_schedule(
         self,
