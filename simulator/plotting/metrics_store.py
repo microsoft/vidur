@@ -5,8 +5,8 @@ from typing import Dict, List
 
 import pandas as pd
 import plotly_express as px
-import wandb
 
+import wandb
 from simulator.config import Config
 from simulator.entities import Batch, BatchStage, ExecutionTime, Request
 from simulator.plotting.cdf_sketch import CDFSketch
@@ -495,7 +495,6 @@ class MetricsStore:
         batch_stage: BatchStage,
         execution_time: ExecutionTime,
     ) -> None:
-        pass
         self._replica_busy_time[replica_id - 1][stage_id - 1].put(time, 100)
         mfu = self._mfu_calculator.get_mfu(batch_stage)
         self._replica_mfu[replica_id - 1][stage_id - 1].put(time, mfu)

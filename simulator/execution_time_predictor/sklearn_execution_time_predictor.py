@@ -60,9 +60,6 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         self._nccl_cpu_launch_overhead_ms = (
             config.sklearn_execution_time_predictor_nccl_cpu_launch_overhead_ms
         )
-        self._nccl_cpu_skew_overhead_per_device_ms = (
-            config.sklearn_execution_time_predictor_nccl_cpu_skew_overhead_per_device_ms
-        )
 
         self._max_batch_size = (
             config.sklearn_execution_time_predictor_prediction_max_batch_size
@@ -105,14 +102,12 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         df = self._read_input_file(file_path)
 
         logger.info(f"Length of complete compute df: {len(df)} {file_path}")
-        logger.info(f"self._num_q_heads: {self._num_q_heads}")
-        logger.info(f"self._embedding_dim: {self._embedding_dim}")
-        logger.info(f"self._mlp_hidden_dim: {self._mlp_hidden_dim}")
-        logger.info(f"self._use_gated_mlp: {self._use_gated_mlp}")
-        logger.info(f"self._vocab_size: {self._vocab_size}")
-        logger.info(
-            f"self._num_tensor_parallel_workers: {self._num_tensor_parallel_workers}"
-        )
+        logger.info(f"Number of query heads: {self._num_q_heads}")
+        logger.info(f"Embedding dimension: {self._embedding_dim}")
+        logger.info(f"MLP hidden dimension: {self._mlp_hidden_dim}")
+        logger.info(f"Use gated MLP: {self._use_gated_mlp}")
+        logger.info(f"Vocab size: {self._vocab_size}")
+        logger.info(f"Tensor parallel degree: {self._num_tensor_parallel_workers}")
 
         return df[
             (df["n_head"] == self._num_q_heads)
@@ -154,9 +149,6 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
     def _load_cpu_overhead_df(self, file_path: str) -> pd.DataFrame:
         df = self._read_input_file(file_path)
-        print(len(df))
-        print(self._model_name)
-        print(self._num_tensor_parallel_workers)
         filtered_df = df[
             (df["model_name"] == self._model_name)
             & (df["tensor_parallel_degree"] == self._num_tensor_parallel_workers)
@@ -165,7 +157,6 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
     def _read_input_file(self, file_path: str) -> pd.DataFrame:
         df = pd.read_csv(file_path)
-        # df = df.dropna()
         df = df.drop_duplicates()
         return df
 
@@ -742,7 +733,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
     def _get_attention_layer_pre_proj_execution_time(self, batch: Batch) -> float:
         num_tokens = self._get_num_tokens(batch)
-        return self._predictions["attn_pre_proj"][(num_tokens,)] * 1.05
+        return self._predictions["attn_pre_proj"][(num_tokens,)]
 
     def _get_attention_layer_post_proj_execution_time(self, batch: Batch) -> float:
         num_tokens = self._get_num_tokens(batch)
@@ -773,8 +764,6 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         return (
             self._predictions["all_reduce"][(num_tokens,)]
             + self._nccl_cpu_launch_overhead_ms
-            + self._nccl_cpu_skew_overhead_per_device_ms
-            * self._num_tensor_parallel_workers**1.25
         )
 
     def _get_pipeline_parallel_communication_time(self, batch: Batch) -> float:
@@ -791,16 +780,6 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         # don't use round up to the nearest multiple of 8 here, because we want to
         # predict the execution time for the exact number of tokens
         num_tokens = sum(batch.num_tokens)
-
-        # special case A40 llama 7b TP1 for now
-        if (
-            self._device_memory == 45
-            and self._num_layers == 32
-            and self._num_kv_heads == 32
-            and self._num_tensor_parallel_workers == 1
-        ):
-            return self._predictions["attn_kv_cache_save"][(num_tokens,)] * 0.3
-
         return self._predictions["attn_kv_cache_save"][(num_tokens,)]
 
     def _get_attention_decode_execution_time(self, batch: Batch) -> float:

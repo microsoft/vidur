@@ -117,7 +117,6 @@ sklearn_execution_time_predictor:
   prediction_max_tokens_per_request: 4096
   attention_decode_overhead_percentage: 0.0
   nccl_cpu_launch_overhead_ms: 0.020
-  nccl_cpu_skew_overhead_per_device_ms: 0
 
 random_forrest_execution_time_predictor:
   num_estimators:
