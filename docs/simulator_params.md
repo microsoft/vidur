@@ -82,7 +82,6 @@ All the output files corresponding to the invocation are stored under this direc
     11. `prediction_max_tokens_per_request`: `4096`
     12. `attention_decode_overhead_percentage`: `0.0`
     13. `nccl_cpu_launch_overhead_ms`: `0.020`
-    14. `nccl_cpu_skew_overhead_per_device_ms`: `0`
 20. `random_forrest_execution_time_predictor`: TODO. Recommend to use the `sklearn_execution_time_predictor` instead.
 21. `linear_regression_execution_time_predictor`: TODO. Recommend to use the `sklearn_execution_time_predictor` instead.
 22. `simulator`:
