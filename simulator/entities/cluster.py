@@ -38,4 +38,5 @@ class Cluster(BaseEntity):
         cluster_info = {"replicas": replica_dicts}
 
         cluster_file = f"{self._config.output_dir}/cluster.json"
-        json.dump(cluster_info, open(cluster_file, "w"))
+        with open(cluster_file, "w") as f:
+            json.dump(cluster_info, f)

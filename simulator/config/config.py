@@ -1,6 +1,5 @@
 import argparse
 import datetime
-import hashlib
 import os
 
 import yaml

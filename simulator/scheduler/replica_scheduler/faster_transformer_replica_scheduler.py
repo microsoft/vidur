@@ -1,6 +1,4 @@
-from typing import List
-
-from simulator.entities.batch import Batch, Request
+from simulator.entities.batch import Batch
 from simulator.scheduler.replica_scheduler.base_replica_scheduler import (
     BaseReplicaScheduler,
 )

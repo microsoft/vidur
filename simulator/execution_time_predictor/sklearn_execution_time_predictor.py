@@ -258,7 +258,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
                 return
 
             logger.info(f"Found model {model_name} in cache")
-            model = pickle.load(open(cache_file, "rb"))
+            with open(cache_file, "rb") as f:
+                model = pickle.load(f)
             return model
 
     def _store_model_in_cache(self, model_name: str, model: BaseEstimator) -> None:
@@ -269,7 +270,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
             # store model in cache
             cache_file = f"{self._cache_dir}/{model_name_hash}.pkl"
-            pickle.dump(model, open(cache_file, "wb"))
+            with open(cache_file, "wb") as f:
+                pickle.dump(model, f)
 
     def _store_training_prediction_data(
         self,
@@ -351,10 +353,12 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             json_file = (
                 f"{self._cache_dir}/{model_name}_{model_name_hash}_predictions.json"
             )
-            pickle.dump(predictions, open(cache_file, "wb"))
+            with open(cache_file, "wb") as f:
+                pickle.dump(predictions, f)
             # convert keys from tuple to string
             json_serializable_predictions = {str(x): y for x, y in predictions.items()}
-            json.dump(json_serializable_predictions, open(json_file, "w"))
+            with open(json_file, "w") as f:
+                json.dump(json_serializable_predictions, f)
 
     def _load_model_predication_cache(self, model_name: str) -> Dict[Tuple, float]:
         with fasteners.InterProcessReaderWriterLock(
@@ -371,7 +375,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
             logger.info(f"Found model {model_name} predictions in cache")
 
-            predictions = pickle.load(open(cache_file, "rb"))
+            with open(cache_file, "rb") as f:
+                predictions = pickle.load(f)
             return predictions
 
     def _get_model_prediction(
@@ -688,8 +693,6 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         num_tokens = sum(batch.num_tokens)
         # round up to the nearest multiple of 8
         num_tokens = int(np.ceil(num_tokens / 8) * 8)
-
-        batch.__num_tokens = num_tokens
 
         return num_tokens
 

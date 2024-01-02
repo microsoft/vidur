@@ -105,11 +105,13 @@ class Simulator:
 
     def _write_event_trace(self) -> None:
         trace_file = f"{self._config.output_dir}/event_trace.json"
-        json.dump(self._event_trace, open(trace_file, "w"))
+        with open(trace_file, "w") as f:
+            json.dump(self._event_trace, f)
 
     def _write_chrome_trace(self) -> None:
         trace_file = f"{self._config.output_dir}/chrome_trace.json"
 
         chrome_trace = {"traceEvents": self._event_chrome_trace}
 
-        json.dump(chrome_trace, open(trace_file, "w"))
+        with open(trace_file, "w") as f:
+            json.dump(chrome_trace, f)

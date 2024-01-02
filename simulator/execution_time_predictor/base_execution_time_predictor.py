@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 from simulator.config import Config
 from simulator.entities import Batch, ExecutionTime

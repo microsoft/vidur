@@ -14,7 +14,8 @@ class BaseRequestGenerator(ABC):
     def _write_requests_to_file(self, requests: List[Request]) -> None:
         request_dicts = [request.to_dict() for request in requests]
         request_file = f"{self._config.output_dir}/requests.json"
-        json.dump(request_dicts, open(request_file, "w"))
+        with open(request_file, "w") as f:
+            json.dump(request_dicts, f)
 
     @abstractmethod
     def generate_requests(self) -> List[Request]:

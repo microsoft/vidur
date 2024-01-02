@@ -79,10 +79,6 @@ class Batch(BaseEntity):
         return self._completed_at
 
     @property
-    def completed(self) -> bool:
-        return self._completed
-
-    @property
     def scheduled(self) -> bool:
         return self._scheduled
 
