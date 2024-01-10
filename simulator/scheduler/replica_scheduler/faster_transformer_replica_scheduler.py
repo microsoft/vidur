@@ -1,6 +1,3 @@
-#from typing import List
-
-#from simulator.entities.batch import Batch, Request
 from simulator.entities.batch import Batch
 from simulator.scheduler.replica_scheduler.base_replica_scheduler import (
     BaseReplicaScheduler,
@@ -18,7 +15,7 @@ class FasterTransformerReplicaScheduler(BaseReplicaScheduler):
     def on_batch_end(self, batch: Batch) -> None:
         self._num_running_batches -= 1
 
-        if batch.completed:
+        if batch.all_requests_completed:
             # free memory for all requests at once
             self.free_batch(batch)
             self.free(*self._pending_free_map.pop(batch.id, []))

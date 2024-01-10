@@ -23,7 +23,8 @@ class BatchStage(BaseEntity):
         batch_id: int,
         replica_id: int,
         pipeline_stage: int,
-        execution_time: int,
+        execution_time: float,
+        model_execution_time: float,
         requests: List[Request],
         num_tokens: List[Request],
     ) -> None:
@@ -35,6 +36,7 @@ class BatchStage(BaseEntity):
         self._replica_id = replica_id
         self._pipeline_stage = pipeline_stage
         self._execution_time = execution_time
+        self._model_execution_time = model_execution_time
 
         self._scheduled_at = None
         self._completed_at = None
@@ -57,6 +59,10 @@ class BatchStage(BaseEntity):
     @property
     def execution_time(self) -> int:
         return self._execution_time
+
+    @property
+    def model_execution_time(self) -> int:
+        return self._model_execution_time
 
     @property
     def pipeline_stage(self) -> int:
@@ -95,13 +101,16 @@ class BatchStage(BaseEntity):
         self._completed_at = time
 
         for request in self._requests:
-            request.on_batch_stage_end(time, self._execution_time)
+            request.on_batch_stage_end(
+                time, self._execution_time, self._model_execution_time
+            )
 
     def to_dict(self) -> dict:
         return {
             "id": self._id,
             "size": self.size,
             "execution_time": self._execution_time,
+            "model_execution_time": self._model_execution_time,
             "scheduled_at": self._scheduled_at,
             "completed_at": self._completed_at,
             "replica_id": self._replica_id,
@@ -116,8 +125,8 @@ class BatchStage(BaseEntity):
         return {
             "name": f"{self.request_ids}",
             "ph": "X",
-            "ts": (time - self.execution_time) * 1e6,
-            "dur": self.execution_time * 1e6,
+            "ts": (time - self._execution_time) * 1e6,
+            "dur": self._execution_time * 1e6,
             "pid": self._replica_id,
             "tid": self._pipeline_stage,
             "args": {

@@ -5,7 +5,6 @@ from simulator.events import BaseEvent
 from simulator.plotting import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
-from simulator.events.batch_stage_arrival_event import BatchStageArrivalEvent
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +24,7 @@ class ReplicaScheduleEvent(BaseEvent):
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
     ) -> List[BaseEvent]:
+        from simulator.events.batch_stage_arrival_event import BatchStageArrivalEvent
 
         replica_scheduler = scheduler.get_replica_scheduler(self._replica_id)
         self._batches = replica_scheduler.on_schedule()

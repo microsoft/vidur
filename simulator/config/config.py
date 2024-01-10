@@ -1,6 +1,5 @@
 import argparse
 import datetime
-#import hashlib
 import os
 
 import yaml
@@ -27,7 +26,7 @@ class Config:
 
     def _add_derived_args(self):
         print(self._args)
-        self._args.output_dir = f"{self._args.output_dir}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        self._args.output_dir = f"{self._args.output_dir}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')}"
         os.makedirs(self._args.output_dir, exist_ok=True)
 
     def _update_namespace(self, config_dict, parent_key=""):

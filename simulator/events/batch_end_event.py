@@ -6,7 +6,6 @@ from simulator.events import BaseEvent
 from simulator.plotting import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
-from simulator.events.replica_schedule_event import ReplicaScheduleEvent
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +23,7 @@ class BatchEndEvent(BaseEvent):
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
     ) -> List[BaseEvent]:
+        from simulator.events.replica_schedule_event import ReplicaScheduleEvent
 
         self._batch.on_batch_end(self.time)
         replica_scheduler = scheduler.get_replica_scheduler(self._replica_id)

@@ -1,4 +1,3 @@
-#import random
 from typing import Tuple
 
 from simulator.request_generator.base_request_length_generator import (

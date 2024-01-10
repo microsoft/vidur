@@ -1,5 +1,3 @@
-#import random
-
 from scipy.stats import gamma
 
 from simulator.request_generator.base_request_interval_generator import (
