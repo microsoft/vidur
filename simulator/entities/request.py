@@ -120,13 +120,6 @@ class Request(BaseEntity):
 
     @property
     @check_scheduled
-    def e2e_time_piecewise_normalized(self) -> float:
-        return self._scheduling_delay + (
-            (self._execution_time + self._preempted_time) / self.num_decode_tokens
-        )
-
-    @property
-    @check_scheduled
     def e2e_time_normalized(self) -> float:
         return self.e2e_time / self.num_decode_tokens
 
@@ -251,7 +244,7 @@ class Request(BaseEntity):
         if self._num_processed_tokens == self.total_tokens:
             self._completed_at = time
             self._completed = True
-            logger.info(f"Request {self._id} completed at {self._completed_at}")
+            logger.debug(f"Request {self._id} completed at {self._completed_at}")
 
     def on_batch_stage_schedule(
         self,
@@ -299,7 +292,7 @@ class Request(BaseEntity):
         }
 
     def restart(self):
-        logger.info(f"Restarting request {self._id}")
+        logger.debug(f"Restarting request {self._id}")
 
         # when we restart the request, we can process all the previously
         # decoded tokens in parallel (i.e., we can prefill all the tokens)

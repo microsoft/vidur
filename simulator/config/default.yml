@@ -1,61 +1,21 @@
 seed: 42
 log_level: info
 output_dir: ./simulator_output/
-cache_dir: ./.cache
+cache_dir: ./cache
 write_json_trace: false
-write_chrome_trace: false
+write_chrome_trace: true
 write_metrics: true
 
 cluster:
   num_replicas: 1
 
 replica:
-  # memory management
   block_size: 16
   memory_margin_fraction: 0.1
-  # parallelism
-  num_pipeline_stages: 1
-  num_tensor_parallel_workers: 8
-  # Model Specs
-  # GPT-3
-  # num_layers: 96
-  # num_q_heads: 96
-  # num_kv_heads: 96
-  # embedding_dim: 12288
-  # mlp_hidden_dim: 49152
-  # use_gated_mlp: false
-  # vocab_size: 50257 
-  # Falcon-180B
-  # num_layers: 80
-  # num_q_heads: 232
-  # num_kv_heads: 8
-  # embedding_dim: 14848
-  # mlp_hidden_dim: 59392
-  # use_gated_mlp: false
-  # vocab_size: 65024 
-  # LLama2 7b
+  num_pipeline_stages: 4
+  num_tensor_parallel_workers: 1
   model_name: meta-llama/Llama-2-7b-hf
-  num_layers: 32
-  num_q_heads: 32
-  num_kv_heads: 32
-  embedding_dim: 4096
-  mlp_hidden_dim: 11008
-  use_gated_mlp: true
-  vocab_size: 32768 
-  # # LLama2 70b
-  # num_layers: 80
-  # num_q_heads: 64
-  # num_kv_heads: 8
-  # embedding_dim: 8192
-  # mlp_hidden_dim: 28672
-  # use_gated_mlp: true
-  # vocab_size: 32768 
-  # a100
-  fp16_tflops: 312
-  total_memory_gb: 80
-  # a40
-  # fp16_tflops: 150
-  # total_memory_gb: 48
+  device: a100
 
 request_generator:
   provider: synthetic
@@ -63,11 +23,10 @@ request_generator:
 
 synthetic_request_generator:
   length_provider: trace
-  interval_provider: poisson
+  interval_provider: static
   min_tokens: 1024
   prefill_to_decode_ratio: 10
-  num_requests: 10000
-  # duration: 100
+  num_requests: 128
 
 trace_request_generator:
   trace_file: ./data/processed_traces/sydney_enterprise.csv
@@ -89,7 +48,7 @@ trace_request_interval_generator:
   time_scale_factor: 0.3
 
 poisson_request_interval_generator:
-  qps: 16.0
+  qps: 0.5
 
 gamma_request_interval_generator:
   cv: 0.5
@@ -99,24 +58,32 @@ zipf_request_length_generator:
   theta: 0.4
   scramble: false
 
+fixed_request_generator:
+  prefill_tokens: 2048
+  decode_tokens: 512
+
 execution_time_predictor:
   provider: random_forrest
   # provider: linear_regression
 
 sklearn_execution_time_predictor:
-  compute_input_file: ./data/profiling/a100/mlp.csv
-  attention_input_file: ./data/profiling/a100/mixed_attention.csv
-  all_reduce_input_file: ./data/profiling/a100/all_reduce.csv
-  send_recv_input_file: ./data/profiling/a100/p2p_intra_node.csv
-  cpu_overhead_input_file: ./data/profiling/a100/cpu_overheads.csv
+  compute_input_file: ./data/profiling/{DEVICE}/mlp.csv
+  attention_input_file: ./data/profiling/{DEVICE}/attention.csv
+  all_reduce_input_file: ./data/profiling/{DEVICE}/all_reduce.csv
+  send_recv_input_file: ./data/profiling/{DEVICE}/send_recv.csv
+  cpu_overhead_input_file: ./data/profiling/{DEVICE}/cpu_overheads.csv
   k_fold_cv_splits: 10
   no_cache: false
-  kv_cache_prediction_granularity: 8
+  kv_cache_prediction_granularity: 64
   prediction_max_prefill_chunk_size: 4096
-  prediction_max_batch_size: 100
+  prediction_max_batch_size: 128
   prediction_max_tokens_per_request: 4096
-  attention_decode_overhead_percentage: 0.0
+  attention_decode_batching_overhead_fraction: 0.1
+  attention_prefill_batching_overhead_fraction: 0.1
   nccl_cpu_launch_overhead_ms: 0.020
+  nccl_cpu_skew_overhead_per_device_ms: 0.0
+  num_training_job_threads: -1
+  skip_cpu_overhead_modeling: false
 
 random_forrest_execution_time_predictor:
   num_estimators:
@@ -150,41 +117,45 @@ linear_regression_execution_time_predictor:
     - false
 
 simulator:
-  time_limit: null
+  time_limit: 0 # in seconds, 0 is no limit
 
 global_scheduler:
   provider: round_robin
 
 replica_scheduler:
-  provider: vllm
+  provider: sarathi
   batch_size_cap: 128
-  num_blocks: 0
+  num_blocks: null
 
 orca_scheduler:
   use_single_prefill_per_batch: false
 
-sarathi_scheduler:
-  chunk_size: 512
-  enable_rolling_prefills: true
-  prefill_fitting_tolerance: 0.2
-
 vllm_scheduler:
   watermark_blocks_fraction: 0.01
   max_tokens_in_batch: 4096
-  max_batch_size_amplification_factor: 1
 
-dsarathi_scheduler:
-  chunk_size: 1024
+sarathi_scheduler:
+  chunk_size: 512
   enable_rolling_prefills: true
-  prefill_fitting_tolerance: 0.2
+  prefill_fitting_tolerance: 0.0
   watermark_blocks_fraction: 0.01
-  max_batch_size_amplification_factor: 1
+
+lightllm_scheduler:
+  max_tokens_in_batch: 4096
+  max_waiting_iters: 10
 
 metrics_store:
-  wandb_project: "llm-simulator"
+  wandb_project: "llm-simulator-v2"
   wandb_group: ""
   wandb_run_name: ""
-  subsamples: 500
+  subsamples: null
   save_table_to_wandb: false
+  store_plots: true
+  store_operation_metrics: false
+  store_token_completion_metrics: false
+  store_request_metrics: true
+  store_batch_metrics: true
+  store_utilization_metrics: true
+  keep_individual_batch_metrics: false
   # min_batch_idx: 2000
   # max_batch_idx: 5000

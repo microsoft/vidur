@@ -1,8 +1,8 @@
-from simulator.scheduler.replica_scheduler.dsarathi_replica_scheduler import (
-    DSarathiReplicaScheduler,
-)
 from simulator.scheduler.replica_scheduler.faster_transformer_replica_scheduler import (
     FasterTransformerReplicaScheduler,
+)
+from simulator.scheduler.replica_scheduler.lightllm_replica_scheduler import (
+    LightLLMReplicaScheduler,
 )
 from simulator.scheduler.replica_scheduler.orca_replica_scheduler import (
     OrcaReplicaScheduler,
@@ -30,5 +30,5 @@ ReplicaSchedulerRegistry.register(ReplicaSchedulerType.ORCA, OrcaReplicaSchedule
 ReplicaSchedulerRegistry.register(ReplicaSchedulerType.SARATHI, SarathiReplicaScheduler)
 ReplicaSchedulerRegistry.register(ReplicaSchedulerType.VLLM, VLLMReplicaScheduler)
 ReplicaSchedulerRegistry.register(
-    ReplicaSchedulerType.DSARATHI, DSarathiReplicaScheduler
+    ReplicaSchedulerType.LIGHTLLM, LightLLMReplicaScheduler
 )

@@ -1,12 +1,13 @@
+import atexit
+import heapq
 import json
 import logging
-from queue import PriorityQueue
 from typing import List
 
 from simulator.config import Config
 from simulator.entities import Cluster
 from simulator.events import BaseEvent, RequestArrivalEvent
-from simulator.plotting import MetricsStore
+from simulator.metrics import MetricsStore
 from simulator.request_generator import RequestGeneratorRegistry
 from simulator.scheduler import BaseGlobalScheduler, GlobalSchedulerRegistry
 
@@ -18,9 +19,12 @@ class Simulator:
         self._config = config
 
         self._time = 0
-        self.terminate = False
+        self._terminate = False
         self._time_limit = self._config.simulator_time_limit
-        self._event_queue = PriorityQueue()
+        if not self._time_limit:
+            self._time_limit = float("inf")
+
+        self._event_queue = []
 
         self._should_write_json_trace = self._config.write_json_trace
         self._should_write_chrome_trace = self._config.write_chrome_trace
@@ -38,6 +42,7 @@ class Simulator:
         )
 
         self._init_event_queue()
+        atexit.register(self._write_output)
 
     @property
     def scheduler(self) -> BaseGlobalScheduler:
@@ -49,14 +54,15 @@ class Simulator:
 
     def run(self) -> None:
         logger.info(
-            f"Starting simulation with cluster: {self._cluster} and {self._event_queue.qsize() - 1} requests"
+            f"Starting simulation with cluster: {self._cluster} and {len(self._event_queue) - 1} requests"
         )
 
-        while not self._event_queue.empty() and not self.terminate:
-            event = self._event_queue.get()
-            self._set_time(event.time)
+        while self._event_queue and not self._terminate:
+            _, event = heapq.heappop(self._event_queue)
+            self._set_time(event._time)
             new_events = event.handle_event(self._scheduler, self._metric_store)
             self._add_events(new_events)
+
             if self._should_write_json_trace:
                 self._event_trace.append(event.to_dict())
 
@@ -65,10 +71,9 @@ class Simulator:
                 if chrome_trace:
                     self._event_chrome_trace.append(chrome_trace)
 
-        assert self._scheduler.is_empty()
+        assert self._scheduler.is_empty() or self._terminate
 
         logger.info(f"Simulation ended at: {self._time}s")
-        self._write_output()
 
     def _write_output(self) -> None:
         logger.info("Writing output")
@@ -86,7 +91,7 @@ class Simulator:
             logger.info("Chrome event trace written")
 
     def _add_event(self, event: BaseEvent) -> None:
-        self._event_queue.put(event)
+        heapq.heappush(self._event_queue, (event._priority_number, event))
 
     def _add_events(self, events: List[BaseEvent]) -> None:
         for event in events:
@@ -100,8 +105,11 @@ class Simulator:
 
     def _set_time(self, time: float) -> None:
         self._time = time
-        if self._time_limit and self._time > self._time_limit:
-            self.terminate = True
+        if self._time > self._time_limit:
+            logger.info(
+                f"Time limit reached: {self._time_limit}s terminating the simulation."
+            )
+            self._terminate = True
 
     def _write_event_trace(self) -> None:
         trace_file = f"{self._config.output_dir}/event_trace.json"

@@ -1,3 +1,6 @@
+from simulator.request_generator.fixed_request_length_generator import (
+    FixedRequestLengthGenerator,
+)
 from simulator.request_generator.trace_request_length_generator import (
     TraceRequestLengthGenerator,
 )
@@ -25,4 +28,7 @@ RequestLengthGeneratorRegistry.register(
 )
 RequestLengthGeneratorRegistry.register(
     RequestLengthGeneratorType.TRACE, TraceRequestLengthGenerator
+)
+RequestLengthGeneratorRegistry.register(
+    RequestLengthGeneratorType.FIXED, FixedRequestLengthGenerator
 )

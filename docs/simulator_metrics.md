@@ -14,16 +14,17 @@ For every request, we define the following key metrics:
 
 Note that arrival, schedule and completion time refer to a specific point in time, where as, execution, preemption time, scheduling delay refer to period of time.
 
-## Logged Metics:
+## Logged Metics
 
 1. `request_inter_arrival_delay_histogram`: Histogram of difference between arrival times of adjacent requests ($a_{r+1} - a_r$).
 2. `request_num_tokens_histogram`: Histogram of number of tokens (prefill + decode) across all requests.
 3. `request_num_restarts_histogram`: Histogram of number of restarts for a given request. Note that this is expected to be a non-zero entity only when using vLLM or dSararthi schedulers - which restart requests in case a replica runs out of memory.
 4. `request_e2e_time_cdf`: CDF of end-to-end request latency ($c_r - a_r$).
-5. `request_execution_plus_preemption_times_cdf`: CDF of total time a request spends in the system excluding initial scheduling delay ($c_r - s_r$).
-6. `request_scheduling_delay_cdf`: CDF of request scheduling delay ($s_r - a_r$).
-7. `request_execution_time_cdf`: CDF of request execution time ($e_r$).
-8. `request_preempted_time_cdf`: CDF of request preemption time ($p_r$).
+5. `request_e2e_time_normalised_cdf`: CDF of end-to-end request latency normalised by number of output tokens.
+6. `request_execution_plus_preemption_times_cdf`: CDF of total time a request spends in the system excluding initial scheduling delay ($c_r - s_r$).
+7. `request_scheduling_delay_cdf`: CDF of request scheduling delay ($s_r - a_r$).
+8. `request_execution_time_cdf`: CDF of request execution time ($e_r$).
+9. `request_preempted_time_cdf`: CDF of request preemption time ($p_r$).
 10. `decode_token_execution_plus_preemption_times`: CDF of per decode token execution time and preemption time - i.e. inter-token delay observed by the user.
 11. `batch_num_tokens_cdf`: CDF of total number of tokens to be processed in a batch (sum of prefill tokens + one per decode request). This distribution is useful towards understanding how the compute load is distributed across batches. Note that with iteration level scheduling a batch is formed at every iteration.
 12. `batch_sizes_cdf`: CDF of batch sizes - usually larger batch sizes imply higher throughput.

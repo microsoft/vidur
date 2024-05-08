@@ -1,0 +1,17 @@
+num_layers: 32
+num_q_heads: 32
+num_kv_heads: 32
+embedding_dim: 2560
+mlp_hidden_dim: 10240
+max_position_embeddings: 2048
+use_gated_mlp: false
+use_bias: true
+use_qkv_bias: true
+activation: gelu
+norm: layer_norm
+post_attn_norm: false
+vocab_size: 51200
+rope_scaling: null
+rope_theta: 10000.0
+partial_rotary_factor: 0.4
+no_tensor_parallel: true

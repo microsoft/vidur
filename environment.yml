@@ -1,10 +1,9 @@
-name: llm_inference_simulator
+name: vidur
 channels:
   - conda-forge
   - plotly
 dependencies:
-  - python
-  # - pypy
+  - python=3.10
   - setuptools
   - pip
   - numpy
@@ -12,15 +11,15 @@ dependencies:
   - jupyterlab
   - matplotlib
   - pyyaml
-  - black
-  - autopep8
-  - isort
-  - flake8
-  - make
   - snakeviz
   - scikit-learn
   - python-kaleido
   - wandb
+  - fasteners
+  - ray-all
+  - streamlit
+  - randomname
   - pip:
     - kaleido
     - ddsketch
+    - paretoset

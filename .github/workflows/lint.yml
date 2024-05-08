@@ -1,0 +1,26 @@
+name: "Run linter"
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+  packages: write
+defaults:
+  run:
+    shell: bash -l {0}
+jobs:
+  sanity_check:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v3
+      - name: Install Conda environment from environment-dev.yml
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment-dev.yml
+      - name: "Run black lint"
+        run: make lint/black
+      - name: "Run isort check"
+        run: make lint/isort

@@ -5,4 +5,6 @@ wandb
 kaleido
 ddsketch
 plotly_express
+matplotlib
+seaborn
 fasteners

@@ -1,4 +1,5 @@
 import logging
+from math import ceil
 from typing import List
 
 from simulator.entities.base_entity import BaseEntity
@@ -38,6 +39,15 @@ class Batch(BaseEntity):
 
         self._requests = requests
         self._num_tokens = num_tokens
+        self._total_num_tokens = sum(num_tokens)
+        self._num_prefill_tokens = sum(
+            [
+                (t if not r.is_prefill_complete else 0)
+                for r, t in zip(self.requests, self._num_tokens)
+            ]
+        )
+
+        self._total_num_tokens_rounded = (self._total_num_tokens + 7) // 8 * 8
 
         self._scheduled_at = None
         self._completed_at = None
@@ -58,11 +68,11 @@ class Batch(BaseEntity):
 
     @property
     def total_num_tokens(self) -> int:
-        return sum(self._num_tokens)
+        return self._total_num_tokens
 
     @property
     def num_prefill_tokens(self) -> int:
-        return sum([x for x in self._num_tokens if x > 1])
+        return self._num_prefill_tokens
 
     @property
     def num_decode_tokens(self) -> int:
@@ -112,9 +122,6 @@ class Batch(BaseEntity):
         for request in self._requests:
             request.on_batch_schedule(time)
 
-        if self._id % 1000 == 0:
-            logger.info(f"Finished scheduling {self._id} batches.")
-
     def on_batch_end(self, time: float):
         self._completed = True
         self._completed_at = time
@@ -134,10 +141,12 @@ class Batch(BaseEntity):
         return {
             "id": self._id,
             "size": self.size,
-            "replica_id": self._replica.id,
+            "replica_id": self._replica_id,
             "scheduled_at": self._scheduled_at,
             "completed_at": self._completed_at,
             "scheduled": self._scheduled,
             "request_ids": self.request_ids,
             "num_tokens": self._num_tokens,
+            "num_prefill_tokens": self.num_prefill_tokens,
+            "num_decode_tokens": self.num_decode_tokens,
         }

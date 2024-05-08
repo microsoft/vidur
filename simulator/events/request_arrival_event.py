@@ -3,7 +3,7 @@ from typing import List
 
 from simulator.entities import Request
 from simulator.events.base_event import BaseEvent
-from simulator.plotting import MetricsStore
+from simulator.metrics import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
 
@@ -12,12 +12,9 @@ logger = logging.getLogger(__name__)
 
 class RequestArrivalEvent(BaseEvent):
     def __init__(self, time: float, request: Request) -> None:
-        super().__init__(time)
-        self._request = request
+        super().__init__(time, EventType.REQUEST_ARRIVAL)
 
-    @property
-    def event_type(self) -> EventType:
-        return EventType.REQUEST_ARRIVAL
+        self._request = request
 
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore

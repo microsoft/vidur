@@ -6,4 +6,4 @@ class ReplicaSchedulerType(BaseIntEnum):
     ORCA = 2
     SARATHI = 3
     VLLM = 4
-    DSARATHI = 5
+    LIGHTLLM = 5

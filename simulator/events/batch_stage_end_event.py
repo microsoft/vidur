@@ -4,7 +4,7 @@ from typing import List
 from simulator.entities.batch import Batch
 from simulator.entities.batch_stage import BatchStage
 from simulator.events import BaseEvent
-from simulator.plotting import MetricsStore
+from simulator.metrics import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
 
@@ -21,7 +21,7 @@ class BatchStageEndEvent(BaseEvent):
         batch: Batch,
         batch_stage: BatchStage,
     ):
-        super().__init__(time)
+        super().__init__(time, EventType.BATCH_STAGE_END)
 
         self._replica_id = replica_id
         self._stage_id = stage_id
@@ -29,10 +29,6 @@ class BatchStageEndEvent(BaseEvent):
 
         self._batch = batch
         self._batch_stage = batch_stage
-
-    @property
-    def event_type(self):
-        return EventType.BATCH_STAGE_END
 
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
@@ -48,7 +44,12 @@ class BatchStageEndEvent(BaseEvent):
         ).on_stage_end()
 
         self._batch_stage.on_stage_end(self.time)
-        metrics_store.on_batch_stage_end(self.time, self._replica_id, self._stage_id)
+        metrics_store.on_batch_stage_end(
+            self._batch_stage,
+            self.time,
+            self._replica_id,
+            self._stage_id,
+        )
 
         next_events = [
             ReplicaStageScheduleEvent(

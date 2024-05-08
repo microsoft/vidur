@@ -14,6 +14,6 @@ class RandomGlobalScheduler(BaseGlobalScheduler):
         request_mapping = []
         while self._request_queue:
             request = self._request_queue.pop(0)
-            replica_id = randint(1, self._num_replicas)
+            replica_id = randint(1, self._num_replicas) - 1
             request_mapping.append((replica_id, request))
         return request_mapping

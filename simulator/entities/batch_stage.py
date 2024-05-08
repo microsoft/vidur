@@ -57,11 +57,11 @@ class BatchStage(BaseEntity):
         return self._completed_at
 
     @property
-    def execution_time(self) -> int:
+    def execution_time(self) -> float:
         return self._execution_time
 
     @property
-    def model_execution_time(self) -> int:
+    def model_execution_time(self) -> float:
         return self._model_execution_time
 
     @property

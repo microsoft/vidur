@@ -1,5 +1,5 @@
 class BaseEntity:
-    _id = 0
+    _id = -1
 
     @classmethod
     def generate_id(cls):

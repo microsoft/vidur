@@ -76,11 +76,19 @@ class TraceRequestLengthGenerator(BaseRequestLengthGenerator):
         pd_ratio = (
             self._trace_df["num_prefill_tokens"] / self._trace_df["num_decode_tokens"]
         )
+        percentiles = [0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
+
         logger.info(
             f"Loaded request length trace file {trace_file} with {len(self._trace_df)} requests"
         )
-        logger.info(
-            f"Prompt/decode token ratio stats\n:{pd_ratio.describe(percentiles=[0.25, 0.5, 0.75, 0.9, 0.95, 0.99])}"
+        logger.debug(
+            f"Prompt token stats\n:{self._trace_df['num_prefill_tokens'].describe(percentiles=percentiles)}"
+        )
+        logger.debug(
+            f"Decode token stats\n:{self._trace_df['num_decode_tokens'].describe(percentiles=percentiles)}"
+        )
+        logger.debug(
+            f"Prompt/decode token ratio stats\n:{pd_ratio.describe(percentiles=percentiles)}"
         )
 
         # randomly shuffle the df based on the seed
