@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v3
-      - name: Install Conda environment from environment.yml
+      - name: Install Conda environment from environment-dev.yml
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: environment-dev.yml
