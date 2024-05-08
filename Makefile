@@ -16,7 +16,7 @@ format/black: ## format code with black
 	black simulator
 
 format/autopep8: ## format code with autopep8
-	autopep8 --in-place --aggressive --aggressive --recursive simulator/
+	autopep8 --in-place --recursive simulator/
 
 format/isort: ## format code with isort
 	isort --profile black simulator

@@ -10,6 +10,7 @@ To run the simulator, create a mamba environment with the given dependency file.
 
 ```sh
 mamba env create -p ./env -f ./environment.yml
+mamba env update -f environment-dev.yml
 ```
 
 ### Using `venv`
@@ -27,6 +28,7 @@ To run the simulator, create a conda environment with the given dependency file.
 
 ```sh
 conda env create -p ./env -f ./environment.yml
+conda env update -f environment-dev.yml
 ```
 
 ## Setting up wandb (Optional)
@@ -63,13 +65,13 @@ python -m simulator.main  \
 --synthetic_request_generator_length_provider trace \
 --synthetic_request_generator_interval_provider static \
 --request_generator_max_tokens 4096 \
---trace_request_length_generator_trace_file ./data/processed_traces/arxiv_summarization_filtered_stats_llama2_tokenizer.csv \
+--trace_request_length_generator_trace_file ./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv \
 --synthetic_request_generator_num_requests 128  \
 --request_generator_provider synthetic \
 --synthetic_request_generator_length_provider trace \
 --synthetic_request_generator_interval_provider static \
 --request_generator_max_tokens 4096 \
---trace_request_length_generator_trace_file ./data/processed_traces/arxiv_summarization_filtered_stats_llama2_tokenizer.csv \
+--trace_request_length_generator_trace_file ./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv \
 --synthetic_request_generator_num_requests 128  \
 --replica_scheduler_provider vllm  \
 --replica_scheduler_batch_size_cap 256  \
