@@ -11,7 +11,9 @@ def render_intro_page():
     )
     add_small_divider()
     st.markdown("### Tools")
-    st.markdown("We provide four tools to help you analyze the results of Vidur simulation runs:")
+    st.markdown(
+        "We provide four tools to help you analyze the results of Vidur simulation runs:"
+    )
     st.markdown("#### Best Config Selection")
     st.markdown(
         "This tool helps you find and visualize variations in best configuration for a given model model under different workloads."
@@ -34,9 +36,7 @@ def render_intro_page():
         "We provide a set of sample models and workloads to help you get started with Vidur. These models and workloads are based on real-world datasets and are designed to help you understand how different configurations affect performance."
     )
     st.markdown("#### Models")
-    st.markdown(
-        "We provide the following models for you to explore in Vidur:"
-    )
+    st.markdown("We provide the following models for you to explore in Vidur:")
     st.markdown(
         """
         | Model Name | Number of Parameters | Number of Layers | Embedding Size | Number of Attention Heads | Attention Type |
@@ -65,9 +65,7 @@ def render_intro_page():
     st.markdown("")
     add_small_divider()
     st.markdown("### Citation")
-    st.markdown(
-        "If you use Vidur in your research, please cite the following paper:"
-    )
+    st.markdown("If you use Vidur in your research, please cite the following paper:")
     st.markdown(
         """
         ```
@@ -80,4 +78,3 @@ def render_intro_page():
         ```
         """
     )
-

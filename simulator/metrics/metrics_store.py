@@ -5,8 +5,8 @@ from typing import Dict, List
 
 import pandas as pd
 import plotly_express as px
-
 import wandb
+
 from simulator.config import Config
 from simulator.entities import Batch, BatchStage, ExecutionTime, Request
 from simulator.metrics.cdf_sketch import CDFSketch

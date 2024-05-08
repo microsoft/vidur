@@ -80,12 +80,20 @@ def prepare_subset_dfs(_args):
     def update_cost(row):
         if row["replica_device"] == "a40":
             return row["cost"]
-        return NEW_GPU_COSTS[row["replica_device"]] * row["cost"] / OLD_GPU_COSTS[row["replica_device"]]
+        return (
+            NEW_GPU_COSTS[row["replica_device"]]
+            * row["cost"]
+            / OLD_GPU_COSTS[row["replica_device"]]
+        )
 
     def update_capacity_per_dollar(row):
         if row["replica_device"] == "a40":
             return row["capacity_per_dollar"]
-        return row["capacity_per_dollar"] * OLD_GPU_COSTS[row["replica_device"]] / NEW_GPU_COSTS[row["replica_device"]]
+        return (
+            row["capacity_per_dollar"]
+            * OLD_GPU_COSTS[row["replica_device"]]
+            / NEW_GPU_COSTS[row["replica_device"]]
+        )
 
     df["cost"] = df.apply(update_cost, axis=1)
     df["capacity_per_dollar"] = df.apply(update_capacity_per_dollar, axis=1)

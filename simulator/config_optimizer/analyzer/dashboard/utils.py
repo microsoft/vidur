@@ -138,7 +138,10 @@ def write_best_config(
 
     best_point_str = ""
     for _, axis_name in AXIS_COLS.items():
-        if axis_name == "Sarathi Chunk Size" and best_config["Scheduler"] != "Sarathi-Serve":
+        if (
+            axis_name == "Sarathi Chunk Size"
+            and best_config["Scheduler"] != "Sarathi-Serve"
+        ):
             continue
         value = best_config[axis_name]
         value = str(value) if not value in PRETTY_NAMES else PRETTY_NAMES[value]

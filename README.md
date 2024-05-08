@@ -1,12 +1,6 @@
 # Vidur: LLM Inference Simulator
 
-We highly recommend to read the [paper](docs/vidur_paper.pdf) first before going into the code.
-
-## Experiments
-
-1. [Cross Model-Dataset Fidelity](experiments/REQUEST_MATCH.md) compares fidelity in terms for request e2e times between the simulator and vLLM for a wide variety of model, tensor parallel dimension and dataset combinations.
-2. [LightLLM-Fidelity](experiments/LIGHTLLM_MATCH.md) compares fidelity in terms for request e2e times between the simulator and LightLLM for LLaMa-7B on datasets.
-3. [Scheduler Match](experiments/SCHEDULER_MATCH.md) compares the simulator with different schedulers and compare the results with vLLM.
+We highly recommend reading the [Vidur: A Large-Scale Simulation Framework for LLM Inference](https://www.microsoft.com/en-us/research/publication/vidur-a-large-scale-simulation-framework-for-llm-inference/) paper first before going into the code.
 
 ## Setup
 
@@ -20,7 +14,7 @@ mamba env create -p ./env -f ./environment.yml
 
 ### Using `venv`
 
-1. Ensure that you have python 3.10 installed on your system. Refer <https://www.bitecode.dev/p/installing-python-the-bare-minimum>
+1. Ensure that you have Python 3.10 installed on your system. Refer <https://www.bitecode.dev/p/installing-python-the-bare-minimum>
 2. `cd` into the repository root
 3. Create a virtual environment using `venv` module using `python3.10 -m venv .venv`
 4. Activate the virtual environment using `source .venv/bin/activate`
@@ -84,7 +78,7 @@ python -m simulator.main  \
 
 The simulator supports a plethora of parameters for the simulation description of which can be found [here](docs/simulator_params.md).
 
-The metrics will be logged to wandb directly and copy will be stored in `simulator_output` directory along with the chrome trace. Description of all the logged metrics can be found [here](docs/simulator_metrics.md).
+The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output` directory along with the chrome trace. A description of all the logged metrics can be found [here](docs/simulator_metrics.md).
 
 ## Formatting Code
 

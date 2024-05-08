@@ -146,7 +146,10 @@ def plot_pareto_curve_under_slos(
 
     # axs[2].set_xlim(0, min(1.5 * slo_1, metric_1_pareto_df[metric_1_col].max() * 1.25))
     # axs[2].set_ylim(0, min(1.5 * slo_2, metric_2_pareto_df[metric_2_col].max() * 1.25))
-    axs[2].set_xlim(max(0.25 * slo_1, metric_1_pareto_df[metric_1_col].min() * 1.2), min(2 * slo_1, metric_1_pareto_df[metric_1_col].max() * 1.5))
+    axs[2].set_xlim(
+        max(0.25 * slo_1, metric_1_pareto_df[metric_1_col].min() * 1.2),
+        min(2 * slo_1, metric_1_pareto_df[metric_1_col].max() * 1.5),
+    )
     axs[2].set_ylim(0, slo_2 * 1.5)
 
     # add light green background for the region that satisfies both the SLOs
@@ -193,7 +196,10 @@ def plot_pareto_curve_under_slos(
         ax.tick_params(axis="both", which="major", labelsize=14)
 
     # set the x and y limits
-    axs[0].set_xlim(max(0.25 * slo_1, metric_1_pareto_df[metric_1_col].min() * 1.2), min(2 * slo_1, metric_1_pareto_df[metric_1_col].max() * 1.5))
+    axs[0].set_xlim(
+        max(0.25 * slo_1, metric_1_pareto_df[metric_1_col].min() * 1.2),
+        min(2 * slo_1, metric_1_pareto_df[metric_1_col].max() * 1.5),
+    )
     axs[1].set_xlim(0.1, slo_2 * 1.25)
 
     # write the best config axis values at the bottom
@@ -276,12 +282,20 @@ def process_sim_results(args: argparse.Namespace):
     def update_cost(row):
         if row["replica_device"] == "a40":
             return row["cost"]
-        return NEW_GPU_COSTS[row["replica_device"]] * row["cost"] / OLD_GPU_COSTS[row["replica_device"]]
+        return (
+            NEW_GPU_COSTS[row["replica_device"]]
+            * row["cost"]
+            / OLD_GPU_COSTS[row["replica_device"]]
+        )
 
     def update_capacity_per_dollar(row):
         if row["replica_device"] == "a40":
             return row["capacity_per_dollar"]
-        return row["capacity_per_dollar"] * OLD_GPU_COSTS[row["replica_device"]] / NEW_GPU_COSTS[row["replica_device"]]
+        return (
+            row["capacity_per_dollar"]
+            * OLD_GPU_COSTS[row["replica_device"]]
+            / NEW_GPU_COSTS[row["replica_device"]]
+        )
 
     df["cost"] = df.apply(update_cost, axis=1)
     df["capacity_per_dollar"] = df.apply(update_capacity_per_dollar, axis=1)
