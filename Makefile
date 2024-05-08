@@ -22,19 +22,3 @@ format/isort: ## format code with isort
 	isort --profile black simulator
 
 format: format/isort format/black ## format code
-
-run:
-	python -m simulator.main
-
-run-with-args:
-	python -m simulator.main $(ARGS)
-
-run-with-trace:
-	python -m simulator.main --write_chrome_trace True; \
-	trace_file=`ls -t simulator_output/*/chrome_trace.json | head -1`; \
-	zip -r $$trace_file.zip $$trace_file
-
-run-with-trace-and-args:
-	python -m simulator.main --write_chrome_trace True $(ARGS); \
-	trace_file=`ls -t simulator_output/*/chrome_trace.json | head -1`; \
-	zip -r $$trace_file.zip $$trace_file
