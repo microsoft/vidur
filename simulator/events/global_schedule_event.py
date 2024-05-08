@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from simulator.events import BaseEvent
-from simulator.plotting import MetricsStore
+from simulator.metrics import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
 
@@ -11,13 +11,10 @@ logger = logging.getLogger(__name__)
 
 class GlobalScheduleEvent(BaseEvent):
     def __init__(self, time: float):
-        super().__init__(time)
+        super().__init__(time, EventType.GLOBAL_SCHEDULE)
+
         self._replica_set = []
         self._request_mapping = []
-
-    @property
-    def event_type(self):
-        return EventType.GLOBAL_SCHEDULE
 
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore

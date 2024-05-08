@@ -1,0 +1,3 @@
+fp16_tflops: 150
+total_memory_gb: 45
+num_devices_per_node: 8

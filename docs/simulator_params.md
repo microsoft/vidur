@@ -44,7 +44,7 @@ All the output files corresponding to the invocation are stored under this direc
     4. `prefill_to_decode_ratio`: Ratio of prefill tokens to decode tokens in a request. This is used in `uniform` length provider. TODO: Verify for `zipf` as well.
     5. `num_requests`: Number of requests to generate / select from the trace.
 12. `trace_request_generator`: This section is used to to further define the trace request generator. Only required if `request_generator_provider` is set to `trace`.
-    1. `trace_file`: Path to the trace file. Currently supported are `AzureFunctionsInvocationTraceForTwoWeeksJan2021Processed.csv` and `sydney_enterprise.csv`.
+    1. `trace_file`: Path to the trace file.
     2. `date`: Date of the trace to use.
     3. `prefill_scale_factor`: Scale factor to apply to the prefill tokens in the trace. Recommend to leave this value at 1.
     4. `decode_scale_factor`: Scale factor to apply to the decode tokens in the trace. Recommend to leave this value at 1.
@@ -54,7 +54,7 @@ All the output files corresponding to the invocation are stored under this direc
     2. `prefill_scale_factor`: See `trace_request_generator` section above.
     3. `decode_scale_factor`: See `trace_request_generator` section above.
 14. `trace_request_interval_generator`: Only required if `request_generator_provider` is set to `synthetic` and `synthetic_request_interval_provider` is set to `trace`.
-    1. `trace_file`: Path to the trace file. This trace file is a csv like [AzureFunctionsInvocationTraceForTwoWeeksJan2021Processed.csv](data/processed_traces/AzureFunctionsInvocationTraceForTwoWeeksJan2021Processed.csv)
+    1. `trace_file`: Path to the trace file.
     2. `start_time`: Start time of the trace to use.
     3. `end_time`: End time of the trace to use.
     4. `time_scale_factor`: See `trace_request_generator` section above.
@@ -89,7 +89,7 @@ All the output files corresponding to the invocation are stored under this direc
 23. `global_scheduler`: This is the scheduler which determines which replica to send the request to.
     1. `provider`: `round_robin`, `random`, `lor`. See [here](simulator/schedulers/global_schedulers) for more details.
 24. `replica_scheduler`: This is the scheduler which determines how to schedule the requests on a replica.
-    1. `provider`: `orca`, `sarathi`, `vllm`, `dsarathi`. See [here](simulator/schedulers/replica_schedulers) for more details.
+    1. `provider`: `orca`, `sarathi`, and `vllm`. See [here](simulator/schedulers/replica_schedulers) for more details.
     2. `batch_size_cap`: Maximum permissible batch size. Set carefully for `orca`. Have a high limit for other schedulers. They will auto-adjust.
     3. `num_blocks`: TODO. Ignore this parameter for now.
 25. `orca_scheduler`: Only required if `replica_scheduler_provider` is set to `orca`.
@@ -102,12 +102,6 @@ All the output files corresponding to the invocation are stored under this direc
     1. `watermark_blocks_fraction`: If this param is 0.01, then we consider the cache is full when 99% of the blocks are full. Prevents unnecessary swaps.
     2. `max_tokens_in_batch`: Maximum number of tokens in a batch. This is an additional limit on top of `batch_size_cap`.
     3. `max_batch_size_amplification_factor`: Ignore this parameter, leave it at `1`.
-28. `dsarathi_scheduler`: Best of `sarathi` and `vllm`. See the parameters of the above schedulers. Only required if `replica_scheduler_provider` is set to `dsarathi`.
-    1. `chunk_size`
-    2. `enable_rolling_prefills`
-    3. `prefill_fitting_tolerance`
-    4. `watermark_blocks_fraction`
-    5. `max_batch_size_amplification_factor`
 29. `metrics_store`: Configuration of the metrics store. The metrics store is a cental store which stores the metrics of the simulator. At simulation end, it dumps the metrics to various files typically `csv`, `png` and `json`. The metrics store is also responsible for uploading the metrics to `wandb`.
     1. `wandb_project`: Wandb project to upload to eg. `llm-simulator`
     2. `wandb_group`

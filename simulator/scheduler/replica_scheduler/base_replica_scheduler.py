@@ -43,7 +43,7 @@ class BaseReplicaScheduler(ABC):
             config.replica_scheduler_batch_size_cap,
         )
 
-        logger.info(
+        logger.debug(
             f"Obtained max batch size of {self._max_batch_size} for replica {self._replica_id}"
         )
 
@@ -78,9 +78,13 @@ class BaseReplicaScheduler(ABC):
         return (self._num_allocated_blocks * 100) / self._num_total_blocks
 
     def is_empty(self) -> bool:
-        return self.num_pending_requests == 0 and all(
-            stage_scheduler.is_empty()
-            for stage_scheduler in self._replica_stage_schedulers.values()
+        return (
+            self.num_pending_requests == 0
+            and len(self._allocation_map) == 0
+            and all(
+                stage_scheduler.is_empty()
+                for stage_scheduler in self._replica_stage_schedulers.values()
+            )
         )
 
     def _get_request_next_num_tokens(self, request: Request) -> int:

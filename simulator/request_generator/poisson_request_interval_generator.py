@@ -11,6 +11,10 @@ class PoissonRequestIntervalGenerator(BaseRequestIntervalGenerator):
         super().__init__(*args, **kwargs)
 
         self._qps = self._config.poisson_request_interval_generator_qps
+        self._std = 1.0 / self._qps
+        self._max_interval = self._std * 3.0
 
     def get_next_inter_request_time(self) -> float:
-        return -math.log(1.0 - random.random()) / self._qps
+        next_interval = -math.log(1.0 - random.random()) / self._qps
+        next_interval = min(next_interval, self._max_interval)
+        return next_interval

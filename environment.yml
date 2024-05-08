@@ -4,7 +4,6 @@ channels:
   - plotly
 dependencies:
   - python
-  # - pypy
   - setuptools
   - pip
   - numpy
@@ -21,6 +20,11 @@ dependencies:
   - scikit-learn
   - python-kaleido
   - wandb
+  - fasteners
+  - ray-all
+  - streamlit
+  - randomname
   - pip:
     - kaleido
     - ddsketch
+    - paretoset

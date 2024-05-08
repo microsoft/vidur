@@ -1,3 +1,4 @@
+import math
 import random
 from typing import Tuple
 
@@ -13,9 +14,11 @@ class UniformRequestLengthGenerator(BaseRequestLengthGenerator):
             self._config.request_generator_max_tokens,
         )
 
-        decode_tokens = total_tokens / (
-            1 + self._config.synthetic_request_generator_prefill_to_decode_ratio
+        decode_tokens = math.ceil(
+            total_tokens
+            / (1 + self._config.synthetic_request_generator_prefill_to_decode_ratio)
         )
         prefill_tokens = total_tokens - decode_tokens
+        assert prefill_tokens > 0 and decode_tokens > 0
 
         return prefill_tokens, decode_tokens

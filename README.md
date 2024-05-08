@@ -1,4 +1,12 @@
-# VIDUR: LLM Inference Simulator
+# Vidur: LLM Inference Simulator
+
+We highly recommend to read the [paper](docs/vidur_paper.pdf) first before going into the code.
+
+## Experiments
+
+1. [Cross Model-Dataset Fidelity](experiments/REQUEST_MATCH.md) compares fidelity in terms for request e2e times between the simulator and vLLM for a wide variety of model, tensor parallel dimension and dataset combinations.
+2. [LightLLM-Fidelity](experiments/LIGHTLLM_MATCH.md) compares fidelity in terms for request e2e times between the simulator and LightLLM for LLaMa-7B on datasets.
+3. [Scheduler Match](experiments/SCHEDULER_MATCH.md) compares the simulator with different schedulers and compare the results with vLLM.
 
 ## Setup
 
@@ -29,17 +37,20 @@ conda env create -p ./env -f ./environment.yml
 
 ## Setting up wandb (Optional)
 
-First, setup your account on <https://microsoft-research.wandb.io/>, obtain the api key and then run the following command,
+First, setup your account on `https://<your-org>.wandb.io/` or public wandb, obtain the api key and then run the following command,
 
 ```sh
-wandb login --host https://microsoft-research.wandb.io
+wandb login --host https://<your-org>.wandb.io
 ```
 
-If you wish to skip wandb setup, simply comment out `wandb_project` and `wandb_group` in `simulator/config/default.yml`.
+To opt out of wandb, pick any one of the following methods:
+
+1. `export WANDB_MODE=disabled` in your shell or add this in `~/.zshrc` or `~/.bashrc`. Remeber to reload using `source ~/.zshrc`.
+2. Set `wandb_project` and `wandb_group` as `""` in `simulator/config/default.yml`. Also remove these CLI params from the shell command with which the simulator is invoked.
 
 ## Running simulator
 
-To run the simulator, simply execute the following command from the repository root,
+To run the simulator, execute the following command from the repository root,
 
 ```sh
 python -m simulator.main
@@ -48,32 +59,27 @@ python -m simulator.main
 or a big example with all the parameters,
 
 ```sh
-python -m simulator.main \
---replica_model_name codellama/CodeLlama-34b-Instruct-hf \
---replica_num_layers 48 \
---replica_num_q_heads 64 \
---replica_num_kv_heads 8 \
---replica_embedding_dim 8192 \
---replica_mlp_hidden_dim 22016 \
---replica_vocab_size 32768 \
---replica_use_gated_mlp \
---replica_fp16_tflops 312 \
---replica_total_memory_gb 80 \
---sklearn_execution_time_predictor_compute_input_file ./data/profiling/a100/mlp.csv \
---sklearn_execution_time_predictor_attention_input_file ./data/profiling/a100/mixed_attention.csv \
---sklearn_execution_time_predictor_all_reduce_input_file ./data/profiling/a100/all_reduce.csv \
---sklearn_execution_time_predictor_send_recv_input_file ./data/profiling/a100/p2p_intra_node.csv \
---sklearn_execution_time_predictor_cpu_overhead_input_file ./data/profiling/a100/cpu_overheads.csv \
+python -m simulator.main  \
+--replica_device a100 \
+--replica_model_name meta-llama/Llama-2-7b-hf  \
 --cluster_num_replicas 1 \
 --replica_num_tensor_parallel_workers 1 \
+--replica_num_pipeline_stages 1 \
 --request_generator_provider synthetic \
 --synthetic_request_generator_length_provider trace \
---trace_request_length_generator_trace_file ./data/processed_traces/cnn_dailymail_stats_llama2_tokenizer.csv \
---synthetic_request_generator_interval_provider poisson \
---poisson_request_interval_generator_qps 0.75 \
---synthetic_request_generator_num_requests 256 \
---replica_scheduler_provider vllm \
---replica_scheduler_batch_size_cap 128
+--synthetic_request_generator_interval_provider static \
+--request_generator_max_tokens 4096 \
+--trace_request_length_generator_trace_file ./data/processed_traces/arxiv_summarization_filtered_stats_llama2_tokenizer.csv \
+--synthetic_request_generator_num_requests 128  \
+--request_generator_provider synthetic \
+--synthetic_request_generator_length_provider trace \
+--synthetic_request_generator_interval_provider static \
+--request_generator_max_tokens 4096 \
+--trace_request_length_generator_trace_file ./data/processed_traces/arxiv_summarization_filtered_stats_llama2_tokenizer.csv \
+--synthetic_request_generator_num_requests 128  \
+--replica_scheduler_provider vllm  \
+--replica_scheduler_batch_size_cap 256  \
+--vllm_scheduler_max_tokens_in_batch 4096
 ```
 
 The simulator supports a plethora of parameters for the simulation description of which can be found [here](docs/simulator_params.md).
@@ -87,7 +93,6 @@ To run the code formatters execute the following command,
 ```sh
 make format
 ```
-
 
 ## Contributing
 

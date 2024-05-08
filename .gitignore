@@ -123,6 +123,7 @@ celerybeat.pid
 .env
 .venv
 env/
+env_2/
 venv/
 ENV/
 env.bak/
@@ -160,6 +161,19 @@ cython_debug/
 #.idea/
 
 # Custom
-simulator_output*
+cache
+cache_random_forrest
+cache_linear_regression
+cache*
+simulator_output
 wandb
-.cache
+train.zip
+profiling_outputs
+profiling_outputs_*
+experiments/profiling/mlp.csv
+experiments/profiling/attention.csv
+config_optimizer_output
+config_optimizer_output_tmpfs
+profiler_traces*
+experiments/profiling/get_profiled_data_from_trace.ipynb
+env_3

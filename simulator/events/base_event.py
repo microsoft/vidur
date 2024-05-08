@@ -1,16 +1,19 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from simulator.plotting import MetricsStore
+from simulator.metrics import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
+from simulator.types import EventType
 
 
 class BaseEvent(ABC):
     _id = 0
 
-    def __init__(self, time: float):
+    def __init__(self, time: float, event_type: EventType):
         self._time = time
         self._id = BaseEvent.generate_id()
+        self._event_type = event_type
+        self._priority_number = self._get_priority_number()
 
     @classmethod
     def generate_id(cls):
@@ -38,19 +41,22 @@ class BaseEvent(ABC):
     ) -> List["BaseEvent"]:
         pass
 
+    def _get_priority_number(self):
+        return (self._time, self._id, self.event_type)
+
     def __lt__(self, other):
         if self._time == other._time:
-            if self.event_type == other.event_type:
-                return self.id < other.id
-            return self.event_type < other.event_type
+            if self._event_type == other._event_type:
+                return self._id < other._id
+            return self._event_type < other._event_type
         else:
             return self._time < other._time
 
     def __eq__(self, other):
         return (
-            self.time == other.time
-            and self.event_type == other.event_type
-            and self.id == other.id
+            self._time == other._time
+            and self._event_type == other._event_type
+            and self._id == other._id
         )
 
     def __str__(self) -> str:

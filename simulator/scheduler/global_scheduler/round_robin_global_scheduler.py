@@ -17,7 +17,8 @@ class RoundRobinGlobalScheduler(BaseGlobalScheduler):
         request_mapping = []
         while self._request_queue:
             request = self._request_queue.pop(0)
-            replica_id = self._request_counter % self._num_replicas + 1
+            replica_id = self._request_counter % self._num_replicas
             self._request_counter += 1
             request_mapping.append((replica_id, request))
+
         return request_mapping

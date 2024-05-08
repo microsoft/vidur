@@ -1,0 +1,15 @@
+num_layers: 80
+num_q_heads: 64
+num_kv_heads: 64
+embedding_dim: 8192
+mlp_hidden_dim: 24576
+max_position_embeddings: 32768
+use_gated_mlp: true
+use_bias: false
+use_qkv_bias: true
+activation: silu
+norm: rms_norm
+post_attn_norm: true
+rope_theta: 1000000
+vocab_size: 152064
+is_neox_style: true
