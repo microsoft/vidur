@@ -1,6 +1,6 @@
 # Vidur: LLM Inference Simulator
 
-We highly recommend reading the [Vidur: A Large-Scale Simulation Framework for LLM Inference](https://www.microsoft.com/en-us/research/publication/vidur-a-large-scale-simulation-framework-for-llm-inference/) paper first before going into the code.
+Vidur is a high-fidelity LLM inference simulator, designed to aid capacity planning and deployment configuration optimization. Please refer to our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) for more details. We have a [live demo](https://vidur.westus2.cloudapp.azure.com/) which captures the capabilities of the system.
 
 ## Setup
 
