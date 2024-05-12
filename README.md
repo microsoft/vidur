@@ -41,7 +41,7 @@ wandb login --host https://<your-org>.wandb.io
 
 To opt out of wandb, pick any one of the following methods:
 
-1. `export WANDB_MODE=disabled` in your shell or add this in `~/.zshrc` or `~/.bashrc`. Remeber to reload using `source ~/.zshrc`.
+1. `export WANDB_MODE=disabled` in your shell or add this in `~/.zshrc` or `~/.bashrc`. Remember to reload using `source ~/.zshrc`.
 2. Set `wandb_project` and `wandb_group` as `""` in `simulator/config/default.yml`. Also remove these CLI params from the shell command with which the simulator is invoked.
 
 ## Running simulator
