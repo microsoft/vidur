@@ -1,12 +1,7 @@
+from unittest.mock import patch
 from typing import Optional
 
 import torch
-
-# Monkey patching sarathi cuda timer to use our custom timer
-from simulator.profiling.cuda_timer import CudaTimer
-import sarathi.metrics.cuda_timer
-
-sarathi.metrics.cuda_timer.CudaTimer = CudaTimer
 
 from sarathi.model_executor.layers.activation import SiluAndMul
 from sarathi.model_executor.layers.layernorm import RMSNorm
@@ -17,7 +12,7 @@ from sarathi.model_executor.parallel_utils.tensor_parallel.layers import (
     VocabParallelEmbedding,
 )
 
-
+from simulator.profiling.cuda_timer import CudaTimer
 from simulator.profiling.model_config import ModelConfig
 
 REUSE_MEMORY = True
@@ -204,6 +199,7 @@ class GPTBlock(torch.nn.Module):
         return hidden_states
 
 
+@patch("sarathi.metrics.cuda_timer.CudaTimer", CudaTimer)
 class GPTModel(torch.nn.Module):
     def __init__(self, config: ModelConfig, world_size: int, num_repeat_steps: int = 1):
         super().__init__()
