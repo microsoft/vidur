@@ -1,6 +1,13 @@
 from typing import Optional
 
 import torch
+
+# Monkey patching sarathi cuda timer to use our custom timer
+from simulator.profiling.cuda_timer import CudaTimer
+import sarathi.metrics.cuda_timer as sarathi_cuda_timer
+
+sarathi_cuda_timer.CudaTimer = CudaTimer
+
 from sarathi.model_executor.layers.activation import SiluAndMul
 from sarathi.model_executor.layers.layernorm import RMSNorm
 from sarathi.model_executor.layers.rotary_embedding import get_rope
@@ -10,7 +17,7 @@ from sarathi.model_executor.parallel_utils.tensor_parallel.layers import (
     VocabParallelEmbedding,
 )
 
-from simulator.profiling.cuda_timer import CudaTimer
+
 from simulator.profiling.model_config import ModelConfig
 
 REUSE_MEMORY = True
