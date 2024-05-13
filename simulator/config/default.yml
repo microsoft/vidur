@@ -83,7 +83,7 @@ sklearn_execution_time_predictor:
   nccl_cpu_launch_overhead_ms: 0.020
   nccl_cpu_skew_overhead_per_device_ms: 0.0
   num_training_job_threads: -1
-  skip_cpu_overhead_modeling: false
+  skip_cpu_overhead_modeling: true
 
 random_forrest_execution_time_predictor:
   num_estimators:
