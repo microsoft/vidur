@@ -1,4 +1,3 @@
-from unittest.mock import patch
 from typing import Optional
 
 import torch
@@ -199,7 +198,6 @@ class GPTBlock(torch.nn.Module):
         return hidden_states
 
 
-@patch("sarathi.metrics.cuda_timer.CudaTimer", CudaTimer)
 class GPTModel(torch.nn.Module):
     def __init__(self, config: ModelConfig, world_size: int, num_repeat_steps: int = 1):
         super().__init__()

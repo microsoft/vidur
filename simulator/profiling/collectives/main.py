@@ -6,7 +6,7 @@ import pandas as pd
 import ray
 from tqdm import tqdm
 
-from simulator.profiling.collectives.collectives_benchmark_runner import BenchmarkRunner
+from simulator.profiling.collectives.benchmark_runner import BenchmarkRunner
 from simulator.profiling.utils import get_collectives_inputs
 
 
@@ -31,11 +31,10 @@ def parse_args():
         help="Maximum number of elements involved in the collective",
     )
     parser.add_argument(
-        "--collectives",
-        type=str,
-        nargs="+",
-        default=["all_reduce", "all_gather", "send_recv"],
-        help="Collectives to profile",
+        "--collective",
+        default="all_reduce",
+        choices=["all_reduce", "send_recv"],
+        help="Collective to profile",
     )
     args = parser.parse_args()
 
@@ -85,7 +84,7 @@ def main():
         num_nodes,
         args.num_workers_per_node_combinations,
         args.max_collective_size,
-        args.collectives,
+        args.collective,
         total_gpus_available,
     )
 
@@ -115,8 +114,7 @@ def main():
     )
 
     # write results to a csv file
-    df.to_csv(f"{args.output_dir}/results.csv")
-    df.to_json(f"{args.output_dir}/results.json", orient="records")
+    df.to_csv(f"{args.output_dir}/{args.collective}.csv")
 
 
 if __name__ == "__main__":

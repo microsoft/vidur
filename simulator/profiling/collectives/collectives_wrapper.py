@@ -4,7 +4,6 @@ import torch
 from simulator.profiling.collectives.collectives_impl import GraphedCollective
 from simulator.profiling.common.cuda_timer import CudaTimer
 from simulator.profiling.common.timer_stats_store import TimerStatsStore
-from simulator.profiling.utils import ProfileMethod
 
 WARMUP_STEPS = 1
 ACTIVE_STEPS = 3
@@ -35,7 +34,7 @@ class CollectiveWrapper:
             num_workers, size, collective=collective, disable_graph=DISABLE_GRAPH
         )
 
-        self.timer_stats_store = TimerStatsStore(profile_method=ProfileMethod.KINETO)
+        self.timer_stats_store = TimerStatsStore(profile_method="kineto")
         self._cuda_timer = CudaTimer(
             collective, aggregation_fn=np.median, filter_str="nccl"
         )

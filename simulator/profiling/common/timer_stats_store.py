@@ -5,14 +5,10 @@ from simulator.profiling.utils import ProfileMethod
 
 
 class TimerStatsStore(metaclass=Singleton):
-    def __init__(self, profile_method: ProfileMethod, disabled: bool = False):
+    def __init__(self, profile_method: str, disabled: bool = False):
         self.disabled = disabled
-        self._profile_method = profile_method
+        self.profile_method = ProfileMethod[profile_method.upper()]
         self.TIMING_STATS = {}
-
-    @property
-    def profile_method(self):
-        return self._profile_method
 
     def record_time(self, name: str, time):
         name = name.replace("vidur_", "")

@@ -8,7 +8,7 @@ import pandas as pd
 import ray
 from tqdm import tqdm
 
-from simulator.profiling.cpu_overhead.cpu_overhead_benchmark_runner import (
+from simulator.profiling.cpu_overhead.benchmark_runner import (
     BenchmarkRunner,
 )
 from simulator.profiling.utils import (
@@ -30,7 +30,6 @@ def parse_args():
         type=str,
         nargs="+",
         default=[
-            "microsoft/phi-2",
             "internlm/internlm-20b",
             "Qwen/Qwen-72B",
             "meta-llama/Llama-2-7b-hf",
@@ -69,12 +68,8 @@ def create_runner(
             ray.PlacementGroupID(hex_to_binary(placement_group_id))
         )
 
-    num_gpus = 0
-    if tensor_parallel_degree == 1:
-        num_gpus = 1
-
     runner_class = (
-        ray.remote(num_gpus=num_gpus)(BenchmarkRunner)
+        ray.remote(num_gpus=0)(BenchmarkRunner)
         .options(runtime_env={"env_vars": {"KINETO_LOG_LEVEL": "5"}})
         .remote
     )
@@ -120,8 +115,7 @@ def main():
             pbar.update(1)
 
     df = pd.DataFrame(results)
-    df.to_csv(f"{args.output_dir}/results.csv")
-    df.to_json(f"{args.output_dir}/results.json", orient="records")
+    df.to_csv(f"{args.output_dir}/cpu_overhead.csv")
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument(
         "--num_gpus",
         type=int,
-        default=8,
+        default=4,
         help="Number of GPUs to use for profiling",
     )
     parser.add_argument(
@@ -41,7 +41,6 @@ def parse_args():
         type=str,
         nargs="+",
         default=[
-            "microsoft/phi-2",
             "internlm/internlm-20b",
             "Qwen/Qwen-72B",
             "meta-llama/Llama-2-7b-hf",
@@ -65,9 +64,7 @@ def parse_args():
     )
     parser.add_argument(
         "--profile_method",
-        default=ProfileMethod.RECORD_FUNCTION,
-        const=ProfileMethod.RECORD_FUNCTION,
-        nargs="?",
+        default="record_function",
         choices=[e.value for e in ProfileMethod],
         help="Method to use for measuring time taken by operations (default: %(default)s)",
     )
@@ -85,9 +82,6 @@ def profile_model(
     args: argparse.Namespace, model: str, num_tokens_to_profile: List[int], pbar: Any
 ):
     model_config = ModelConfig.from_model_name(model)
-    output_file_path = f"{args.output_dir}/{model}.csv"
-    # create parent directory if it doesn't exist
-    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     promises = []
     all_results = []
@@ -138,9 +132,6 @@ def profile_model(
         .add_prefix("time_stats.")
         .join(df.drop(columns=["time_stats"]))
     )
-    # write results to a csv file
-    df.to_csv(output_file_path, index=False)
-    df.to_json(f"{args.output_dir}/{model}.json", orient="records")
 
     return df
 
@@ -161,7 +152,6 @@ def main():
 
     pbar = tqdm(total=len(list(total_combos)))
 
-    result_dfs = []
 
     for model in args.models:
         result_df = profile_model(
@@ -170,12 +160,9 @@ def main():
             num_tokens_to_profile,
             pbar,
         )
-        result_dfs.append(result_df)
-
-    # combine all results into a single dataframe
-    combined_df = pd.concat(result_dfs, ignore_index=True)
-    # write combined results to a csv file
-    combined_df.to_csv(f"{args.output_dir}/combined.csv", index=False)
+        # model name would contain '/', so create a directory as required
+        os.makedirs(f"{args.output_dir}/{model}", exist_ok=True)
+        result_df.to_csv(f"{args.output_dir}/{model}/mlp.csv", index=False)
 
 
 if __name__ == "__main__":

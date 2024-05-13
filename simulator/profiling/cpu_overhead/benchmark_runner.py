@@ -54,7 +54,6 @@ class BenchmarkRunner:
             .integers(low=0, high=10000, size=NUM_PREFILL_TOKEN)
             .tolist()
         )
-        # prompt_token_ids = [1] * NUM_PREFILL_TOKEN
 
         return {
             "prompt": None,
