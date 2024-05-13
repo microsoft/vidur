@@ -1,7 +1,5 @@
 import binascii
 import enum
-import itertools
-import random
 from itertools import product
 from typing import List
 
@@ -16,13 +14,6 @@ class ProfileMethod(enum.Enum):
     KINETO = "kineto"
     PERF_COUNTER = "perf_counter"
     RECORD_FUNCTION = "record_function"
-
-
-class ProfileOrder(enum.Enum):
-    INCREASING = "increasing"
-    DECREASING = "decreasing"
-    BIGLITTLE = "biglittle"
-    RANDOM = "random"
 
 
 def safe_ray_get(futures):
@@ -40,7 +31,6 @@ def safe_ray_get(futures):
 
 def get_num_tokens_to_profile(
     max_num_tokens: int,
-    profile_order: ProfileOrder,
 ):
     NUM_TOKENS_SPACE = (
         list([1, 2, 4])
@@ -59,21 +49,7 @@ def get_num_tokens_to_profile(
             num_tokens_to_profile.append(num_tokens)
         else:
             break
-    if profile_order == ProfileOrder.INCREASING:
-        num_tokens_to_profile.sort()
-    elif profile_order == ProfileOrder.DECREASING:
-        num_tokens_to_profile.sort(reverse=True)
-    elif profile_order == ProfileOrder.BIGLITTLE:
-        num_tokens_to_profile.sort()
-        first_half = num_tokens_to_profile[: len(num_tokens_to_profile) // 2]
-        second_half = reversed(num_tokens_to_profile[len(num_tokens_to_profile) // 2 :])
-        num_tokens_to_profile = [
-            x
-            for x in itertools.chain(*itertools.zip_longest(second_half, first_half))
-            if x is not None
-        ]
-    elif profile_order == ProfileOrder.RANDOM:
-        random.shuffle(num_tokens_to_profile)
+    num_tokens_to_profile.sort(reverse=True)
 
     return num_tokens_to_profile
 

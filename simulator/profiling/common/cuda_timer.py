@@ -3,7 +3,7 @@ import time
 import torch
 from torch.profiler import record_function
 
-from simulator.profiling.timer_stats_store import TimerStatsStore
+from simulator.profiling.common.timer_stats_store import TimerStatsStore
 from simulator.profiling.utils import ProfileMethod
 
 
@@ -11,7 +11,7 @@ class CudaTimer:
     def __init__(
         self,
         name,
-        layer_id: int = 0,
+        layer_id: int = 0, # we don't care about layer id, it is just for compatibility with sarathi cudatimer
         aggregation_fn=sum,
         filter_str=None,
     ):
@@ -25,17 +25,20 @@ class CudaTimer:
 
         self.timer_stats_store = TimerStatsStore()
         self.disabled = (name is None) or self.timer_stats_store.disabled
+
         if self.disabled:
             return
 
         self.aggregation_fn = aggregation_fn
         self.filter_str = filter_str
-        # we don't care about layer id, it is just for compatibility with vllm cudatimer
 
-        self.profiler = torch.profiler.profile(
-            activities=[torch.profiler.ProfilerActivity.CUDA],
-            on_trace_ready=self.handle_trace,
-        )
+        if self.timer_stats_store.profile_method == ProfileMethod.KINETO:            
+            self.profiler = torch.profiler.profile(
+                activities=[torch.profiler.ProfilerActivity.CUDA],
+                on_trace_ready=self.handle_trace,
+            )
+        else:    
+            self.profiler = None
         self.start_event = None
         self.end_event = None
         self.start_time = None

@@ -10,10 +10,9 @@ import yaml
 from tqdm import tqdm
 
 from simulator.profiling.mlp.mlp_wrapper import MlpWrapper
-from simulator.profiling.model_config import ModelConfig
+from simulator.profiling.common.model_config import ModelConfig
 from simulator.profiling.utils import (
     ProfileMethod,
-    ProfileOrder,
     get_num_tokens_to_profile,
 )
 
@@ -72,14 +71,6 @@ def parse_args():
         choices=[e.value for e in ProfileMethod],
         help="Method to use for measuring time taken by operations (default: %(default)s)",
     )
-    parser.add_argument(
-        "--profile_order",
-        default=ProfileOrder.DECREASING,
-        const=ProfileOrder.DECREASING,
-        nargs="?",
-        choices=[e.value for e in ProfileOrder],
-        help="In what order the matmul sizes are profiled (default: %(default)s)",
-    )
     args = parser.parse_args()
 
     args.output_dir = (
@@ -118,7 +109,6 @@ def profile_model(
                 model_config,
                 num_tensor_parallel_workers,
                 args.profile_method,
-                args.profile_order,
                 rank,
                 args.output_dir,
             )
@@ -160,7 +150,7 @@ def main():
     yaml.dump(vars(args), open(f"{args.output_dir}/config.yaml", "w"))
 
     num_tokens_to_profile = get_num_tokens_to_profile(
-        args.max_tokens, args.profile_order
+        args.max_tokens
     )
 
     total_combos = itertools.product(
