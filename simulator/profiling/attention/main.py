@@ -25,7 +25,7 @@ def parse_args():
     parser.add_argument(
         "--num_gpus",
         type=int,
-        default=4,
+        default=8,
         help="Number of GPUs to use for profiling",
     )
     parser.add_argument(
