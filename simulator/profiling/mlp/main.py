@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument(
         "--num_gpus",
         type=int,
-        default=4,
+        default=8,
         help="Number of GPUs to use for profiling",
     )
     parser.add_argument(
@@ -41,6 +41,7 @@ def parse_args():
         type=str,
         nargs="+",
         default=[
+            "microsoft/phi-2",
             "internlm/internlm-20b",
             "Qwen/Qwen-72B",
             "meta-llama/Llama-2-7b-hf",
