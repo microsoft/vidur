@@ -121,26 +121,22 @@ class AttentionWrapper:
         # batch size is always 1 for prefill and can be different for decode
         assert attention_input.is_valid(self._max_model_len)
 
-        try:
-            seq_metadata_list, query, key, value, kv_cache = self._get_input_tensors(
-                attention_input,
-            )
-            get_attention_wrapper().begin_forward(seq_metadata_list)
+        seq_metadata_list, query, key, value, kv_cache = self._get_input_tensors(
+            attention_input,
+        )
+        get_attention_wrapper().begin_forward(seq_metadata_list)
 
-            for _ in range(WARMUP_STEPS):
-                get_attention_wrapper().forward(query, key, value, kv_cache)
-            torch.cuda.synchronize()
+        for _ in range(WARMUP_STEPS):
+            get_attention_wrapper().forward(query, key, value, kv_cache)
+        torch.cuda.synchronize()
 
-            self.time_stats_store.clear_stats()
+        self.time_stats_store.clear_stats()
 
-            for _ in range(ACTIVE_STEPS):
-                get_attention_wrapper().forward(query, key, value, kv_cache)
-            torch.cuda.synchronize()
+        for _ in range(ACTIVE_STEPS):
+            get_attention_wrapper().forward(query, key, value, kv_cache)
+        torch.cuda.synchronize()
 
-            get_attention_wrapper().end_forward()
-        except RuntimeError as e:
-            print(e)
-            return None
+        get_attention_wrapper().end_forward()
 
         return {
             "time_stats": self.time_stats_store.get_stats(),

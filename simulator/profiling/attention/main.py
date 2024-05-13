@@ -40,7 +40,7 @@ def parse_args():
         nargs="+",
         default=[
             # "internlm/internlm-20b",
-            "Qwen/Qwen-72B",
+            # "Qwen/Qwen-72B",
             "meta-llama/Llama-2-7b-hf",
             "codellama/CodeLlama-34b-Instruct-hf",
             "meta-llama/Llama-2-70b-hf",

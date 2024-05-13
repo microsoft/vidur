@@ -59,6 +59,9 @@ def parse_args():
     return args
 
 
+def profile_mo
+
+
 def create_runner(
     model_name: str, batch_size: int, tensor_parallel_degree: int, output_dir: str
 ) -> BenchmarkRunner:
