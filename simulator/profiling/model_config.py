@@ -22,7 +22,7 @@ class ModelConfig:
         norm: str,
         post_attn_norm: bool,
         vocab_size: int,
-        is_neox_style: bool,
+        is_neox_style: Optional[bool] = True,
         rope_theta: Optional[int] = None,
         rope_scaling: Optional[Dict[str, Any]] = None,
         partial_rotary_factor: float = 1.0,
