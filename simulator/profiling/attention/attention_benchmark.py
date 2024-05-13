@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from simulator.profiling.attention.attention_input import AttentionInput
 from simulator.profiling.attention.attention_wrapper import AttentionWrapper
-from simulator.profiling.model_config import ModelConfig
+from simulator.profiling.common.model_config import ModelConfig
 from simulator.profiling.utils import ProfileMethod, get_attention_input_combinations
 
 

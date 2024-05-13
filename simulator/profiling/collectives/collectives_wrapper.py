@@ -2,8 +2,8 @@ import numpy as np
 import torch
 
 from simulator.profiling.collectives.collectives_impl import GraphedCollective
-from simulator.profiling.cuda_timer import CudaTimer
-from simulator.profiling.timer_stats_store import TimerStatsStore
+from simulator.profiling.common.cuda_timer import CudaTimer
+from simulator.profiling.common.timer_stats_store import TimerStatsStore
 from simulator.profiling.utils import ProfileMethod
 
 WARMUP_STEPS = 1

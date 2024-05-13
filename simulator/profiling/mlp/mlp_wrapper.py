@@ -6,9 +6,9 @@ import torch
 from sarathi.model_executor.weight_utils import initialize_dummy_weights
 
 from simulator.profiling.mlp.mlp_impl import GPTModel
-from simulator.profiling.model_config import ModelConfig
-from simulator.profiling.timer_stats_store import TimerStatsStore
-from simulator.profiling.utils import ProfileMethod, ProfileOrder
+from simulator.profiling.common.model_config import ModelConfig
+from simulator.profiling.common.timer_stats_store import TimerStatsStore\
+from simulator.profiling.utils import ProfileMethod
 
 WARMUP_STEPS = 2
 ACTIVE_STEPS = 20
@@ -20,7 +20,6 @@ class MlpWrapper:
         model_config: ModelConfig,
         num_tensor_parallel_workers: int,
         profile_method: ProfileMethod,
-        profile_order: ProfileOrder,
         rank: int,
         output_dir: str,
     ):
@@ -31,7 +30,6 @@ class MlpWrapper:
         self.model_config = model_config
         self.num_tensor_parallel_workers = num_tensor_parallel_workers
         self.profile_method = profile_method
-        self.profile_order = profile_order
         self.rank = rank
         self.output_dir = output_dir
         os.makedirs(f"{self.output_dir}/profiler_traces/", exist_ok=True)

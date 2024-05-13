@@ -12,8 +12,8 @@ from sarathi.model_executor.parallel_utils.tensor_parallel.layers import (
     VocabParallelEmbedding,
 )
 
-from simulator.profiling.cuda_timer import CudaTimer
-from simulator.profiling.model_config import ModelConfig
+from simulator.profiling.common.cuda_timer import CudaTimer
+from simulator.profiling.common.model_config import ModelConfig
 
 REUSE_MEMORY = True
 

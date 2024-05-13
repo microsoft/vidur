@@ -11,8 +11,8 @@ from sarathi.model_executor.attention import (
 
 from simulator.profiling.attention.attention_input import AttentionInput
 from simulator.profiling.attention.sequence_proxy import SequenceMetadataProxy
-from simulator.profiling.model_config import ModelConfig
-from simulator.profiling.timer_stats_store import TimerStatsStore
+from simulator.profiling.common.model_config import ModelConfig
+from simulator.profiling.common.timer_stats_store import TimerStatsStore
 from simulator.profiling.utils import ProfileMethod
 
 WARMUP_STEPS = 2
