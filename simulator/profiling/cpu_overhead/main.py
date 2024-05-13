@@ -2,6 +2,7 @@ import argparse
 import datetime
 import gc
 import os
+from typing import List, Any
 from itertools import product
 
 import pandas as pd
@@ -59,7 +60,37 @@ def parse_args():
     return args
 
 
-def profile_mo
+def profile_model(
+    model_name: str,
+    batch_sizes_to_profile: List[int],
+    tensor_parallel_degrees: List[int],
+    output_dir: str,
+    pbar: Any,
+) -> dict:    
+    results = []
+
+    for tensor_parallel_degree in tensor_parallel_degrees:
+        for batch_index, batch_size in enumerate(batch_sizes_to_profile):
+            try:
+                runner = create_runner(
+                    model_name, batch_size, tensor_parallel_degree, output_dir
+                )
+                results.append(ray.get(runner.run.remote()))
+                del runner
+                # trigger garbage collection
+                gc.collect()
+            except Exception as e:
+                print(
+                    f"Failed to run {model_name}_{batch_size}_{tensor_parallel_degree} due to {e}"
+                )
+                # update progress bar
+                pbar.update(len(batch_sizes_to_profile) - batch_index)
+                break
+
+            pbar.update(1)
+
+    df = pd.DataFrame(results)
+    df.to_csv(f"{output_dir}/{model_name}/cpu_overhead.csv")
 
 
 def create_runner(
@@ -83,7 +114,6 @@ def create_runner(
 def main():
     args = parse_args()
 
-    results = []
 
     batch_sizes_to_profile = get_cpu_overhead_batch_sizes_to_profile(
         args.max_batch_size
@@ -95,30 +125,14 @@ def main():
 
     pbar = tqdm(total=len(list(input_combos)))
 
-    for model_name, tensor_parallel_degree in product(
-        args.models, args.num_tensor_parallel_workers
-    ):
-        for batch_index, batch_size in enumerate(batch_sizes_to_profile):
-            try:
-                runner = create_runner(
-                    model_name, batch_size, tensor_parallel_degree, args.output_dir
-                )
-                results.append(ray.get(runner.run.remote()))
-                del runner
-                # trigger garbage collection
-                gc.collect()
-            except Exception as e:
-                print(
-                    f"Failed to run {model_name}_{batch_size}_{tensor_parallel_degree} due to {e}"
-                )
-                # update progress bar
-                pbar.update(len(batch_sizes_to_profile) - batch_index)
-                break
-
-            pbar.update(1)
-
-    df = pd.DataFrame(results)
-    df.to_csv(f"{args.output_dir}/cpu_overhead.csv")
+    for model_name in args.models:
+        profile_model(
+            model_name,
+            batch_sizes_to_profile,
+            args.num_tensor_parallel_workers,
+            args.output_dir,
+            pbar,
+        )
 
 
 if __name__ == "__main__":
