@@ -39,7 +39,7 @@ def parse_args():
         type=str,
         nargs="+",
         default=[
-            "microsoft/phi-2.yml",
+            "microsoft/phi-2",
             "internlm/internlm-20b",
             "Qwen/Qwen-72B",
             "meta-llama/Llama-2-7b-hf",
