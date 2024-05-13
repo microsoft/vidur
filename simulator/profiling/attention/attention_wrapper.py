@@ -102,12 +102,13 @@ class AttentionWrapper:
         seq_metadata_list: List[SequenceMetadataProxy] = []
         for _ in range(attention_input.batch_size):
             num_blocks = ceil((num_tokens_per_seq + attention_input.kv_cache_size) / self._block_size)
+            # TODO(nitinkedia7): Investigate why high=total_num_blocks fails with a CUDA illegal memory access
             seq_metadata = SequenceMetadataProxy(
                 is_prompt=attention_input.is_prefill,
                 total_len=num_tokens_per_seq + attention_input.kv_cache_size,
                 processed_len=attention_input.kv_cache_size,
                 block_table=np.random.default_rng()
-                .integers(low=0, high=total_num_blocks, size=num_blocks)
+                .integers(low=0, high=total_num_blocks - 1, size=num_blocks)
                 .tolist(),
             )
             seq_metadata_list.append(seq_metadata)
