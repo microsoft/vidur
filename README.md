@@ -1,6 +1,12 @@
 # Vidur: LLM Inference Simulator
 
-Vidur is a high-fidelity LLM inference simulator, designed to aid capacity planning and deployment configuration optimization. Please refer to our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) for more details. We have a [live demo](https://vidur.westus2.cloudapp.azure.com/) that captures the capabilities of the system.
+Vidur is a high-fidelity LLM inference simulator, designed to aid capacity planning and deployment configuration optimization. Please refer to our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) for more details.<br>
+We have a [live demo](https://vidur.westus2.cloudapp.azure.com/) that captures the capabilities of the system.
+
+![Simulator Fidelity](./assets/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.jpeg)
+*Difference in 95th percentile Request E2E Normalized time showing fidelity of Vidur's execution time predictions across four models and three dynamic workload traces, using request load at 85% of the maximum serving capacity for each scenario.*
+![Config Search](./assets/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.jpeg)
+*Capacity per dollar for different deployment configurations vs TTFT-P90 (left) and TBT-P99 (middle) for LLaMA2-70B.*
 
 ## Setup
 
@@ -44,7 +50,7 @@ To opt out of wandb, pick any one of the following methods:
 1. `export WANDB_MODE=disabled` in your shell or add this in `~/.zshrc` or `~/.bashrc`. Remember to reload using `source ~/.zshrc`.
 2. Set `wandb_project` and `wandb_group` as `""` in `simulator/config/default.yml`. Also, remove these CLI params from the shell command with which the simulator is invoked.
 
-## Running simulator
+## Running the simulator
 
 To run the simulator, execute the following command from the repository root,
 
@@ -82,7 +88,7 @@ The simulator supports a plethora of parameters for the simulation description w
 
 The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output` directory along with the chrome trace. A description of all the logged metrics can be found [here](simulator/metrics/README.md).
 
-# Adding a new model
+## Adding a new model
 
 Instructions on adding a new model can be found [here](simulator/profiling/README.md).
 
