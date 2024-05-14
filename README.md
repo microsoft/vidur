@@ -48,20 +48,20 @@ wandb login --host https://<your-org>.wandb.io
 To opt out of wandb, pick any one of the following methods:
 
 1. `export WANDB_MODE=disabled` in your shell or add this in `~/.zshrc` or `~/.bashrc`. Remember to reload using `source ~/.zshrc`.
-2. Set `wandb_project` and `wandb_group` as `""` in `simulator/config/default.yml`. Also, remove these CLI params from the shell command with which the simulator is invoked.
+2. Set `wandb_project` and `wandb_group` as `""` in `vidur/config/default.yml`. Also, remove these CLI params from the shell command with which the simulator is invoked.
 
 ## Running the simulator
 
 To run the simulator, execute the following command from the repository root,
 
 ```sh
-python -m simulator.main
+python -m vidur.main
 ```
 
 or a big example with all the parameters,
 
 ```sh
-python -m simulator.main  \
+python -m vidur.main  \
 --replica_device a100 \
 --replica_model_name meta-llama/Llama-2-7b-hf  \
 --cluster_num_replicas 1 \
@@ -84,13 +84,13 @@ python -m simulator.main  \
 --vllm_scheduler_max_tokens_in_batch 4096
 ```
 
-The simulator supports a plethora of parameters for the simulation description which can be found [here](simulator/config/README.md).
+The simulator supports a plethora of parameters for the simulation description which can be found [here](vidur/config/README.md).
 
-The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output` directory along with the chrome trace. A description of all the logged metrics can be found [here](simulator/metrics/README.md).
+The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output` directory along with the chrome trace. A description of all the logged metrics can be found [here](vidur/metrics/README.md).
 
 ## Adding a new model
 
-Instructions on adding a new model can be found [here](simulator/profiling/README.md).
+Instructions on adding a new model can be found [here](vidur/profiling/README.md).
 
 ## Formatting Code
 
