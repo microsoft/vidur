@@ -16,6 +16,7 @@ replica:
   num_tensor_parallel_workers: 1
   model_name: meta-llama/Llama-2-7b-hf
   device: a100
+  network_device: a100_pair_nvlink
 
 request_generator:
   provider: synthetic
@@ -67,11 +68,11 @@ execution_time_predictor:
   # provider: linear_regression
 
 sklearn_execution_time_predictor:
-  compute_input_file: ./data/profiling/{DEVICE}/mlp.csv
-  attention_input_file: ./data/profiling/{DEVICE}/attention.csv
-  all_reduce_input_file: ./data/profiling/{DEVICE}/all_reduce.csv
-  send_recv_input_file: ./data/profiling/{DEVICE}/send_recv.csv
-  cpu_overhead_input_file: ./data/profiling/{DEVICE}/cpu_overheads.csv
+  compute_input_file: ./data/profiling/compute/{DEVICE}/{MODEL}/mlp.csv
+  attention_input_file: ./data/profiling/compute/{DEVICE}/{MODEL}/attention.csv
+  all_reduce_input_file: ./data/profiling/network/{NETWORK_DEVICE}/all_reduce.csv
+  send_recv_input_file: ./data/profiling/network/{NETWORK_DEVICE}/send_recv.csv
+  cpu_overhead_input_file: ./data/profiling/cpu_overhead/{NETWORK_DEVICE}/{MODEL}/cpu_overheads.csv
   k_fold_cv_splits: 10
   no_cache: false
   kv_cache_prediction_granularity: 64
@@ -83,7 +84,7 @@ sklearn_execution_time_predictor:
   nccl_cpu_launch_overhead_ms: 0.020
   nccl_cpu_skew_overhead_per_device_ms: 0.0
   num_training_job_threads: -1
-  skip_cpu_overhead_modeling: false
+  skip_cpu_overhead_modeling: true
 
 random_forrest_execution_time_predictor:
   num_estimators:
