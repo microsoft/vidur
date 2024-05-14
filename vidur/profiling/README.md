@@ -22,13 +22,13 @@ The profiling data is stored in the `data/profiling` directory. The profiling da
             - a100_pair_nvlink
                 - allreduce.csv
                 - send_recv.csv
-            - h100_nvlink
+            - h100_dgx
                 - allreduce.csv
                 - send_recv.csv
 ```
 
-For compute profiling, only the SKU matters not the network configuration of the node. So, we don't discriminate between `a100_pair_nvlink` (Azure Standard_NC96ads_A100_v4 with 4 A100s) and `a100_nvlink` (A100 DGX with 8 A100s), the same compute data is used in both in the folder called `a100`.
-For network profiling, the network configuration of the node matters. So, we have separate folders for `a100_pair_nvlink` and `a100_nvlink`. One example is that TP4 is different in these. In `a100_pair_nvlink`, there are two pairs connected by NVLink but between these pairs is a relatively slower link, but in `a100_nvlink` where all 8 GPUs are connected by NVLink.
+For compute profiling, only the SKU matters not the network configuration of the node. So, we don't discriminate between `a100_pair_nvlink` (Azure Standard_NC96ads_A100_v4 with 4 A100s) and `a100_dgx` (A100 DGX with 8 A100s), the same compute data is used in both in the folder called `a100`.
+For network profiling, the network configuration of the node matters. So, we have separate folders for `a100_pair_nvlink` and `a100_dgx`. One example is that TP4 is different in these. In `a100_pair_nvlink`, there are two pairs connected by NVLink but between these pairs is a relatively slower link, but in `a100_dgx` where all 8 GPUs are connected by NVLink.
 
 ## Adding a new model
 
@@ -75,9 +75,11 @@ Network profiling is not dependent on the model 🎉. So, we can use the same ne
 
 Currently available data include:
 
-- `a100_pair_nvlink`: Azure Standard_NC96ads_A100_v4 with 4 80GB A100s.
-- `a100_nvlink`: A100 DGX with 8 80GB A100s.
-- `h100_nvlink`: H100 DGX with 8 H100s.
+- `a100_pair_nvlink`: Azure Standard_NC96ads_A100_v4 with 4 80GB A100 PCIe GPUs with pair-wise NVLINK connectivity.
+- `h100_pair_nvlink`: Azure internal VM with 4 80GB H100 NVL GPUs with pair-wise NVLINK connectivity.
+- `a100_dgx`: A100 DGX with 8 80GB A100s.
+- `h100_dgx`: H100 DGX with 8 H100s.
+
 
 Steps to profile:
 
@@ -97,7 +99,7 @@ Steps to profile:
 
     - One may need to adjust `--num_workers_per_node_combinations` depending on the number of GPUs in the node eg. `1,2,4` for Azure Standard_NC96ads_A100_v4 node.
     - Copy the CSV file from `profiling_outputs/collectives/<timestamp>/all_reduce.csv` to `data/profiling/network/{network_device}/allreduce.csv`.
-    - `network_device` is an informal name for the network configuration of the node. Eg: `a100_pair_nvlink`, `a100_nvlink`, `h100_nvlink` etc.
+    - `network_device` is an informal name for the network configuration of the node. Eg: `a100_pair_nvlink`, `a100_dgx`, `h100_dgx` etc.
     - Run `python vidur/profiling/collectives/main.py --help` for more options.
 1. Run the following command to profile for the `send_recv` operation, (required only for PP):
 
@@ -109,7 +111,7 @@ Steps to profile:
 
     - Typically, PP is done across nodes so `num_workers_per_node_combinations` should be the same as the number of GPUs available in one node. But there is no harm in profiling `num_workers_per_node_combinations` less than the number of GPUs in the node.
     - Copy the CSV file from `profiling_outputs/collectives/<timestamp>/send_recv.csv` to `data/profiling/network/{network_device}/send_recv.csv`.
-    - `network_device` is an informal name for the network configuration of the node. Eg: `a100_pair_nvlink`, `a100_nvlink`, `h100_nvlink` etc.
+    - `network_device` is an informal name for the network configuration of the node. Eg: `a100_pair_nvlink`, `a100_dgx`, `h100_dgx` etc.
 
 ## CPU Overhead Profiling
 
