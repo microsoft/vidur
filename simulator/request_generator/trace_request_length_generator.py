@@ -1,14 +1,14 @@
-import logging
 from typing import Tuple
 
 import numpy as np
 import pandas as pd
 
+from simulator.logger import init_logger
 from simulator.request_generator.base_request_length_generator import (
     BaseRequestLengthGenerator,
 )
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class TraceRequestLengthGenerator(BaseRequestLengthGenerator):

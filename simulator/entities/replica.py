@@ -1,10 +1,10 @@
-import logging
 from math import ceil
 
 from simulator.config import Config
 from simulator.entities.base_entity import BaseEntity
+from simulator.utils import init_logger
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class Replica(BaseEntity):

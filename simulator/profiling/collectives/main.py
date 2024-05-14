@@ -6,8 +6,11 @@ import pandas as pd
 import ray
 from tqdm import tqdm
 
+from simulator.logger import init_logger
 from simulator.profiling.collectives.benchmark_runner import BenchmarkRunner
 from simulator.profiling.utils import get_collectives_inputs
+
+logger = init_logger(__name__)
 
 
 def parse_args():
@@ -46,12 +49,12 @@ def parse_args():
 
 def create_runner_pool():
     total_gpus_available = int(ray.cluster_resources()["GPU"])
-    print(f"Total GPUs available: {total_gpus_available}")
+    logger.info(f"Total GPUs available: {total_gpus_available}")
 
     assert total_gpus_available > 0, "No GPUs available"
 
     all_node_ips = [x["NodeName"] for x in ray.nodes()]
-    print(f"All node IPs: {all_node_ips}")
+    logger.info(f"All node IPs: {all_node_ips}")
 
     assert len(all_node_ips) > 0, "No nodes available"
 

@@ -1,17 +1,17 @@
 import atexit
 import heapq
 import json
-import logging
 from typing import List
 
 from simulator.config import Config
 from simulator.entities import Cluster
 from simulator.events import BaseEvent, RequestArrivalEvent
+from simulator.logger import init_logger
 from simulator.metrics import MetricsStore
 from simulator.request_generator import RequestGeneratorRegistry
 from simulator.scheduler import BaseGlobalScheduler, GlobalSchedulerRegistry
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class Simulator:

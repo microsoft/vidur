@@ -15,6 +15,9 @@ from simulator.config_optimizer.config_explorer.ray_utils import (
     CpuAssignmentManager,
     get_ip,
 )
+from simulator.logger import init_logger
+
+logger = init_logger(__name__)
 
 
 class CapacitySearch:
@@ -53,8 +56,7 @@ class CapacitySearch:
             cpu_affinity_command = f"taskset --cpu-list {self.cpu_core_id}"
 
         command = f"nice -n 1 {cpu_affinity_command} python -m simulator.main {scheduler_config.to_args()}"
-        if self.args.debug:
-            print(f"Running command: {command}", flush=True)
+        logger.debug(f"Running command: {command}", flush=True)
 
         return command
 
@@ -80,7 +82,7 @@ class CapacitySearch:
             scheduling_delay <= self.args.scheduling_delay_slo_value
         )
 
-        print(
+        logger.info(
             f"{simulator_config.to_human_readable_name()} - Scheduling delay (P{self.args.scheduling_delay_slo_quantile}): {scheduling_delay}",
             flush=True,
         )
@@ -119,7 +121,7 @@ class CapacitySearch:
             ), f"Result file not found for {simulator_config.to_human_readable_name()}"
             return self._is_under_sla(result_file, simulator_config)
         except Exception as e:
-            print(
+            logger.error(
                 f"Error running: {self.job_config.get_human_readable_name()}, failed with error: {e}",
                 flush=True,
             )
@@ -129,7 +131,7 @@ class CapacitySearch:
         """
         Perform binary search to find the maximum QPS under the SLO
         """
-        print(
+        logger.info(
             f"Starting search for {self.job_config.get_human_readable_name()}",
             flush=True,
         )
@@ -174,7 +176,7 @@ class CapacitySearch:
 
                 min_qps_over_sla = min(min_qps_over_sla, qps)
 
-        print(
+        logger.info(
             f"Max QPS under SLO for {self.job_config.get_human_readable_name()}: {max_qps_under_sla}",
             flush=True,
         )

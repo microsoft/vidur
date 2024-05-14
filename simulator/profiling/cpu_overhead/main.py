@@ -9,11 +9,14 @@ import pandas as pd
 import ray
 from tqdm import tqdm
 
+from simulator.logger import init_logger
 from simulator.profiling.cpu_overhead.benchmark_runner import BenchmarkRunner
 from simulator.profiling.utils import (
     get_cpu_overhead_batch_sizes_to_profile,
     hex_to_binary,
 )
+
+logger = init_logger(__name__)
 
 
 def parse_args():
@@ -78,7 +81,7 @@ def profile_model(
                 # trigger garbage collection
                 gc.collect()
             except Exception as e:
-                print(
+                logger.error(
                     f"Failed to run {model_name}_{batch_size}_{tensor_parallel_degree} due to {e}"
                 )
                 # update progress bar

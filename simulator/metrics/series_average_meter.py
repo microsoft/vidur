@@ -1,9 +1,10 @@
 import json
-import logging
 
 import wandb
 
-logger = logging.getLogger(__name__)
+from simulator.logger import init_logger
+
+logger = init_logger(__name__)
 
 
 class SeriesAverageMeter:

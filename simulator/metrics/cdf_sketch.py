@@ -1,13 +1,12 @@
-import logging
-
 import numpy as np
 import pandas as pd
 import plotly_express as px
+import wandb
 from ddsketch.ddsketch import DDSketch
 
-import wandb
+from simulator.logger import init_logger
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class CDFSketch:

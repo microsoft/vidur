@@ -1,13 +1,13 @@
 import argparse
 import datetime
-import logging
 import os
 
 import yaml
 
 from simulator.constants import DEFAULT_CONFIG_FILE, DEVICE_CONFIG_DIR, MODEL_CONFIG_DIR
+from simulator.logger import init_logger
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class Config:

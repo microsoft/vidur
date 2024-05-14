@@ -1,14 +1,14 @@
-import logging
 import os
 from functools import reduce
 from typing import Dict, List
 
 import pandas as pd
 import plotly_express as px
-
 import wandb
+
 from simulator.config import Config
 from simulator.entities import Batch, BatchStage, ExecutionTime, Request
+from simulator.logger import init_logger
 from simulator.metrics.cdf_sketch import CDFSketch
 from simulator.metrics.constants import (
     BatchMetricsCountDistribution,
@@ -25,7 +25,7 @@ from simulator.metrics.data_series import DataSeries
 from simulator.metrics.series_average_meter import SeriesAverageMeter
 from simulator.utils.mfu_calculator import MFUCalculator
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 def if_write_metrics(func):

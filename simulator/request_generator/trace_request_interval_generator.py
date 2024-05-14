@@ -1,12 +1,11 @@
-import logging
-
 import pandas as pd
 
+from simulator.logger import init_logger
 from simulator.request_generator.base_request_interval_generator import (
     BaseRequestIntervalGenerator,
 )
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class TraceRequestIntervalGenerator(BaseRequestIntervalGenerator):

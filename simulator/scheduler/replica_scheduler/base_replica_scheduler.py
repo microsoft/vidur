@@ -1,14 +1,14 @@
-import logging
 from abc import ABC, abstractmethod
 from typing import List
 
 from simulator.config import Config
 from simulator.entities import Batch, Replica, Request
 from simulator.execution_time_predictor import BaseExecutionTimePredictor
+from simulator.logger import init_logger
 from simulator.scheduler.replica_stage_scheduler import ReplicaStageScheduler
 from simulator.scheduler.utils.memory_planner import MemoryPlanner
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class BaseReplicaScheduler(ABC):

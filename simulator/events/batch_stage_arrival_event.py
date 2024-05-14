@@ -1,13 +1,13 @@
-import logging
 from typing import List
 
 from simulator.entities.batch import Batch
 from simulator.events import BaseEvent
+from simulator.logger import init_logger
 from simulator.metrics import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class BatchStageArrivalEvent(BaseEvent):

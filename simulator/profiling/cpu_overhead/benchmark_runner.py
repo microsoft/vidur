@@ -6,6 +6,11 @@ from sarathi import LLMEngine, SamplingParams
 from sarathi.metrics.constants import CpuOperationMetrics
 from tqdm import tqdm
 
+from simulator.logger import init_logger
+
+logger = init_logger(__name__)
+
+
 NUM_PREFILL_TOKEN = 256
 NUM_DECODE_TOKEN_AMPLIFICATION_FACTOR = 3
 
@@ -101,7 +106,7 @@ class BenchmarkRunner:
         end_time = time.monotonic()
         pbar.close()
 
-        print(
+        logger.info(
             f"{self._config_name} exiting after processing {self._batch_size} ({num_steps} iterations),"
             f" Total time taken: {end_time - start_time:.2f} seconds"
         )

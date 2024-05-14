@@ -1,14 +1,14 @@
-import logging
-from collections import defaultdict, deque
+from collections import defaultdict
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 import plotly_express as px
-
 import wandb
 
-logger = logging.getLogger(__name__)
+from simulator.logger import init_logger
+
+logger = init_logger(__name__)
 
 
 class DataSeries:

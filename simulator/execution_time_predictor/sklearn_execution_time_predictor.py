@@ -1,6 +1,4 @@
 import hashlib
-import json
-import logging
 import os
 import pickle
 from abc import abstractmethod
@@ -19,8 +17,9 @@ from simulator.entities import Batch
 from simulator.execution_time_predictor.base_execution_time_predictor import (
     BaseExecutionTimePredictor,
 )
+from simulator.logger import init_logger
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
@@ -826,7 +825,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         try:
             return self._predictions["send_recv"][(batch._total_num_tokens_rounded,)]
         except KeyError as e:
-            print(batch)
+            logger.error(f"Failed to get send_recv prediction for batch {batch}")
             raise e
 
     def _get_attention_rope_execution_time(self, batch: Batch) -> float:

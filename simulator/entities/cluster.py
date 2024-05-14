@@ -1,11 +1,11 @@
 import json
-import logging
 
 from simulator.config import Config
 from simulator.entities.base_entity import BaseEntity
 from simulator.entities.replica import Replica
+from simulator.utils import init_logger
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class Cluster(BaseEntity):

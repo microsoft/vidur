@@ -15,6 +15,9 @@ import time
 import yaml
 
 from simulator.config_optimizer.config_explorer.config_explorer import ConfigExplorer
+from simulator.logger import init_logger
+
+logger = init_logger(__name__)
 
 
 def get_args():
@@ -61,9 +64,9 @@ if __name__ == "__main__":
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    print("Starting config optimizer", flush=True)
-    print(f"Args: {args}", flush=True)
-    print(f"Config: {config}", flush=True)
+    logger.info("Starting config optimizer", flush=True)
+    logger.info(f"Args: {args}", flush=True)
+    logger.info(f"Config: {config}", flush=True)
 
     # store the config and args
     json.dump(vars(args), open(f"{args.output_dir}/args.json", "w"))
@@ -77,4 +80,4 @@ if __name__ == "__main__":
 
     end_time = time.time()
 
-    print(f"Simulation took time: {end_time - start_time}", flush=True)
+    logger.info(f"Simulation took time: {end_time - start_time}", flush=True)

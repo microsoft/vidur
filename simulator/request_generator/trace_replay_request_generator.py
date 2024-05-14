@@ -1,12 +1,12 @@
-import logging
 from typing import List
 
 import pandas as pd
 
 from simulator.entities import Request
+from simulator.logger import init_logger
 from simulator.request_generator.base_request_generator import BaseRequestGenerator
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class TraceReplayRequestGenerator(BaseRequestGenerator):

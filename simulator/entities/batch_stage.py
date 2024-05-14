@@ -1,10 +1,10 @@
-import logging
 from typing import List
 
 from simulator.entities.base_entity import BaseEntity
 from simulator.entities.request import Request
+from simulator.logger import init_logger
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 # a decorator which checks if the request has been scheduled

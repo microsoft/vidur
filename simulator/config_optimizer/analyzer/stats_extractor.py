@@ -9,6 +9,9 @@ import pandas as pd
 import yaml
 
 from simulator.config_optimizer.analyzer.constants import CPU_MACHINE_COST, GPU_COSTS
+from simulator.logger import init_logger
+
+logger = init_logger(__name__)
 
 
 def extract_stat_from_request_metrics(
@@ -194,11 +197,9 @@ def process_trace(sim_results_dir: str):
 
     # filer out None values
     all_results = [r for r in all_results if r is not None]
-    print(f"Total number of runs: {len(run_dirs)} valid runs: {len(all_results)}")
+    logger.info(f"Total number of runs: {len(run_dirs)} valid runs: {len(all_results)}")
 
     df = pd.DataFrame(all_results)
-
-    print(list(df.columns))
 
     df["num_gpus"] = (
         df["cluster_num_replicas"]

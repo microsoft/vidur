@@ -1,13 +1,13 @@
-import logging
 from typing import List
 
 from simulator.entities import Request
 from simulator.events.base_event import BaseEvent
+from simulator.logger import init_logger
 from simulator.metrics import MetricsStore
 from simulator.scheduler import BaseGlobalScheduler
 from simulator.types import EventType
 
-logger = logging.getLogger(__name__)
+logger = init_logger(__name__)
 
 
 class RequestArrivalEvent(BaseEvent):

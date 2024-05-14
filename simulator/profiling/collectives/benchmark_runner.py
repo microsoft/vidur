@@ -5,8 +5,11 @@ from typing import Optional
 import ray
 import torch
 
+from simulator.logger import init_logger
 from simulator.profiling.collectives.collectives_input import CollectivesInput
 from simulator.profiling.collectives.collectives_wrapper import CollectiveWrapper
+
+logger = init_logger(__name__)
 
 
 @ray.remote(num_gpus=1)
@@ -78,7 +81,7 @@ class BenchmarkRunner:
     def _init_communication(
         self, comm_id: int, rank: int, num_workers: int, devices_per_node: int
     ):
-        print(
+        logger.info(
             f"Initializing gpu id: {self._gpu_id}, Rank: {rank}, num_workers: {num_workers}, comm_id: {comm_id}, "
             f"devices_per_node: {devices_per_node}, max_devices_per_node: {self._max_devices_per_node}, "
             f"ip_addr: {ray.util.get_node_ip_address()}, CUDA_VISIBLE_DEVICES: {os.environ['CUDA_VISIBLE_DEVICES']}"
