@@ -24,7 +24,7 @@ class MlpWrapper:
         self,
         model_config: ModelConfig,
         num_tensor_parallel_workers: int,
-        profile_method: ProfileMethod,
+        profile_method: str,
         rank: int,
         output_dir: str,
     ):
@@ -42,7 +42,7 @@ class MlpWrapper:
         self.model = GPTModel(
             model_config,
             num_tensor_parallel_workers,
-            ACTIVE_STEPS if self.profile_method == ProfileMethod.RECORD_FUNCTION else 1,
+            ACTIVE_STEPS if self.profile_method == ProfileMethod.RECORD_FUNCTION.value else 1,
         )
         initialize_dummy_weights(self.model)
         self.model = self.model.to(dtype=torch.float16).cuda().eval()
@@ -59,7 +59,7 @@ class MlpWrapper:
         )
         positions = torch.arange(num_tokens, device="cuda", dtype=torch.long)
 
-        if self.profile_method == ProfileMethod.RECORD_FUNCTION:
+        if self.profile_method == ProfileMethod.RECORD_FUNCTION.value:
             # Run the model once without capturing the graph.
             # This is to make sure that the captured graph does not include the
             # kernel launches for initial benchmarking (e.g., Triton autotune).

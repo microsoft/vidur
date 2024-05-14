@@ -3,8 +3,6 @@ import enum
 from itertools import product
 from typing import List
 
-import ray
-
 from simulator.profiling.attention.attention_input import AttentionInput
 from simulator.profiling.collectives.collectives_input import CollectivesInput
 

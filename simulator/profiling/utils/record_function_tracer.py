@@ -1,15 +1,13 @@
 import json
-import uuid
-
 import numpy as np
-
 import torch
+import uuid
 
 
 class RecordFunctionTracer:
     def __init__(self, output_path: str):
-        uuid = str(uuid.uuid4())[:8]
-        self.trace_path = f"{output_path}/profiler_traces/profiler_trace_{uuid}.json"
+        trace_id = str(uuid.uuid4())[:8]
+        self.trace_path = f"{output_path}/profiler_traces/profiler_trace_{trace_id}.json"
 
     def __enter__(self):
         self.profiler = torch.profiler.profile(
