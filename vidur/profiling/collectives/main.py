@@ -69,7 +69,7 @@ def create_runner_pool():
                 resources={
                     f"node:{node_ip}": 0.01,
                 }
-            ).remote(gpu_id, gpus_per_node)
+            ).remote(gpu_id, gpus_per_node, all_node_ips[0])
         )
     return total_gpus_available, num_nodes, runner_pool
 
