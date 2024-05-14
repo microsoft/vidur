@@ -11,10 +11,7 @@ from tqdm import tqdm
 
 from vidur.logger import init_logger
 from vidur.profiling.cpu_overhead.benchmark_runner import BenchmarkRunner
-from vidur.profiling.utils import (
-    get_cpu_overhead_batch_sizes_to_profile,
-    hex_to_binary,
-)
+from vidur.profiling.utils import get_cpu_overhead_batch_sizes_to_profile, hex_to_binary
 
 logger = init_logger(__name__)
 

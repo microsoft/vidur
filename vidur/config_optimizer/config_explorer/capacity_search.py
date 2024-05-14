@@ -7,10 +7,7 @@ from subprocess import Popen
 import pandas as pd
 import ray
 
-from vidur.config_optimizer.config_explorer.config import (
-    JobConfig,
-    SimulationConfig,
-)
+from vidur.config_optimizer.config_explorer.config import JobConfig, SimulationConfig
 from vidur.config_optimizer.config_explorer.ray_utils import (
     CpuAssignmentManager,
     get_ip,

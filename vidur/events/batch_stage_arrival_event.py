@@ -21,9 +21,7 @@ class BatchStageArrivalEvent(BaseEvent):
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
     ) -> List[BaseEvent]:
-        from vidur.events.replica_stage_schedule_event import (
-            ReplicaStageScheduleEvent,
-        )
+        from vidur.events.replica_stage_schedule_event import ReplicaStageScheduleEvent
 
         scheduler.get_replica_stage_scheduler(
             self._replica_id, self._stage_id

@@ -38,7 +38,7 @@ trace_request_generator:
 
 # Config for synthetic trace generator
 trace_request_length_generator:
-  trace_file: ./data/processed_traces/lmsys_chat_1m_conversation_stats_llama2_tokenizer.csv
+  trace_file: ./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv
   prefill_scale_factor: 1
   decode_scale_factor:  1
 

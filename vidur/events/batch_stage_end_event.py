@@ -35,9 +35,7 @@ class BatchStageEndEvent(BaseEvent):
     ) -> List[BaseEvent]:
         from vidur.events.batch_end_event import BatchEndEvent
         from vidur.events.batch_stage_arrival_event import BatchStageArrivalEvent
-        from vidur.events.replica_stage_schedule_event import (
-            ReplicaStageScheduleEvent,
-        )
+        from vidur.events.replica_stage_schedule_event import ReplicaStageScheduleEvent
 
         scheduler.get_replica_stage_scheduler(
             self._replica_id, self._stage_id

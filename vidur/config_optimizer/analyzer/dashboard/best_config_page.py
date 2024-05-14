@@ -3,10 +3,7 @@ import plotly.graph_objs as go
 import streamlit as st
 
 from vidur.config_optimizer.analyzer.bottleneck_analyzer import BottleneckAnalyzer
-from vidur.config_optimizer.analyzer.constants import (
-    AXIS_COLS,
-    AXIS_COLS_LONG_TO_SHORT,
-)
+from vidur.config_optimizer.analyzer.constants import AXIS_COLS, AXIS_COLS_LONG_TO_SHORT
 from vidur.config_optimizer.analyzer.dashboard.utils import (
     add_advanced_filters,
     add_small_divider,

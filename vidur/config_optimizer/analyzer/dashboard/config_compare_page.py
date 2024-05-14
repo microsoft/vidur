@@ -4,10 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from vidur.config_optimizer.analyzer.constants import AXIS_COLS
-from vidur.config_optimizer.analyzer.dashboard.utils import (
-    add_small_divider,
-    plot_cdf,
-)
+from vidur.config_optimizer.analyzer.dashboard.utils import add_small_divider, plot_cdf
 
 
 def render_comparison_points(df):

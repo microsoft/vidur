@@ -3,7 +3,7 @@ import json
 from vidur.config import Config
 from vidur.entities.base_entity import BaseEntity
 from vidur.entities.replica import Replica
-from vidur.utils import init_logger
+from vidur.logger import init_logger
 
 logger = init_logger(__name__)
 
