@@ -90,6 +90,7 @@ def profile_model(
             pbar.update(1)
 
     df = pd.DataFrame(results)
+    os.makedirs("f{output_dir}/{model_name}", exist_ok=True)
     df.to_csv(f"{output_dir}/{model_name}/cpu_overhead.csv")
 
 

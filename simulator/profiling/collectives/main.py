@@ -16,7 +16,7 @@ def parse_args():
         "--num_workers_per_node_combinations",
         type=int,
         nargs="+",
-        default=[1, 2, 4],
+        default=[1, 2, 4, 8],
     )
     parser.add_argument(
         "--output_dir",
