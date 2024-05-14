@@ -6,8 +6,8 @@ setup(
     python_requires='>=3.10',
     description="A LLM inference cluster simulator",
     include_package_data=True,
-    keywords='simulator',
-    name='simulator',
-    packages=find_packages(include=['simulator', 'simulator.*']),
+    keywords='vidur',
+    name='vidur',
+    packages=find_packages(include=['vidur', 'vidur.*']),
     version='0.0.1',
 )
