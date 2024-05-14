@@ -1,4 +1,4 @@
-# Understanding metrics logged by simulator
+# Understanding metrics logged by the simulator
 
 ## Preliminaries
 
