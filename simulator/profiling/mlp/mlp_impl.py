@@ -1,7 +1,6 @@
 from typing import Optional
 
 import torch
-
 from sarathi.model_executor.layers.activation import SiluAndMul
 from sarathi.model_executor.layers.layernorm import RMSNorm
 from sarathi.model_executor.layers.rotary_embedding import get_rope

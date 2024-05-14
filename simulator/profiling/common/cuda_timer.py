@@ -11,7 +11,7 @@ class CudaTimer:
     def __init__(
         self,
         name,
-        layer_id: int = 0, # we don't care about layer id, it is just for compatibility with sarathi cudatimer
+        layer_id: int = 0,  # we don't care about layer id, it is just for compatibility with sarathi cudatimer
         aggregation_fn=sum,
         filter_str=None,
     ):
@@ -32,12 +32,12 @@ class CudaTimer:
         self.aggregation_fn = aggregation_fn
         self.filter_str = filter_str
 
-        if self.timer_stats_store.profile_method == ProfileMethod.KINETO:            
+        if self.timer_stats_store.profile_method == ProfileMethod.KINETO:
             self.profiler = torch.profiler.profile(
                 activities=[torch.profiler.ProfilerActivity.CUDA],
                 on_trace_ready=self.handle_trace,
             )
-        else:    
+        else:
             self.profiler = None
         self.start_event = None
         self.end_event = None

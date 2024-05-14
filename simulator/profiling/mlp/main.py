@@ -9,12 +9,9 @@ import ray
 import yaml
 from tqdm import tqdm
 
-from simulator.profiling.mlp.mlp_wrapper import MlpWrapper
 from simulator.profiling.common.model_config import ModelConfig
-from simulator.profiling.utils import (
-    ProfileMethod,
-    get_num_tokens_to_profile,
-)
+from simulator.profiling.mlp.mlp_wrapper import MlpWrapper
+from simulator.profiling.utils import ProfileMethod, get_num_tokens_to_profile
 
 
 def parse_args():
@@ -141,9 +138,7 @@ def main():
     args = parse_args()
     yaml.dump(vars(args), open(f"{args.output_dir}/config.yaml", "w"))
 
-    num_tokens_to_profile = get_num_tokens_to_profile(
-        args.max_tokens
-    )
+    num_tokens_to_profile = get_num_tokens_to_profile(args.max_tokens)
 
     total_combos = itertools.product(
         args.models,
@@ -152,7 +147,6 @@ def main():
     )
 
     pbar = tqdm(total=len(list(total_combos)))
-
 
     for model in args.models:
         result_df = profile_model(

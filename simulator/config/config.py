@@ -95,17 +95,15 @@ class Config:
         self._add_to_args(yaml_config, "replica_")
 
     def _substitute_variables_in_args(self):
-        assert self.replica_model_name is not None 
+        assert self.replica_model_name is not None
         assert self.replica_device is not None
         assert self.replica_network_device is not None
 
         # update names of sklearn config files
         for key, value in self._args.__dict__.items():
             if isinstance(value, str):
-                self._args.__dict__[key] = value.replace(
-                    "{MODEL}", self.replica_model_name
-                ).replace(
-                    "{DEVICE}", self.replica_device
-                ).replace(
-                    "{NETWORK_DEVICE}", self.replica_network_device
+                self._args.__dict__[key] = (
+                    value.replace("{MODEL}", self.replica_model_name)
+                    .replace("{DEVICE}", self.replica_device)
+                    .replace("{NETWORK_DEVICE}", self.replica_network_device)
                 )

@@ -1,17 +1,18 @@
 import os
 
+import sarathi.metrics.cuda_timer
 import torch
 
 from simulator.profiling.common.cuda_timer import CudaTimer
-import sarathi.metrics.cuda_timer
+
 # monkey patching the CudaTimer class to use the sarathi implementation
 sarathi.metrics.cuda_timer.CudaTimer = CudaTimer
 
 from sarathi.model_executor.weight_utils import initialize_dummy_weights
 
-from simulator.profiling.mlp.mlp_impl import GPTModel
 from simulator.profiling.common.model_config import ModelConfig
 from simulator.profiling.common.timer_stats_store import TimerStatsStore
+from simulator.profiling.mlp.mlp_impl import GPTModel
 from simulator.profiling.utils import ProfileMethod
 from simulator.profiling.utils.record_function_tracer import RecordFunctionTracer
 
@@ -42,7 +43,11 @@ class MlpWrapper:
         self.model = GPTModel(
             model_config,
             num_tensor_parallel_workers,
-            ACTIVE_STEPS if self.profile_method == ProfileMethod.RECORD_FUNCTION.value else 1,
+            (
+                ACTIVE_STEPS
+                if self.profile_method == ProfileMethod.RECORD_FUNCTION.value
+                else 1
+            ),
         )
         initialize_dummy_weights(self.model)
         self.model = self.model.to(dtype=torch.float16).cuda().eval()
@@ -78,7 +83,7 @@ class MlpWrapper:
                     input_ids,
                     positions,
                 )
-            
+
             time_stats = record_function_tracer.get_operation_time_stats()
         else:
             for _ in range(WARMUP_STEPS):
@@ -115,4 +120,3 @@ class MlpWrapper:
         self.timer_stats_store.clear_stats()
 
         return stats
-

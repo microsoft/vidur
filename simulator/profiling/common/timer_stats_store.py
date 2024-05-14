@@ -1,7 +1,7 @@
 import numpy as np
 
-from simulator.profiling.utils.singleton import Singleton
 from simulator.profiling.utils import ProfileMethod
+from simulator.profiling.utils.singleton import Singleton
 
 
 class TimerStatsStore(metaclass=Singleton):

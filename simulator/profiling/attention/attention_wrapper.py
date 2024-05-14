@@ -2,10 +2,11 @@ from math import ceil, floor
 from typing import List
 
 import numpy as np
+import sarathi.metrics.cuda_timer
 import torch
 
 from simulator.profiling.common.cuda_timer import CudaTimer
-import sarathi.metrics.cuda_timer
+
 # monkey patching the CudaTimer class to use the sarathi implementation
 sarathi.metrics.cuda_timer.CudaTimer = CudaTimer
 
@@ -65,8 +66,17 @@ class AttentionWrapper:
         self._max_blocks_per_sequence = ceil(max_model_len / self._block_size)
         # We create (big) KV tensors and reuse them
         element_size = torch.randn(1, dtype=self._dtype).element_size()
-        block_memory_size = 2 * self._block_size * self._n_worker_kv_heads * self._head_dim * element_size
-        self.total_num_blocks = floor((torch.cuda.mem_get_info()[1] * 0.9) / (block_memory_size * model_config.num_layers))
+        block_memory_size = (
+            2
+            * self._block_size
+            * self._n_worker_kv_heads
+            * self._head_dim
+            * element_size
+        )
+        self.total_num_blocks = floor(
+            (torch.cuda.mem_get_info()[1] * 0.9)
+            / (block_memory_size * model_config.num_layers)
+        )
         self.kv_cache = get_attention_wrapper().get_cache_block(
             self.total_num_blocks, dtype=self._dtype, device=self._device
         )
@@ -100,14 +110,16 @@ class AttentionWrapper:
         # Create SequenceMetadataProxy objects corresponding to AttentionInput
         seq_metadata_list: List[SequenceMetadataProxy] = []
         for _ in range(attention_input.batch_size):
-            num_blocks = ceil((num_tokens_per_seq + attention_input.kv_cache_size) / self._block_size)
+            num_blocks = ceil(
+                (num_tokens_per_seq + attention_input.kv_cache_size) / self._block_size
+            )
             # TODO(nitinkedia7): Investigate why high=total_num_blocks fails with a CUDA illegal memory access
             seq_metadata = SequenceMetadataProxy(
                 is_prompt=attention_input.is_prefill,
                 total_len=num_tokens_per_seq + attention_input.kv_cache_size,
                 processed_len=attention_input.kv_cache_size,
                 block_table=np.random.default_rng()
-                .integers(low=0, high=self.total_num_blocks-1, size=num_blocks)
+                .integers(low=0, high=self.total_num_blocks - 1, size=num_blocks)
                 .tolist(),
             )
             seq_metadata_list.append(seq_metadata)

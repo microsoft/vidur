@@ -2,16 +2,14 @@ import argparse
 import datetime
 import gc
 import os
-from typing import List, Any
 from itertools import product
+from typing import Any, List
 
 import pandas as pd
 import ray
 from tqdm import tqdm
 
-from simulator.profiling.cpu_overhead.benchmark_runner import (
-    BenchmarkRunner,
-)
+from simulator.profiling.cpu_overhead.benchmark_runner import BenchmarkRunner
 from simulator.profiling.utils import (
     get_cpu_overhead_batch_sizes_to_profile,
     hex_to_binary,
@@ -66,7 +64,7 @@ def profile_model(
     tensor_parallel_degrees: List[int],
     output_dir: str,
     pbar: Any,
-) -> dict:    
+) -> dict:
     results = []
 
     for tensor_parallel_degree in tensor_parallel_degrees:
@@ -114,7 +112,6 @@ def create_runner(
 
 def main():
     args = parse_args()
-
 
     batch_sizes_to_profile = get_cpu_overhead_batch_sizes_to_profile(
         args.max_batch_size
