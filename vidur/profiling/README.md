@@ -40,7 +40,6 @@ We need actual GPUs to get profiling data for a new model. Once the profiling is
     - Ensure that correct parameters are set in the YAML file so that the reference transformer model [GPTModel](vidur/profiling/mlp/mlp_impl.py) closely resembles the new model.
     - We use this reference model to profile only the MLP operations of all the models so the attention operations are no-op'ed here.
 1. Clone the [`sarathi-serve`](https://github.com/microsoft/sarathi-serve) GitHub repo and follow its README to install it. Let us assume that the Python virtual environment was created in `sarathi-serve/env`.
-1. Ensure that the new model is added to the `sarathi-serve` repo. `sarathi-serve` is a fork of vLLM so one can use the [Adding a New Model](https://docs.vllm.ai/en/stable/models/adding_model.html) documentation to add the new model.
 1. Clone this (`vidur`) repo but keep the `sarathi-serve/env` virtual environment activated.
 1. Run the following command to install the simulator in the virtual environment: `python -m pip install -e .` from the `vidur/` directory.
 1. For compute profiling, 1 GPU is enough even for tensor parallel degrees greater than 1. So `num_gpus` set to 1 is sufficient albeit slower for MLP and attention profiling. For network profiling, 4 GPUs are needed for TP1 and 8 GPUs are needed for TP8 etc.
