@@ -22,7 +22,7 @@ class MemoryPlanner:
 
     def _get_kv_cache_memory_per_device_per_request(self) -> int:
         return (
-            self._get_kv_cache_memory_per_layer_per_request() * self._replica.num_layers
+            self._get_kv_cache_memory_per_layer_per_request() * self._replica.num_layers_per_pipeline_stage
         )
 
     def get_max_batch_size(self) -> int:
