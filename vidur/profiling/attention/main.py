@@ -1,18 +1,19 @@
 import argparse
 import datetime
-import itertools
 import os
 from typing import Any, List
 
 import pandas as pd
 import ray
+import torch
+from sarathi.config import ParallelConfig
 from sarathi.model_executor.attention import AttentionBackend
 from tqdm import tqdm
 
 from vidur.profiling.attention.attention_input import AttentionInput
 from vidur.profiling.attention.attention_wrapper import AttentionWrapper
 from vidur.profiling.common.model_config import ModelConfig
-from vidur.profiling.utils import get_attention_input_combinations
+from vidur.profiling.utils import get_attention_input_combinations, get_max_num_blocks
 
 
 def parse_args():
@@ -59,7 +60,7 @@ def parse_args():
         "--max_model_len",
         type=int,
         default=4096,
-        help="Maximum context length model can server",
+        help="Maximum context length model can serve",
     )
     parser.add_argument(
         "--max_seq_len",
@@ -91,7 +92,7 @@ def parse_args():
     )
     parser.add_argument(
         "--attention_backend",
-        default=AttentionBackend.FLASH_ATTENTION,
+        default=AttentionBackend.FLASHINFER,
         choices=[e.value for e in AttentionBackend],
         help="The attention backend to profile (default: %(default)s)",
     )
@@ -112,10 +113,14 @@ def parse_args():
 def profile_model(
     args: argparse.Namespace,
     model: str,
+    num_tensor_parallel_workers: int,
     input_combinations: List[AttentionInput],
+    max_num_blocks: int,
+    dtype: torch.dtype,
     pbar: Any,
 ):
     model_config = ModelConfig.from_model_name(model)
+    parallel_config = ParallelConfig(num_tensor_parallel_workers, 1)
 
     promises = []
     all_results = []
@@ -127,29 +132,30 @@ def profile_model(
         AttentionWrapper,
     ).options(runtime_env={"env_vars": {"KINETO_LOG_LEVEL": "5"}})
 
-    for num_tensor_parallel_workers in args.num_tensor_parallel_workers:
-        model_wrappers = [
-            model_wrapper_actor.remote(
-                model_config,
-                num_tensor_parallel_workers,
-                args.max_model_len,
-                args.block_size,
-                args.attention_backend,
-            )
-            for _ in range(args.num_gpus)
-        ]
+    model_wrappers = [
+        model_wrapper_actor.remote(
+            model_config,
+            parallel_config,
+            max_num_blocks,
+            args.max_model_len,
+            args.block_size,
+            args.attention_backend,
+            dtype,
+        )
+        for _ in range(args.num_gpus)
+    ]
 
-        for attention_input in input_combinations:
-            worker_id = len(promises)
-            promise = model_wrappers[worker_id].profile.remote(attention_input)
-            promises.append(promise)
+    for attention_input in input_combinations:
+        worker_id = len(promises)
+        promise = model_wrappers[worker_id].profile.remote(attention_input)
+        promises.append(promise)
 
-            if len(promises) >= args.num_gpus:
-                results = ray.get(promises)
-                all_results.extend(results)
-                promises = []
+        if len(promises) >= args.num_gpus:
+            results = ray.get(promises)
+            all_results.extend(results)
+            promises = []
 
-            pbar.update(1)
+        pbar.update(1)
 
     results = ray.get(promises)
     all_results.extend(results)
@@ -170,6 +176,7 @@ def profile_model(
 def main():
     args = parse_args()
 
+    dtype = torch.float16
     input_combinations = get_attention_input_combinations(
         args.max_seq_len,
         args.min_batch_size,
@@ -178,21 +185,46 @@ def main():
         args.profile_only_decode,
     )
 
-    total_combos = itertools.product(
-        args.models,
-        args.num_tensor_parallel_workers,
-        input_combinations,
-    )
+    total_combos = {}
+    max_num_blocks_dict = {}
+    for model in args.models:
+        model_config = ModelConfig.from_model_name(model)
+        for num_tensor_parallel_workers in args.num_tensor_parallel_workers:
+            max_num_blocks = get_max_num_blocks(
+                model_config,
+                ParallelConfig(num_tensor_parallel_workers, 1),
+                args.block_size,
+                dtype,
+            )
+            max_num_blocks_dict[(model, num_tensor_parallel_workers)] = max_num_blocks
+            total_combos[(model, num_tensor_parallel_workers)] = list(
+                filter(
+                    lambda input_combination: input_combination.is_under_memory_limit(
+                        max_num_blocks * args.block_size
+                    ),
+                    input_combinations,
+                )
+            )
 
-    pbar = tqdm(total=len(list(total_combos)))
+    pbar = tqdm(total=sum(len(v) for v in total_combos.values()))
 
     for model in args.models:
-        result_df = profile_model(
-            args,
-            model,
-            input_combinations,
-            pbar,
-        )
+        result_df = pd.DataFrame()
+        for num_tensor_parallel_workers in args.num_tensor_parallel_workers:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    profile_model(
+                        args,
+                        model,
+                        num_tensor_parallel_workers,
+                        total_combos[(model, num_tensor_parallel_workers)],
+                        max_num_blocks_dict[(model, num_tensor_parallel_workers)],
+                        dtype,
+                        pbar,
+                    ),
+                ]
+            )
         # model name would contain '/', so create a directory as required
         os.makedirs(f"{args.output_dir}/{model}", exist_ok=True)
         result_df.to_csv(f"{args.output_dir}/{model}/attention.csv", index=False)

@@ -92,12 +92,15 @@ The metrics will be logged to wandb directly and a copy will be stored in the `s
 
 | Model / Device | A100 80GB DGX | H100 DGX | 4xA100 80GB Pairwise NVLink Node | 8xA40 Pairwise NVLink Node |
 | --- | --- | --- | --- | --- |
+| `meta-llama/Meta-Llama-3-8B` | ✅ | ❌ | ✅* | ❌ |
+| `meta-llama/Meta-Llama-3-70B` | ✅ | ❌ | ✅ | ❌ |
 | `meta-llama/Llama-2-7b-hf` | ✅ | ✅ | ✅ | ✅ |
 | `codellama/CodeLlama-34b-Instruct-hf"` | ✅ | ✅ | ✅ | ✅ |
 | `meta-llama/Llama-2-70b-hf` | ✅ | ✅ | ✅ | ✅ |
 | `internlm/internlm-20b` | ✅ | ✅ | ✅ | ✅ |
 | `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
 
+* Maximum context length supported is 4k except `Llama3-8B` and `Llama3-70B` which support 32k context length on 4xA100 80GB Pairwise NVLink Node.
 * Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
 * In DGX nodes, there are 8 GPUs, fully connected via NVLink. So TP1, TP2, TP4 and TP8 are supported.
 * In 4x pairwise NVLink nodes, there are 4 GPUs, so TP1, TP2 and TP4 are supported. TP4 here is less performant than TP4 in DGX nodes because (GPU1, GPU2) are connected via NVLink and (GPU3, GPU4) are connected via NVLink. but between these layers, the interconnect is slower.
