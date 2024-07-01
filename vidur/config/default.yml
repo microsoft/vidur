@@ -123,6 +123,10 @@ simulator:
 global_scheduler:
   provider: round_robin
 
+splitwise_scheduler:
+  pd_node_ratio: 0.5
+  sub_scheduler: round_robin
+
 replica_scheduler:
   provider: sarathi
   batch_size_cap: 128

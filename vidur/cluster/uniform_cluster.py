@@ -1,27 +1,30 @@
+from abc import ABC, abstractmethod
+from typing import Dict
 import json
 
 from vidur.config import Config
-from vidur.entities.base_entity import BaseEntity
 from vidur.entities.replica import Replica
+from vidur.cluster.base_cluster import BaseCluster
 from vidur.logger import init_logger
 
 logger = init_logger(__name__)
 
 
-class Cluster(BaseEntity):
+class UniformCluster(BaseCluster):
     def __init__(self, config: Config):
-        self._id = Cluster.generate_id()
         self._config = config
 
         # Init replica object handles
         self._replicas = {}
 
-        for _ in range(self._config.cluster_num_replicas):
-            replica = Replica(config)
-            self._replicas[replica.id] = replica
+        self._replicas = self.create_replicas()
 
         if self._config.write_json_trace:
             self._write_cluster_info_to_file()
+
+    @abstractmethod
+    def create_replicas(self) -> Dict[int, Replica]:
+        pass
 
     @property
     def replicas(self):
