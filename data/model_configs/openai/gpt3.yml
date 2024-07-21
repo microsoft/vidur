@@ -1,7 +1,0 @@
-num_layers: 96
-num_q_heads: 96
-num_kv_heads: 96
-embedding_dim: 12288
-mlp_hidden_dim: 49152
-use_gated_mlp: false
-vocab_size: 50257

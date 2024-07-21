@@ -1,8 +1,0 @@
-num_layers: 80
-num_q_heads: 232
-num_kv_heads: 8
-embedding_dim: 14848
-mlp_hidden_dim: 59392
-use_gated_mlp: false
-vocab_size: 65024 
-is_neox_style: true

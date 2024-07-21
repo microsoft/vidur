@@ -6,6 +6,12 @@ from vidur.types.replica_scheduler_type import ReplicaSchedulerType
 from vidur.types.request_generator_type import RequestGeneratorType
 from vidur.types.request_interval_generator_type import RequestIntervalGeneratorType
 from vidur.types.request_length_generator_type import RequestLengthGeneratorType
+from vidur.types.device_sku_type import DeviceSKUType
+from vidur.types.node_sku_type import NodeSKUType
+from vidur.types.norm_type import NormType
+from vidur.types.activation_type import ActivationType
+from vidur.types.model_type import ModelType
+
 
 __all__ = [
     EventType,
@@ -15,5 +21,10 @@ __all__ = [
     RequestLengthGeneratorType,
     RequestIntervalGeneratorType,
     ReplicaSchedulerType,
+    DeviceSKUType,
+    NodeSKUType,
+    NormType,
+    ActivationType,
+    ModelType,
     BaseIntEnum,
 ]

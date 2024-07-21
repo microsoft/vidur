@@ -14,16 +14,6 @@ class SarathiReplicaScheduler(BaseReplicaScheduler):
         self._num_running_batches = 0
         self._preempted_requests = []
         self._chunk_size = self._config.sarathi_scheduler_chunk_size
-        # club multiple prefills to ensure uniform chunk size
-        self._enable_rolling_prefills = (
-            self._config.sarathi_scheduler_enable_rolling_prefills
-        )
-        # when we are packing multiple prefills in a batch, we need to ensure
-        # that we don't end up packing a very small prefill chunk just to make batch full
-        # because that will lead to reduced number of schedulable prefill requests
-        self._prefill_fitting_tolerance = (
-            self._config.sarathi_scheduler_prefill_fitting_tolerance
-        )
         # vLLM config
         self._watermark_blocks_fraction = (
             self._config.sarathi_scheduler_watermark_blocks_fraction
@@ -93,19 +83,9 @@ class SarathiReplicaScheduler(BaseReplicaScheduler):
             self._chunk_size - num_batch_tokens,
         )
 
-        if not batch_contains_prefill:
-            return next_num_tokens
+        next_num_tokens = max(0, next_num_tokens)
 
-        if self._enable_rolling_prefills and num_batch_tokens < self._chunk_size * (
-            1 - self._prefill_fitting_tolerance
-        ):
-            # we can have multiple prefills per batch
-            # but the total number of tokens should not exceed
-            # the max batch size
-            return next_num_tokens
-        else:
-            # we will only allow one prefill per batch
-            return 0
+        return next_num_tokens
 
     def _get_next_batch(self) -> Batch:
         requests = []
