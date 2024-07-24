@@ -1,7 +1,6 @@
 import json
 
 import wandb
-
 from vidur.logger import init_logger
 
 logger = init_logger(__name__)

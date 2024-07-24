@@ -1,6 +1,8 @@
 from typing import Any, Dict, Optional
 
+import torch
 import yaml
+from sarathi.config import ParallelConfig
 
 from vidur.constants import MODEL_CONFIG_DIR
 
@@ -63,3 +65,16 @@ class ModelConfig:
             model_config = yaml.safe_load(f)
 
         return ModelConfig(model_name, **model_config)
+
+    def get_num_q_heads(self, parallel_config: ParallelConfig):
+        return self.num_q_heads // parallel_config.tensor_parallel_size
+
+    def get_num_kv_heads(self, parallel_config: ParallelConfig):
+        return self.num_kv_heads // parallel_config.tensor_parallel_size
+
+    def get_head_size(self):
+        return self.embedding_dim // self.num_q_heads
+
+    @property
+    def dtype(self):
+        return torch.float16
