@@ -24,7 +24,14 @@ We have a [live demo](https://vidur.westus2.cloudapp.azure.com/) that captures t
 | `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
 
 * __Instructions on adding a new model to existing or new SKUs can be found [here](docs/profiling.md)__.
-* All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length.
+* All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length by passing additional CLI params:
+
+```text
+--sklearn_execution_time_predictor_prediction_max_prefill_chunk_size 16384 \
+--sklearn_execution_time_predictor_prediction_max_batch_size 512 \
+--sklearn_execution_time_predictor_prediction_max_tokens_per_request 16384 \
+```
+
 * Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
 * In DGX nodes, there are 8 GPUs, fully connected via NVLink. So TP1, TP2, TP4 and TP8 are supported.
 * In 4x pairwise NVLink nodes, there are 4 GPUs, so TP1, TP2 and TP4 are supported. TP4 here is less performant than TP4 in DGX nodes because (GPU1, GPU2) are connected via NVLink and (GPU3, GPU4) are connected via NVLink. but between these layers, the interconnect is slower.
