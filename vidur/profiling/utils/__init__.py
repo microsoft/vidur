@@ -44,11 +44,12 @@ def get_num_tokens_to_profile(
 
 
 def get_attention_batch_sizes_to_profile(min_batch_size: int, max_batch_size: int):
-    BATCH_SIZE_SPACE = (
-        list(range(1, 128 + 1, 1))
-        + list(range(128, 1024 + 1, 8))
+    BATCH_SIZE_SPACE = list(range(1, 128 + 1, 1)) + list(range(128, 1024 + 1, 8))
+    return list(
+        filter(
+            lambda x: (x >= min_batch_size and x <= max_batch_size), BATCH_SIZE_SPACE
+        )
     )
-    return list(filter(lambda x: (x >= min_batch_size and x <= max_batch_size), BATCH_SIZE_SPACE))
 
 
 def get_attention_prefill_chunk_sizes_to_profile(max_seq_len: int):
@@ -68,6 +69,7 @@ def get_attention_prefill_chunk_sizes_to_profile(max_seq_len: int):
         else:
             break
     return prefill_chunk_sizes_to_profile
+
 
 def get_seq_lengths_to_profile(max_seq_len: int):
     SEQ_LENGTH_SIZE_SPACE = (
@@ -107,9 +109,7 @@ def get_attention_input_combinations(
         )
     # Full prefills
     prefill_lengths_to_profile = get_seq_lengths_to_profile(max_seq_len)
-    input_combinations.extend(
-        product(prefill_lengths_to_profile, [0], [1], [True])
-    )
+    input_combinations.extend(product(prefill_lengths_to_profile, [0], [1], [True]))
     # Decodes
     kv_cache_sizes_to_profile = get_seq_lengths_to_profile(max_seq_len)
     batch_sizes_to_profile = get_attention_batch_sizes_to_profile(
@@ -145,11 +145,15 @@ def get_attention_input_combinations(
     For a given model and parallel config, get the maximum number of blocks that can be allocated.
     This doesn't take into account the weights and activations.
 """
+
+
 def get_max_num_blocks(
     model_config: ModelConfig,
     parallel_config: ParallelConfig,
     block_size: int,
     dtype: torch.dtype,
+    gpu_memory_utilization: float = 0.9,
+    max_pipeline_parallel_size: int = 8,
 ):
     element_size = torch.randn(1, dtype=dtype).element_size()
     block_memory_size = (
@@ -159,9 +163,12 @@ def get_max_num_blocks(
         * model_config.get_head_size()
         * element_size
     )
+    assert model_config.num_layers % max_pipeline_parallel_size == 0
+    block_memory_total = block_memory_size * (
+        model_config.num_layers // max_pipeline_parallel_size
+    )
     return floor(
-        (torch.cuda.mem_get_info()[1] * 0.9)
-        / (block_memory_size * model_config.num_layers)
+        (torch.cuda.mem_get_info()[1] * gpu_memory_utilization) / (block_memory_total)
     )
 
 

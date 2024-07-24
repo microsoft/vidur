@@ -120,7 +120,10 @@ def profile_model(
     pbar: Any,
 ):
     model_config = ModelConfig.from_model_name(model)
-    parallel_config = ParallelConfig(num_tensor_parallel_workers, 1)
+    parallel_config = ParallelConfig(
+        tensor_parallel_size=num_tensor_parallel_workers,
+        pipeline_parallel_size=1,
+    )
 
     promises = []
     all_results = []
@@ -192,7 +195,10 @@ def main():
         for num_tensor_parallel_workers in args.num_tensor_parallel_workers:
             max_num_blocks = get_max_num_blocks(
                 model_config,
-                ParallelConfig(num_tensor_parallel_workers, 1),
+                ParallelConfig(
+                    tensor_parallel_size=num_tensor_parallel_workers,
+                    pipeline_parallel_size=1,
+                ),
                 args.block_size,
                 dtype,
             )
