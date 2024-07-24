@@ -3,7 +3,7 @@ import heapq
 import json
 from typing import List
 
-from vidur.config import Config
+from vidur.config import SimulationConfig
 from vidur.entities import Cluster
 from vidur.events import BaseEvent, RequestArrivalEvent
 from vidur.logger import init_logger
@@ -15,30 +15,32 @@ logger = init_logger(__name__)
 
 
 class Simulator:
-    def __init__(self, config: Config) -> None:
-        self._config = config
+    def __init__(self, config: SimulationConfig) -> None:
+        self._config: SimulationConfig = config
 
         self._time = 0
         self._terminate = False
-        self._time_limit = self._config.simulator_time_limit
+        self._time_limit = self._config.time_limit
         if not self._time_limit:
             self._time_limit = float("inf")
 
         self._event_queue = []
 
-        self._should_write_json_trace = self._config.write_json_trace
-        self._should_write_chrome_trace = self._config.write_chrome_trace
+        self._should_write_json_trace = self._config.cluster_config.metrics_config.write_json_trace
+        self._should_write_chrome_trace = self._config.cluster_config.metrics_config.enable_chrome_trace
 
         self._event_trace = []
         self._event_chrome_trace = []
 
         self._cluster = Cluster(self._config)
         self._metric_store = MetricsStore(self._config)
-        self._request_generator = RequestGeneratorRegistry.get_from_str(
-            self._config.request_generator_provider, self._config
+        self._request_generator = RequestGeneratorRegistry.get(
+            self._config.request_generator_config.get_type(),
+            self._config.request_generator_config,
         )
-        self._scheduler = GlobalSchedulerRegistry.get_from_str(
-            self._config.global_scheduler_provider, self._config, self._cluster.replicas
+        self._scheduler = GlobalSchedulerRegistry.get(
+            self._config.cluster_config.global_scheduler_config.get_type(),
+            self._config, self._cluster.replicas
         )
 
         self._init_event_queue()

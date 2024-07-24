@@ -13,16 +13,16 @@ class SarathiReplicaScheduler(BaseReplicaScheduler):
         # sarathi config
         self._num_running_batches = 0
         self._preempted_requests = []
-        self._chunk_size = self._config.sarathi_scheduler_chunk_size
+        self._chunk_size = self._config.cluster_config.replica_scheduler_config.chunk_size
         # vLLM config
         self._watermark_blocks_fraction = (
-            self._config.sarathi_scheduler_watermark_blocks_fraction
+            self._config.cluster_config.replica_scheduler_config.watermark_blocks_fraction
         )
         # For vLLM and its derivatives, we only need to set a loose max batch size
         # Memory requirements are handled explicitly by the scheduler
-        self._max_batch_size = self._config.replica_scheduler_batch_size_cap
+        self._max_batch_size = self._config.cluster_config.replica_scheduler_config.batch_size_cap
         self._max_micro_batch_size = (
-            self._config.replica_scheduler_batch_size_cap // self._num_stages
+            self._max_batch_size // self._num_stages
         )
         self._watermark_blocks = int(
             self._watermark_blocks_fraction * self._num_total_blocks

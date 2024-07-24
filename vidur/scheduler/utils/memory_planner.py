@@ -1,10 +1,10 @@
-from vidur.config import Config
+from vidur.config import SimulationConfig
 from vidur.entities.replica import Replica
 from vidur.utils.param_counter import ParamCounter
 
 
 class MemoryPlanner:
-    def __init__(self, config: Config, replica: Replica) -> None:
+    def __init__(self, config: SimulationConfig, replica: Replica) -> None:
         self._param_counter = ParamCounter(config)
         self._replica = replica
 

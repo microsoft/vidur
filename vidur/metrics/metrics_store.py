@@ -6,7 +6,7 @@ import pandas as pd
 import plotly_express as px
 import wandb
 
-from vidur.config import Config
+from vidur.config import SimulationConfig, MetricsConfig
 from vidur.entities import Batch, BatchStage, ExecutionTime, Request
 from vidur.logger import init_logger
 from vidur.metrics.cdf_sketch import CDFSketch
@@ -48,37 +48,40 @@ TIME_STR_MS = "Time (ms)"
 
 
 class MetricsStore:
-    def __init__(self, config: Config):
-        self._config = config
-        self._num_replicas = config.cluster_num_replicas
-        self._num_stages = config.replica_num_pipeline_stages
-        self._should_write_metrics = config.write_metrics
-        self._subsamples = config.metrics_store_subsamples
-        self._save_table_to_wandb = config.metrics_store_save_table_to_wandb
-        self._save_plots = config.metrics_store_store_plots
+
+    def __init__(self, config: SimulationConfig):
+        self._config: SimulationConfig = config
+        metrics_config: MetricsConfig = metrics_config
+
+        self._num_replicas = config.cluster_config.num_replicas
+        self._num_stages = config.cluster_config.replica_scheduler_config.num_pipeline_stages
+        self._should_write_metrics = metrics_config.write_metrics
+        self._subsamples = metrics_config.subsamples
+        self._save_table_to_wandb = metrics_config.save_table_to_wandb
+        self._save_plots = metrics_config.store_plots
         self._keep_individual_batch_metrics = (
-            config.metrics_store_keep_individual_batch_metrics
+            metrics_config.keep_individual_batch_metrics
         )
 
-        self._wandb_project = config.metrics_store_wandb_project
-        self._wandb_group = config.metrics_store_wandb_group
-        self._wandb_run_name = config.metrics_store_wandb_run_name
+        self._wandb_project = metrics_config.wandb_project
+        self._wandb_group = metrics_config.wandb_group
+        self._wandb_run_name = metrics_config.wandb_run_name
 
-        self._min_batch_idx = config.metrics_store_min_batch_idx
-        self._max_batch_idx = config.metrics_store_max_batch_idx
+        self._min_batch_idx = metrics_config.min_batch_index
+        self._max_batch_idx = metrics_config.max_batch_index
 
         self._last_request_arrived_at = None
         self._should_store_token_completion_metrics = (
-            config.metrics_store_store_token_completion_metrics
+            metrics_config.store_token_completion_metrics
         )
         self._should_store_utilization_metrics = (
-            config.metrics_store_store_utilization_metrics
+            metrics_config.store_utilization_metrics
         )
-        self._should_store_batch_metrics = config.metrics_store_store_batch_metrics
+        self._should_store_batch_metrics = metrics_config.store_batch_metrics
         self._should_store_operation_metrics = (
-            config.metrics_store_store_operation_metrics
+            metrics_config.store_operation_metrics
         )
-        self._should_store_request_metrics = config.metrics_store_store_request_metrics
+        self._should_store_request_metrics = metrics_config.store_request_metrics
 
         # Initialise request metrics
         self._request_metrics_time_distributions: Dict[

@@ -50,7 +50,7 @@ def reconstruct_original_dataclass(self) -> Any:
     for _cls in reversed(sorted_classes):
         args = {}
 
-        for prefixed_filed_name, original_field_name, field_type in self.dataclass_args[
+        for prefixed_field_name, original_field_name, field_type in self.dataclass_args[
             _cls
         ]:
             if is_subclass(field_type, BasePolyConfig):
@@ -63,7 +63,7 @@ def reconstruct_original_dataclass(self) -> Any:
             elif hasattr(field_type, "__dataclass_fields__"):
                 args[original_field_name] = instances[field_type]
             else:
-                args[original_field_name] = getattr(self, prefixed_filed_name)
+                args[original_field_name] = getattr(self, prefixed_field_name)
 
         instances[_cls] = _cls(**args)
 
@@ -80,6 +80,7 @@ def create_from_cli_args(cls) -> Any:
     for field in fields(cls):
         nargs = None
         field_type = field.type
+        help_text = field.metadata.get("help", None)
 
         if is_list(field.type):
             assert is_composed_of_primitives(field.type)
@@ -95,7 +96,7 @@ def create_from_cli_args(cls) -> Any:
         # handle cases with default and default factory args
         if field.default is not MISSING:
             parser.add_argument(
-                f"--{field.name}", type=field_type, default=field.default, nargs=nargs
+                f"--{field.name}", type=field_type, default=field.default, nargs=nargs, help=help_text
             )
         elif field.default_factory is not MISSING:
             parser.add_argument(
@@ -103,10 +104,11 @@ def create_from_cli_args(cls) -> Any:
                 type=field_type,
                 default=field.default_factory(),
                 nargs=nargs,
+                help=help_text,
             )
         else:
             parser.add_argument(
-                f"--{field.name}", type=field_type, required=True, nargs=nargs
+                f"--{field.name}", type=field_type, required=True, nargs=nargs, help=help_text
             )
 
     args = parser.parse_args()

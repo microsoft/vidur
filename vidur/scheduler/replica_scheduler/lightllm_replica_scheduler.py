@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -14,11 +14,11 @@ class LightLLMReplicaScheduler(BaseReplicaScheduler):
 
         self._preempted_requests: List[Request] = []
         self._num_running_batches = 0
-        self._max_tokens_in_batch = self._config.lightllm_scheduler_max_tokens_in_batch
-        self._max_waiting_iters = self._config.lightllm_scheduler_max_waiting_iters
-        self._max_batch_size = self._config.replica_scheduler_batch_size_cap
+        self._max_tokens_in_batch = self._config.cluster_config.replica_scheduler_config.max_tokens_in_batch
+        self._max_waiting_iters = self._config.cluster_config.replica_scheduler_config.max_waiting_iters
+        self._max_batch_size = self._config.cluster_config.replica_scheduler_config.batch_size_cap
         self._max_micro_batch_size = (
-            self._config.replica_scheduler_batch_size_cap // self._num_stages
+            self._max_batch_size // self._num_stages
         )
         assert (
             self._block_size == 1
@@ -39,7 +39,7 @@ class LightLLMReplicaScheduler(BaseReplicaScheduler):
             else:
                 self._preempted_requests.append(request)
 
-    def _get_tuple_tokens(self, request: Request) -> (int, int):
+    def _get_tuple_tokens(self, request: Request) -> Tuple[int, int]:
         if request.scheduled:
             num_processed_tokens = request.num_processed_tokens
             remaining_tokens = (

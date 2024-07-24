@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from vidur.config.base_poly_config import BasePolyConfig
 from vidur.logger import init_logger
@@ -9,13 +9,21 @@ logger = init_logger(__name__)
 
 @dataclass
 class BaseNodeSKUConfig(BasePolyConfig):
-    num_devices_per_node: int
+    num_devices_per_node: int = field(
+        metadata={"help": "The number of devices per node"},
+    )
 
 
 @dataclass
 class A40PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = DeviceSKUType.A40
-    num_devices_per_node: int = 8
+    device_sku_type: DeviceSKUType = field(
+        default=DeviceSKUType.A40,
+        metadata={"help": "The device SKU type"},
+    )
+    num_devices_per_node: int = field(
+        default=8,
+        metadata={"help": "The number of devices per node"},
+    )
 
     @staticmethod
     def get_type():
@@ -24,8 +32,14 @@ class A40PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
 
 @dataclass
 class A100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = DeviceSKUType.A100
-    num_devices_per_node: int = 8
+    device_sku_type: DeviceSKUType = field(
+        default=DeviceSKUType.A100,
+        metadata={"help": "The device SKU type"},
+    )
+    num_devices_per_node: int = field(
+        default=8,
+        metadata={"help": "The number of devices per node"},
+    )
 
     @staticmethod
     def get_type():
@@ -34,8 +48,14 @@ class A100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
 
 @dataclass
 class H100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = DeviceSKUType.H100
-    num_devices_per_node: int = 8
+    device_sku_type: DeviceSKUType = field(
+        default=DeviceSKUType.H100,
+        metadata={"help": "The device SKU type"},
+    )
+    num_devices_per_node: int = field(
+        default=8,
+        metadata={"help": "The number of devices per node"},
+    )
 
     @staticmethod
     def get_type():
@@ -44,8 +64,14 @@ class H100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
 
 @dataclass
 class A100DgxNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = DeviceSKUType.A100
-    num_devices_per_node: int = 8
+    device_sku_type: DeviceSKUType = field(
+        default=DeviceSKUType.A100,
+        metadata={"help": "The device SKU type"},
+    )
+    num_devices_per_node: int = field(
+        default=8,
+        metadata={"help": "The number of devices per node"},
+    )
 
     @staticmethod
     def get_type():
@@ -54,8 +80,14 @@ class A100DgxNodeSKUConfig(BaseNodeSKUConfig):
 
 @dataclass
 class H100DgxNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = DeviceSKUType.H100
-    num_devices_per_node: int = 8
+    device_sku_type: DeviceSKUType = field(
+        default=DeviceSKUType.H100,
+        metadata={"help": "The device SKU type"},
+    )
+    num_devices_per_node: int = field(
+        default=8,
+        metadata={"help": "The number of devices per node"},
+    )
 
     @staticmethod
     def get_type():

@@ -15,9 +15,7 @@ from vidur.utils.base_registry import BaseRegistry
 
 
 class RequestIntervalGeneratorRegistry(BaseRegistry):
-    @classmethod
-    def get_key_from_str(cls, key_str: str) -> RequestIntervalGeneratorType:
-        return RequestIntervalGeneratorType.from_str(key_str)
+    pass
 
 
 RequestIntervalGeneratorRegistry.register(

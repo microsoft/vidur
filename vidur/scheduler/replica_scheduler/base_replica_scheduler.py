@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from vidur.config import Config
+from vidur.config import SimulationConfig
 from vidur.entities import Batch, Replica, Request
 from vidur.execution_time_predictor import BaseExecutionTimePredictor
 from vidur.logger import init_logger
@@ -14,7 +14,7 @@ logger = init_logger(__name__)
 class BaseReplicaScheduler(ABC):
     def __init__(
         self,
-        config: Config,
+        config: SimulationConfig,
         replica: Replica,
         num_stages: int,
         execution_time_predictor: BaseExecutionTimePredictor,
@@ -24,15 +24,15 @@ class BaseReplicaScheduler(ABC):
         self._num_stages = num_stages
 
         # store config variables
-        self._block_size = self._config.replica_block_size
+        self._block_size = self._config.cluster_config.replica_scheduler_config.block_size
 
         self._max_blocks_per_sequence = (
-            self._config.request_generator_max_tokens // self._block_size
+            self._config.request_generator_config.max_tokens // self._block_size
         )
 
         memory_planner = MemoryPlanner(config, replica)
 
-        self._num_total_blocks = config.replica_scheduler_num_blocks
+        self._num_total_blocks = config.cluster_config.replica_scheduler_config.num_blocks
 
         if not self._num_total_blocks:
             self._num_total_blocks = (
@@ -40,7 +40,7 @@ class BaseReplicaScheduler(ABC):
             )
         self._max_batch_size = min(
             memory_planner.get_max_batch_size(),
-            config.replica_scheduler_batch_size_cap,
+            config.cluster_config.replica_scheduler_config.batch_size_cap,
         )
 
         logger.debug(

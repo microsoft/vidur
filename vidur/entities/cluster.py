@@ -1,6 +1,6 @@
 import json
 
-from vidur.config import Config
+from vidur.config import SimulationConfig
 from vidur.entities.base_entity import BaseEntity
 from vidur.entities.replica import Replica
 from vidur.logger import init_logger
@@ -9,18 +9,18 @@ logger = init_logger(__name__)
 
 
 class Cluster(BaseEntity):
-    def __init__(self, config: Config):
+    def __init__(self, config: SimulationConfig):
         self._id = Cluster.generate_id()
-        self._config = config
+        self._config: SimulationConfig = config
 
         # Init replica object handles
         self._replicas = {}
 
-        for _ in range(self._config.cluster_num_replicas):
+        for _ in range(self._config.cluster_config.num_replicas):
             replica = Replica(config)
             self._replicas[replica.id] = replica
 
-        if self._config.write_json_trace:
+        if self._config.cluster_config.metrics_config.write_json_trace:
             self._write_cluster_info_to_file()
 
     @property

@@ -18,9 +18,7 @@ from vidur.utils.base_registry import BaseRegistry
 
 
 class ReplicaSchedulerRegistry(BaseRegistry):
-    @classmethod
-    def get_key_from_str(cls, key_str: str) -> ReplicaSchedulerType:
-        return ReplicaSchedulerType.from_str(key_str)
+    pass
 
 
 ReplicaSchedulerRegistry.register(
