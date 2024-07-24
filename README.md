@@ -1,12 +1,40 @@
 # Vidur: LLM Inference Simulator
 
-Vidur is a high-fidelity LLM inference simulator, designed to aid capacity planning and deployment configuration optimization. Please refer to our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) for more details.<br>
+Vidur is a high-fidelity and extensible LLM inference simulator. It can help you with:
+
+1. Capacity planning and finding the best deployment configuration for your LLM deployments.
+2. Test new research ideas like new scheduling algorithms, optimizations like speculative decoding, etc.
+3. Study the system performance of models under different workloads and configurations.
+
+... all without access to GPUs except for a quick initial profiling phase.
+
+Please refer to our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) for more details.
 We have a [live demo](https://vidur.westus2.cloudapp.azure.com/) that captures the capabilities of the system.
 
-![Simulator Fidelity](./assets/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.jpeg)
-*Difference in 95th percentile Request E2E Normalized time showing fidelity of Vidur's execution time predictions across four models and three dynamic workload traces, using request load at 85% of the maximum serving capacity for each scenario.*
-![Config Search](./assets/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.jpeg)
-*Capacity per dollar for different deployment configurations vs TTFT-P90 (left) and TBT-P99 (middle) for LLaMA2-70B.*
+## Supported Models
+
+| Model / Device | A100 80GB DGX | H100 DGX | 4xA100 80GB Pairwise NVLink Node | 8xA40 Pairwise NVLink Node |
+| --- | --- | --- | --- | --- |
+| `meta-llama/Meta-Llama-3-8B` | ✅ | ❌ | ✅ | ❌ |
+| `meta-llama/Meta-Llama-3-70B` | ✅ | ❌ | ✅ | ❌ |
+| `meta-llama/Llama-2-7b-hf` | ✅ | ✅ | ✅ | ✅ |
+| `codellama/CodeLlama-34b-Instruct-hf"` | ✅ | ✅ | ✅ | ✅ |
+| `meta-llama/Llama-2-70b-hf` | ✅ | ✅ | ✅ | ✅ |
+| `internlm/internlm-20b` | ✅ | ✅ | ✅ | ✅ |
+| `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
+
+* __Instructions on adding a new model to existing or new SKUs can be found [here](docs/profiling.md)__.
+* All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length.
+* Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
+* In DGX nodes, there are 8 GPUs, fully connected via NVLink. So TP1, TP2, TP4 and TP8 are supported.
+* In 4x pairwise NVLink nodes, there are 4 GPUs, so TP1, TP2 and TP4 are supported. TP4 here is less performant than TP4 in DGX nodes because (GPU1, GPU2) are connected via NVLink and (GPU3, GPU4) are connected via NVLink. but between these layers, the interconnect is slower.
+* You can use any combination of TP and PP. For example, you can run LLaMA2-70B on TP2-PP2 on a 4xA100 80GB Pairwise NVLink Node.
+
+## Chrome Trace
+
+Vidur exports chrome traces of each simulation. The trace can be found in the `simulator_output` directory. The trace can be opened by navigating to `chrome://tracing/` or `edge://tracing/` and loading the trace.
+
+![Chrome Trace](./assets/chrome_trace.png)
 
 ## Setup
 
@@ -84,38 +112,13 @@ python -m vidur.main  \
 --vllm_scheduler_max_tokens_in_batch 4096
 ```
 
-The simulator supports a plethora of parameters for the simulation description which can be found [here](vidur/config/README.md).
+The simulator supports a plethora of parameters for the simulation description which can be found [here](docs/launch_parameters.md).
 
-The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output` directory along with the chrome trace. A description of all the logged metrics can be found [here](vidur/metrics/README.md).
-
-## Supported Models
-
-| Model / Device | A100 80GB DGX | H100 DGX | 4xA100 80GB Pairwise NVLink Node | 8xA40 Pairwise NVLink Node |
-| --- | --- | --- | --- | --- |
-| `meta-llama/Meta-Llama-3-8B` | ✅ | ❌ | ✅* | ❌ |
-| `meta-llama/Meta-Llama-3-70B` | ✅ | ❌ | ✅ | ❌ |
-| `meta-llama/Llama-2-7b-hf` | ✅ | ✅ | ✅ | ✅ |
-| `codellama/CodeLlama-34b-Instruct-hf"` | ✅ | ✅ | ✅ | ✅ |
-| `meta-llama/Llama-2-70b-hf` | ✅ | ✅ | ✅ | ✅ |
-| `internlm/internlm-20b` | ✅ | ✅ | ✅ | ✅ |
-| `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
-
-* Maximum context length supported is 4k except `Llama3-8B` and `Llama3-70B` which support 32k context length on 4xA100 80GB Pairwise NVLink Node.
-* Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
-* In DGX nodes, there are 8 GPUs, fully connected via NVLink. So TP1, TP2, TP4 and TP8 are supported.
-* In 4x pairwise NVLink nodes, there are 4 GPUs, so TP1, TP2 and TP4 are supported. TP4 here is less performant than TP4 in DGX nodes because (GPU1, GPU2) are connected via NVLink and (GPU3, GPU4) are connected via NVLink. but between these layers, the interconnect is slower.
-* You can use any combination of TP and PP. For example, you can run LLaMA2-70B on TP2-PP2 on a 4xA100 80GB Pairwise NVLink Node.
-* Instructions on adding a new model to existing or new SKUs can be found [here](vidur/profiling/README.md).
-
-## Chrome Trace
-
-Vidur exports chrome traces of each simulation. The trace can be found in the `simulator_output` directory. The trace can be opened by navigating to `chrome://tracing/` or `edge://tracing/` and loading the trace.
-
-![Chrome Trace](./assets/chrome_trace.png)
+The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output` directory along with the chrome trace. A description of all the logged metrics can be found [here](docs/metrics.md).
 
 ## Formatting Code
 
-To run the code formatters execute the following command,
+To format code, execute the following command:
 
 ```sh
 make format
