@@ -1,11 +1,12 @@
 import binascii
 import enum
-from math import floor
-import torch
 from itertools import product
+from math import floor
 from typing import List
 
+import torch
 from sarathi.config import ParallelConfig
+
 from vidur.profiling.attention.attention_input import AttentionInput
 from vidur.profiling.collectives.collectives_input import CollectivesInput
 from vidur.profiling.common.model_config import ModelConfig

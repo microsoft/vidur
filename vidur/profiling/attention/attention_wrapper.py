@@ -18,9 +18,7 @@ from sarathi.model_executor.attention import (
 )
 
 from vidur.profiling.attention.attention_input import AttentionInput
-from vidur.profiling.attention.sequence_proxy import (
-    SequenceMetadataProxy,
-)
+from vidur.profiling.attention.sequence_proxy import SequenceMetadataProxy
 from vidur.profiling.common.model_config import ModelConfig
 from vidur.profiling.common.timer_stats_store import TimerStatsStore
 
