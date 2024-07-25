@@ -10,7 +10,6 @@ from vidur.types.device_sku_type import DeviceSKUType
 from vidur.types.node_sku_type import NodeSKUType
 from vidur.types.norm_type import NormType
 from vidur.types.activation_type import ActivationType
-from vidur.types.model_type import ModelType
 
 
 __all__ = [
@@ -25,6 +24,5 @@ __all__ = [
     NodeSKUType,
     NormType,
     ActivationType,
-    ModelType,
     BaseIntEnum,
 ]

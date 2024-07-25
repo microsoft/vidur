@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from vidur.config.base_poly_config import BasePolyConfig
 from vidur.logger import init_logger
-from vidur.types import NormType, ActivationType, ModelType
+from vidur.types import NormType, ActivationType
 
 logger = init_logger(__name__)
 
