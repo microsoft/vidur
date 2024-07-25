@@ -15,7 +15,7 @@ class ModelConfig:
 
     def to_config_dict(self):
         return {
-            "replica_model_name": self.identifier,
+            "replica_config_model_name": self.identifier,
         }
 
     def is_tensor_parallel_degree_valid(self, tp_degree: int):
@@ -35,15 +35,20 @@ class TraceConfig:
 
     def to_config_dict(self):
         return {
-            "request_generator_provider": "synthetic",
-            "synthetic_request_generator_length_provider": "trace",
-            "synthetic_request_generator_interval_provider": "poisson",
-            "request_generator_max_tokens": self.max_seq_len,
-            "trace_request_length_generator_trace_file": self.trace_file,
-            "trace_request_length_generator_prefill_scale_factor": 1,
-            "trace_request_length_generator_decode_scale_factor": 1,
-            "synthetic_request_generator_num_requests": self.num_requests,
-            "vllm_scheduler_max_tokens_in_batch": self.max_seq_len,
+            "request_generator_config_type": "synthetic",
+            "length_generator_config_type": "trace",
+            "interval_generator_config_type": "poisson",
+            "synthetic_request_generator_config_max_tokens": self.max_seq_len,
+            "trace_request_length_generator_config_max_tokens": self.max_seq_len,
+            "zipf_request_length_generator_config_max_tokens": self.max_seq_len,
+            "uniform_request_length_generator_config_max_tokens": self.max_seq_len,
+            "fixed_request_length_generator_config_max_tokens": self.max_seq_len,
+            "trace_request_generator_config_max_tokens": self.max_seq_len,
+            "trace_request_length_generator_config_trace_file": self.trace_file,
+            "trace_request_length_generator_config_prefill_scale_factor": 1,
+            "trace_request_length_generator_config_decode_scale_factor": 1,
+            "synthetic_request_generator_config_num_requests": self.num_requests,
+            "vllm_scheduler_config_max_tokens_in_batch": self.max_seq_len,
         }
 
 
@@ -58,7 +63,7 @@ class ClusterConfig:
 
     def to_config_dict(self):
         return {
-            "replica_device": self.device,
+            "replica_config_device": self.device,
         }
 
 
@@ -78,16 +83,14 @@ class SchedulerConfig:
     def to_config_dict(self):
         if self.scheduler == "vllm":
             return {
-                "replica_scheduler_provider": "vllm",
+                "replica_scheduler_config_type": "vllm",
             }
 
         assert self.scheduler == "sarathi"
         assert self.chunk_size is not None
         return {
-            "replica_scheduler_provider": "sarathi",
-            "sarathi_scheduler_chunk_size": self.chunk_size,
-            "sarathi_scheduler_enable_rolling_prefills": None,
-            "sarathi_scheduler_prefill_fitting_tolerance": 0.0,
+            "replica_scheduler_config_type": "sarathi",
+            "sarathi_scheduler_config_chunk_size": self.chunk_size,
         }
 
 
@@ -145,10 +148,14 @@ class JobConfig:
             **self.trace_config.to_config_dict(),
             **self.cluster_config.to_config_dict(),
             **self.scheduler_config.to_config_dict(),
-            "replica_num_tensor_parallel_workers": self.num_tensor_parallel_workers,
-            "replica_num_pipeline_stages": self.num_pipeline_stages,
-            "replica_scheduler_batch_size_cap": self.batch_size,
-            "cluster_num_replicas": self.num_replicas,
+            "replica_config_tensor_parallel_size": self.num_tensor_parallel_workers,
+            "replica_config_num_pipeline_stages": self.num_pipeline_stages,
+            "vllm_scheduler_config_batch_size_cap": self.batch_size,
+            "light_l_l_m_scheduler_config_batch_size_cap": self.batch_size,
+            "orca_scheduler_config_batch_size_cap": self.batch_size,
+            "faster_transformer_scheduler_config_batch_size_cap": self.batch_size,
+            "sarathi_scheduler_config_batch_size_cap": self.batch_size,
+            "cluster_config_num_replicas": self.num_replicas,
         }
 
     @classmethod
@@ -234,14 +241,16 @@ class SimulationConfig:
             **self.job_config.to_config_dict(),
             "output_dir": self.get_run_dir(),
             "cache_dir": self.cache_dir,
-            "poisson_request_interval_generator_qps": self.qps,
-            "simulator_time_limit": self.time_limit * 60,  # to seconds
-            "no-metrics_store_save_table_to_wandb": None,
-            "no-metrics_store_store_plots": None,
-            "no-metrics_store_store_operation_metrics": None,
-            "no-metrics_store_store_token_completion_metrics": None,
-            "no-write_chrome_trace": None,
-            "sklearn_execution_time_predictor_skip_cpu_overhead_modeling": None,
+            "poisson_request_interval_generator_config_qps": self.qps,
+            "gamma_request_interval_generator_config_qps": self.qps,
+            "time_limit": self.time_limit * 60,  # to seconds
+            "no-metrics_config_save_table_to_wandb": None,
+            "no-metrics_config_store_plots": None,
+            "no-metrics_config_store_operation_metrics": None,
+            "no-metrics_config_store_token_completion_metrics": None,
+            "no-metrics_config_enable_chrome_trace": None,
+            "linear_regression_execution_time_predictor_config_skip_cpu_overhead_modeling": None,
+            "random_forrest_execution_time_predictor_config_skip_cpu_overhead_modeling": None,
         }
 
     def to_args(self):

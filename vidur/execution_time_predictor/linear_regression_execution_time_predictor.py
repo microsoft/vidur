@@ -2,24 +2,26 @@ from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import PolynomialFeatures
 
+from vidur.config import SimulationConfig
 from vidur.execution_time_predictor.sklearn_execution_time_predictor import (
     SklearnExecutionTimePredictor,
 )
 
 
 class LinearRegressionExecutionTimePredictor(SklearnExecutionTimePredictor):
-    def __init__(self, config):
+    def __init__(self, config: SimulationConfig):
+        predictor_config = config.cluster_config.execution_time_predictor_config
         self._polynomial_degree = (
-            config.linear_regression_execution_time_predictor_polynomial_degree
+            predictor_config.polynomial_degree
         )
         self._polynomial_include_bias = (
-            config.linear_regression_execution_time_predictor_polynomial_include_bias
+            predictor_config.polynomial_include_bias
         )
         self._polynomial_interaction_only = (
-            config.linear_regression_execution_time_predictor_polynomial_interaction_only
+            predictor_config.polynomial_interaction_only
         )
         self._fit_intercept = (
-            config.linear_regression_execution_time_predictor_fit_intercept
+            predictor_config.fit_intercept
         )
 
         # will trigger model training

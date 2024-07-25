@@ -181,7 +181,7 @@ def create_flat_dataclass(input_dataclass: Any) -> Any:
                 )
             elif field_default_factory is not MISSING:
                 meta_fields_with_defaults.append(
-                    (prefixed_name, field_type, field_default_factory())
+                    (prefixed_name, field_type, field_default_factory)
                 )
             else:
                 meta_fields_without_defaults.append((prefixed_name, field_type))

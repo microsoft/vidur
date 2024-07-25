@@ -12,7 +12,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 
-from vidur.config import Config
+from vidur.config import SimulationConfig
 from vidur.entities import Batch
 from vidur.execution_time_predictor.base_execution_time_predictor import (
     BaseExecutionTimePredictor,
@@ -23,94 +23,95 @@ logger = init_logger(__name__)
 
 
 class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: SimulationConfig) -> None:
         super().__init__(config)
 
         self._cache_dir = f"{config.cache_dir}/execution_time_predictor"
         os.makedirs(self._cache_dir, exist_ok=True)
 
-        self._no_cache = config.sklearn_execution_time_predictor_no_cache
+        predictor_config = config.cluster_config.execution_time_predictor_config
+        model_config = config.cluster_config.replica_config.model_config
+
+        self._no_cache = predictor_config.no_cache
 
         self._k_fold_cv_splits = (
-            config.sklearn_execution_time_predictor_k_fold_cv_splits
+            predictor_config.k_fold_cv_splits
         )
-        self._model_name = config.replica_model_name
-        self._num_q_heads = config.replica_num_q_heads
-        self._num_kv_heads = config.replica_num_kv_heads
-        self._embedding_dim = config.replica_embedding_dim
-        self._mlp_hidden_dim = config.replica_mlp_hidden_dim
-        self._use_gated_mlp = config.replica_use_gated_mlp
-        self._vocab_size = config.replica_vocab_size
-        self._block_size = config.replica_block_size
-        self._norm = config.replica_norm
-        self._post_attn_norm = config.replica_post_attn_norm
+        self._model_name = str(model_config.get_type())
+        self._num_q_heads = model_config.num_q_heads
+        self._num_kv_heads = model_config.num_kv_heads
+        self._embedding_dim = model_config.embedding_dim
+        self._mlp_hidden_dim = model_config.mlp_hidden_dim
+        self._use_gated_mlp = model_config.use_gated_mlp
+        self._vocab_size = model_config.vocab_size
+        self._block_size = config.cluster_config.replica_scheduler_config.block_size
+        self._norm = model_config.norm
+        self._post_attn_norm = model_config.post_attn_norm
 
-        self._model_provider = config.execution_time_predictor_provider
+        self._model_provider = str(model_config.get_type())
 
         # These overheads are only for GQA models
         self._attention_prefill_batching_overhead_fraction = (
             (
-                config.sklearn_execution_time_predictor_attention_prefill_batching_overhead_fraction
+                predictor_config.attention_prefill_batching_overhead_fraction
             )
             if self._num_q_heads > self._num_kv_heads
             else 0
         )
         self._attention_decode_batching_overhead_fraction = (
             (
-                config.sklearn_execution_time_predictor_attention_decode_batching_overhead_fraction
+                predictor_config.attention_decode_batching_overhead_fraction
             )
             if self._num_q_heads > self._num_kv_heads
             else 0
         )
         self._nccl_cpu_launch_overhead_ms = (
-            config.sklearn_execution_time_predictor_nccl_cpu_launch_overhead_ms
+            predictor_config.nccl_cpu_launch_overhead_ms
         )
         self._nccl_cpu_skew_overhead_per_device_ms = (
-            config.sklearn_execution_time_predictor_nccl_cpu_skew_overhead_per_device_ms
+            predictor_config.nccl_cpu_skew_overhead_per_device_ms
         )
 
         self._max_batch_size = (
-            config.sklearn_execution_time_predictor_prediction_max_batch_size
+            predictor_config.prediction_max_batch_size
         )
         self._max_tokens_per_request = (
-            config.sklearn_execution_time_predictor_prediction_max_tokens_per_request
+            predictor_config.prediction_max_tokens_per_request
         )
 
-        if config.replica_scheduler_provider == "orca":
+        if self._replica_scheduler_provider == "orca":
             self._max_tokens = self._max_tokens_per_request * self._max_batch_size
         else:
             self._max_tokens = self._max_tokens_per_request
 
-        self._prefill_chunk_size = config.replica_prefill_chunk_size
-
         self._compute_input_file = (
-            config.sklearn_execution_time_predictor_compute_input_file
+            predictor_config.compute_input_file
         )
         self._attention_input_file = (
-            config.sklearn_execution_time_predictor_attention_input_file
+            predictor_config.attention_input_file
         )
         self._all_reduce_input_file = (
-            config.sklearn_execution_time_predictor_all_reduce_input_file
+            predictor_config.all_reduce_input_file
         )
         self._send_recv_input_file = (
-            config.sklearn_execution_time_predictor_send_recv_input_file
+            predictor_config.send_recv_input_file
         )
         self._cpu_overhead_input_file = (
-            config.sklearn_execution_time_predictor_cpu_overhead_input_file
+            predictor_config.cpu_overhead_input_file
         )
         self._kv_cache_prediction_granularity = (
-            config.sklearn_execution_time_predictor_kv_cache_prediction_granularity
+            predictor_config.kv_cache_prediction_granularity
         )
         self._prediction_max_prefill_chunk_size = (
-            config.sklearn_execution_time_predictor_prediction_max_prefill_chunk_size
+            predictor_config.prediction_max_prefill_chunk_size
         )
 
-        self._device_memory = config.replica_total_memory_gb
+        self._device_memory = config.cluster_config.replica_config.device_config.total_memory_gb
         self._num_training_job_threads = (
-            config.sklearn_execution_time_predictor_num_training_job_threads
+            predictor_config.num_training_job_threads
         )
 
-        devices_per_node = config.replica_num_devices_per_node
+        devices_per_node = config.cluster_config.replica_config.node_config.num_devices_per_node
         num_workers = self._num_pipeline_stages * self._num_tensor_parallel_workers
         assert (
             num_workers < devices_per_node or num_workers % devices_per_node == 0
@@ -118,9 +119,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         self._is_multi_node = num_workers > devices_per_node
 
-        self._max_batch_tokens = config.vllm_scheduler_max_tokens_in_batch
         self._skip_cpu_overhead_modeling = (
-            config.sklearn_execution_time_predictor_skip_cpu_overhead_modeling
+            predictor_config.skip_cpu_overhead_modeling
         )
 
         self._models = self._train_models()

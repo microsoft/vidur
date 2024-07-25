@@ -1,8 +1,9 @@
 from typing import Any, Dict, Optional
 
-import yaml
+from dataclasses import asdict
 
-from vidur.constants import MODEL_CONFIG_DIR
+from vidur.config.model_config import BaseModelConfig
+from vidur.config.utils import get_model_config
 
 
 class ModelConfig:
@@ -58,8 +59,7 @@ class ModelConfig:
 
     @staticmethod
     def from_model_name(model_name: str):
-        model_config_path = f"{MODEL_CONFIG_DIR}/{model_name}.yml"
-        with open(model_config_path, "r") as f:
-            model_config = yaml.safe_load(f)
+        model_config: BaseModelConfig = get_model_config(model_name)
+        model_config_dict = asdict(model_config)
 
-        return ModelConfig(model_name, **model_config)
+        return ModelConfig(model_name, **model_config_dict)

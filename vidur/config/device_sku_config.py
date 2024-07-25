@@ -15,9 +15,6 @@ class BaseDeviceSKUConfig(BasePolyConfig):
     total_memory_gb: int = field(
         metadata={"help": "The total memory of the device in GB"},
     )
-    num_devices_per_node: int = field(
-        metadata={"help": "The number of devices per node"},
-    )
 
 
 @dataclass
@@ -33,7 +30,7 @@ class A100DeviceSKUConfig(BaseDeviceSKUConfig):
 
     @staticmethod
     def get_type():
-        return DeviceSKUType.A100
+        return DeviceSKUType.A40
 
 
 @dataclass
@@ -65,5 +62,5 @@ class H100DeviceSKUConfig(BaseDeviceSKUConfig):
 
     @staticmethod
     def get_type():
-        return DeviceSKUType.A100
+        return DeviceSKUType.H100
 

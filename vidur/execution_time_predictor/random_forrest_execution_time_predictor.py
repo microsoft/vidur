@@ -1,19 +1,19 @@
 from sklearn.ensemble import RandomForestRegressor
 
+from vidur.config import SimulationConfig
 from vidur.execution_time_predictor.sklearn_execution_time_predictor import (
     SklearnExecutionTimePredictor,
 )
 
 
 class RandomForrestExecutionTimePredictor(SklearnExecutionTimePredictor):
-    def __init__(self, config):
+    def __init__(self, config: SimulationConfig):
+        predictor_config = config.cluster_config.execution_time_predictor_config
         self._num_estimators = (
-            config.random_forrest_execution_time_predictor_num_estimators
+            predictor_config.num_estimators
         )
-        self._max_depth = config.random_forrest_execution_time_predictor_max_depth
-        self._min_samples_split = (
-            config.random_forrest_execution_time_predictor_min_samples_split
-        )
+        self._max_depth = predictor_config.max_depth
+        self._min_samples_split = predictor_config.min_samples_split
 
         # will trigger model training
         super().__init__(config)

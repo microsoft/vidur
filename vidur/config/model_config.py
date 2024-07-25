@@ -212,6 +212,87 @@ class Llama2_70BModelConfig(Llama2ModelConfig):
 
 
 @dataclass
+class Llama3_8BModelConfig(Llama2ModelConfig):
+    num_layers: int = field(
+        default=32,
+        metadata={"help": "The number of layers in the model"},
+    )
+    num_q_heads: int = field(
+        default=32,
+        metadata={"help": "The number of query heads in the model"},
+    )
+    num_kv_heads: int = field(
+        default=8,
+        metadata={"help": "The number of key-value heads in the model"},
+    )
+    embedding_dim: int = field(
+        default=4096,
+        metadata={"help": "The embedding dimension of the model"},
+    )
+    mlp_hidden_dim: int = field(
+        default=14336,
+        metadata={"help": "The hidden dimension of the MLP in the model"},
+    )
+    max_position_embeddings: int = field(
+        default=4096,
+        metadata={"help": "The maximum position embeddings in the model"},
+    )
+    rope_theta: Optional[int] = field(
+        default=500000.0,
+        metadata={"help": "The rope theta in the model"},
+    )
+    vocab_size: int = field(
+        default=128256,
+        metadata={"help": "The vocabulary size of the model"},
+    )
+
+
+    @staticmethod
+    def get_type():
+        return ModelType.LLAMA_3_70B
+
+
+@dataclass
+class Llama3_70BModelConfig(Llama2ModelConfig):
+    num_layers: int = field(
+        default=80,
+        metadata={"help": "The number of layers in the model"},
+    )
+    num_q_heads: int = field(
+        default=64,
+        metadata={"help": "The number of query heads in the model"},
+    )
+    num_kv_heads: int = field(
+        default=8,
+        metadata={"help": "The number of key-value heads in the model"},
+    )
+    embedding_dim: int = field(
+        default=8192,
+        metadata={"help": "The embedding dimension of the model"},
+    )
+    mlp_hidden_dim: int = field(
+        default=28672,
+        metadata={"help": "The hidden dimension of the MLP in the model"},
+    )
+    max_position_embeddings: int = field(
+        default=8192,
+        metadata={"help": "The maximum position embeddings in the model"},
+    )
+    rope_theta: Optional[int] = field(
+        default=500000.0,
+        metadata={"help": "The rope theta in the model"},
+    )
+    vocab_size: int = field(
+        default=128256,
+        metadata={"help": "The vocabulary size of the model"},
+    )
+
+
+    @staticmethod
+    def get_type():
+        return ModelType.LLAMA_3_70B
+
+@dataclass
 class InternLM2ModelConfig(Llama2ModelConfig):
     max_position_embeddings: int = field(
         default=32768,

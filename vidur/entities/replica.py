@@ -1,6 +1,6 @@
 from math import ceil
 
-from vidur.config import Config
+from vidur.config import SimulationConfig
 from vidur.entities.base_entity import BaseEntity
 from vidur.logger import init_logger
 
@@ -8,28 +8,31 @@ logger = init_logger(__name__)
 
 
 class Replica(BaseEntity):
-    def __init__(self, config: Config) -> None:
-        assert config.replica_num_layers % config.replica_num_pipeline_stages == 0
+    def __init__(self, config: SimulationConfig) -> None:
+        assert config.cluster_config.replica_config.model_config.num_layers % config.cluster_config.replica_config.num_pipeline_stages == 0
         assert (
-            config.replica_embedding_dim % config.replica_num_tensor_parallel_workers
+            config.cluster_config.replica_config.model_config.embedding_dim % config.cluster_config.replica_config.tensor_parallel_size
             == 0
         )
 
         self._id = Replica.generate_id()
 
-        self._num_pipeline_stages = config.replica_num_pipeline_stages
-        self._num_tensor_parallel_workers = config.replica_num_tensor_parallel_workers
-        self._num_layers = config.replica_num_layers
-        self._num_q_heads = config.replica_num_q_heads
-        self._num_kv_heads = config.replica_num_kv_heads
-        self._embedding_dim = config.replica_embedding_dim
-        self._mlp_hidden_dim = config.replica_mlp_hidden_dim
-        self._use_gated_mlp = config.replica_use_gated_mlp
-        self._vocab_size = config.replica_vocab_size
-        self._total_memory_gb = config.replica_total_memory_gb
-        self._memory_margin_fraction = config.replica_memory_margin_fraction
-        self._max_request_tokens = config.request_generator_max_tokens
-        self._per_device_flops = config.replica_fp16_tflops * 2**40
+        replica_config = config.cluster_config.replica_config
+        model_config = replica_config.model_config
+        
+        self._num_pipeline_stages = replica_config.num_pipeline_stages
+        self._num_tensor_parallel_workers = config.cluster_config.replica_config.tensor_parallel_size
+        self._num_layers = model_config.num_layers
+        self._num_q_heads = model_config.num_q_heads
+        self._num_kv_heads = model_config.num_kv_heads
+        self._embedding_dim = model_config.embedding_dim
+        self._mlp_hidden_dim = model_config.mlp_hidden_dim
+        self._use_gated_mlp = model_config.use_gated_mlp
+        self._vocab_size = model_config.vocab_size
+        self._total_memory_gb = replica_config.device_config.total_memory_gb
+        self._memory_margin_fraction = replica_config.memory_margin_fraction
+        self._max_request_tokens = config.request_generator_config.max_tokens
+        self._per_device_flops = replica_config.device_config.fp16_tflops * 2**40
 
     @property
     def num_layers(self) -> int:

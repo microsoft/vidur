@@ -1,20 +1,22 @@
 from math import ceil
 
-from vidur.config import Config
+from vidur.config import SimulationConfig
 
 
 class ParamCounter:
-    def __init__(self, config: Config) -> None:
-        self._embedding_dim = config.replica_embedding_dim
-        self._num_pipeline_stages = config.replica_num_pipeline_stages
-        self._num_tensor_parallel_workers = config.replica_num_tensor_parallel_workers
-        self._num_layers = config.replica_num_layers
-        self._num_q_heads = config.replica_num_q_heads
-        self._num_kv_heads = config.replica_num_kv_heads
-        self._embedding_dim = config.replica_embedding_dim
-        self._mlp_hidden_dim = config.replica_mlp_hidden_dim
-        self._use_gated_mlp = config.replica_use_gated_mlp
-        self._vocab_size = config.replica_vocab_size
+    def __init__(self, config: SimulationConfig) -> None:
+        replica_config = config.cluster_config.replica_config
+        model_config = replica_config.model_config
+
+        self._embedding_dim = model_config.embedding_dim
+        self._num_pipeline_stages = replica_config.num_pipeline_stages
+        self._num_tensor_parallel_workers = replica_config.tensor_parallel_size
+        self._num_layers = model_config.num_layers
+        self._num_q_heads = model_config.num_q_heads
+        self._num_kv_heads = model_config.num_kv_heads
+        self._mlp_hidden_dim = model_config.mlp_hidden_dim
+        self._use_gated_mlp = model_config.use_gated_mlp
+        self._vocab_size = model_config.vocab_size
 
         assert self._num_q_heads % self._num_tensor_parallel_workers == 0
         assert self._num_layers % self._num_pipeline_stages == 0

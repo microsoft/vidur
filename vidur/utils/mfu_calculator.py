@@ -1,21 +1,25 @@
-from vidur.config import Config
+from vidur.config import SimulationConfig
 from vidur.entities import BatchStage
 from vidur.utils.param_counter import ParamCounter
 
 
 class MFUCalculator:
-    def __init__(self, config: Config):
+    def __init__(self, config: SimulationConfig):
         param_counter = ParamCounter(config)
         self._num_params_per_device = param_counter.get_num_parameters_per_device()
+
+        replica_config = config.cluster_config.replica_config
+        model_config = replica_config.model_config
+
         self._num_layers_per_device = (
-            config.replica_num_layers // config.replica_num_pipeline_stages
+            model_config.num_layers // replica_config.num_pipeline_stages
         )
-        self._embedding_dim = config.replica_embedding_dim
+        self._embedding_dim = model_config.embedding_dim
         self._num_heads_per_device = (
-            config.replica_num_q_heads // config.replica_num_tensor_parallel_workers
+            model_config.num_q_heads // replica_config.tensor_parallel_size
         )
-        self._head_dimension = self._embedding_dim // config.replica_num_q_heads
-        self._device_flops = config.replica_fp16_tflops * 2**40
+        self._head_dimension = self._embedding_dim // model_config.num_q_heads
+        self._device_flops = replica_config.device_config.fp16_tflops * 2**40
 
     def _get_mlp_flops(self, batch_stage: BatchStage) -> float:
         num_tokens = sum(batch_stage.num_tokens)

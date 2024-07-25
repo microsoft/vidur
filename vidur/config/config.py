@@ -4,7 +4,12 @@ from datetime import datetime
 from typing import Optional, List
 
 from vidur.config.base_poly_config import BasePolyConfig
+from vidur.config.constants import MODEL_NAME_MAPPING, NETWORK_DEVICE_MAPPING
+from vidur.config.device_sku_config import BaseDeviceSKUConfig
 from vidur.config.flat_dataclass import create_flat_dataclass
+from vidur.config.model_config import BaseModelConfig
+from vidur.config.node_sku_config import BaseNodeSKUConfig
+from vidur.config.utils import get_all_subclasses
 from vidur.logger import init_logger
 from vidur.types import ReplicaSchedulerType, GlobalSchedulerType, ExecutionTimePredictorType, RequestGeneratorType, RequestIntervalGeneratorType, RequestLengthGeneratorType
 
@@ -252,7 +257,7 @@ class TraceRequestGeneratorConfig(BaseRequestGeneratorConfig):
 
     @staticmethod
     def get_type():
-        return RequestGeneratorType.TRACE
+        return RequestGeneratorType.TRACE_REPLAY
 
 
 @dataclass
@@ -260,10 +265,6 @@ class BaseReplicaSchedulerConfig(BasePolyConfig):
     max_num_seqs: int = field(
         default=128,
         metadata={"help": "Maximum number of sequences."},
-    )
-    num_pipeline_stages: int = field(
-        default=1,
-        metadata={"help": "Number of pipeline stages."},
     )
     watermark_blocks_fraction: float = field(
         default=0.01,
@@ -281,10 +282,6 @@ class BaseReplicaSchedulerConfig(BasePolyConfig):
         default=128,
         metadata={"help": "Maximum batch size cap."},
     )
-
-    @abstractmethod
-    def get_max_num_batched_tokens(self):
-        pass
 
 
 @dataclass
@@ -443,9 +440,13 @@ class ReplicaConfig:
         default=0.8,
         metadata={"help": "GPU memory utilization."},
     )
-    pipeline_parallel_size: int = field(
+    memory_margin_fraction: float = field(
+        default=0.1,
+        metadata={"help": "Memory margin fraction."},
+    )
+    num_pipeline_stages: int = field(
         default=1,
-        metadata={"help": "Pipeline parallel size."},
+        metadata={"help": "Number of pipeline stages."},
     )
     tensor_parallel_size: int = field(
         default=1,
@@ -460,8 +461,40 @@ class ReplicaConfig:
         metadata={"help": "Network device."},
     )
 
+    def get_model_config(model_name: str) -> BaseModelConfig:
+        model_configs = get_all_subclasses(BaseModelConfig)
+        if model_name not in MODEL_NAME_MAPPING:
+            raise ValueError(f"Model name not found: {model_name}")
+        model_type = MODEL_NAME_MAPPING[model_name]
+        for model_config in model_configs:
+            if model_config.get_type() == model_type:
+                return model_config
+        return ValueError(f"Model config not found for model name: {model_name}")
+
+
+    def get_device_config(device_name: str) -> BaseDeviceSKUConfig:
+        device_configs = get_all_subclasses(BaseDeviceSKUConfig)
+        for device_config in device_configs:
+            if str(device_config.get_type()) == device_name:
+                return device_config
+        raise ValueError(f"Device config not found for device name: {device_name}")
+
+
+    def get_node_config(network_device: str) -> BaseNodeSKUConfig:
+        node_configs = get_all_subclasses(BaseNodeSKUConfig)
+        if network_device not in NETWORK_DEVICE_MAPPING:
+            raise ValueError(f"Network device not found: {network_device}")
+        network_type = NETWORK_DEVICE_MAPPING[network_device]
+        for node_config in node_configs:
+            if node_config.get_type() == network_type:
+                return node_config
+        raise ValueError(f"Node config not found for network device: {network_device}")
+
     def __post_init__(self):
-        self.world_size = self.pipeline_parallel_size * self.tensor_parallel_size
+        self.world_size = self.num_pipeline_stages * self.tensor_parallel_size
+        self.model_config: BaseModelConfig = self.get_model_config(self.model_name)
+        self.device_config: BaseDeviceSKUConfig = self.get_device_config(self.device)
+        self.node_config: BaseNodeSKUConfig = self.get_node_config(self.network_device)
 
 
 @dataclass
@@ -629,6 +662,43 @@ class ClusterConfig:
         default_factory=MetricsConfig,
         metadata={"help": "Metrics config."},
     )
+
+    def update_predictor_config(self):
+        if "{DEVICE}" in self.execution_time_predictor_config.compute_input_file:
+            self.execution_time_predictor_config.compute_input_file = self.execution_time_predictor_config.compute_input_file.replace(
+                "{DEVICE}", self.replica_config.device
+            )
+        if "{MODEL}" in self.execution_time_predictor_config.compute_input_file:
+            self.execution_time_predictor_config.compute_input_file = self.execution_time_predictor_config.compute_input_file.replace(
+                "{MODEL}", self.replica_config.model_name
+            )
+        if "{DEVICE}" in self.execution_time_predictor_config.attention_input_file:
+            self.execution_time_predictor_config.attention_input_file = self.execution_time_predictor_config.attention_input_file.replace(
+                "{DEVICE}", self.replica_config.device
+            )
+        if "{MODEL}" in self.execution_time_predictor_config.attention_input_file:
+            self.execution_time_predictor_config.attention_input_file = self.execution_time_predictor_config.attention_input_file.replace(
+                "{MODEL}", self.replica_config.model_name
+            )
+        if "{NETWORK_DEVICE}" in self.execution_time_predictor_config.all_reduce_input_file:
+            self.execution_time_predictor_config.all_reduce_input_file = self.execution_time_predictor_config.all_reduce_input_file.replace(
+                "{NETWORK_DEVICE}", self.replica_config.network_device
+            )
+        if "{NETWORK_DEVICE}" in self.execution_time_predictor_config.send_recv_input_file:
+            self.execution_time_predictor_config.send_recv_input_file = self.execution_time_predictor_config.send_recv_input_file.replace(
+                "{NETWORK_DEVICE}", self.replica_config.network_device
+            )
+        if "{NETWORK_DEVICE}" in self.execution_time_predictor_config.cpu_overhead_input_file:
+            self.execution_time_predictor_config.cpu_overhead_input_file = self.execution_time_predictor_config.cpu_overhead_input_file.replace(
+                "{NETWORK_DEVICE}", self.replica_config.network_device
+            )
+        if "{MODEL}" in self.execution_time_predictor_config.cpu_overhead_input_file:
+            self.execution_time_predictor_config.cpu_overhead_input_file = self.execution_time_predictor_config.cpu_overhead_input_file.replace(
+                "{MODEL}", self.replica_config.model_name
+            )
+
+    def __post_init__(self):
+        self.update_predictor_config()
 
 
 @dataclass
