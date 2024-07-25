@@ -301,7 +301,7 @@ class VllmSchedulerConfig(BaseReplicaSchedulerConfig):
 
 
 @dataclass
-class LightLLMSchedulerConfig(BaseReplicaSchedulerConfig):
+class LightllmSchedulerConfig(BaseReplicaSchedulerConfig):
     max_batched_tokens: int = field(
         default=None,
         metadata={"help": "Maximum batched tokens for LightLLM."},
