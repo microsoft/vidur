@@ -1,9 +1,11 @@
 from typing import Any, Dict, Optional
 
+import torch
 from dataclasses import asdict
+from sarathi.config import ParallelConfig
 
 from vidur.config.model_config import BaseModelConfig
-from vidur.config.utils import get_model_config
+from vidur.config.config import ReplicaConfig
 
 
 class ModelConfig:
@@ -59,7 +61,20 @@ class ModelConfig:
 
     @staticmethod
     def from_model_name(model_name: str):
-        model_config: BaseModelConfig = get_model_config(model_name)
+        model_config: BaseModelConfig = ReplicaConfig.get_model_config(model_name)
         model_config_dict = asdict(model_config)
 
         return ModelConfig(model_name, **model_config_dict)
+
+    def get_num_q_heads(self, parallel_config: ParallelConfig):
+        return self.num_q_heads // parallel_config.tensor_parallel_size
+
+    def get_num_kv_heads(self, parallel_config: ParallelConfig):
+        return self.num_kv_heads // parallel_config.tensor_parallel_size
+
+    def get_head_size(self):
+        return self.embedding_dim // self.num_q_heads
+
+    @property
+    def dtype(self):
+        return torch.float16

@@ -1,7 +1,5 @@
 from typing import List
 
-import numpy as np
-
 
 class SequenceProxy:
     def __init__(self, total_len: int, processed_len: int):

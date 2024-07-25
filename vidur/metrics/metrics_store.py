@@ -4,7 +4,6 @@ from typing import Dict, List
 
 import pandas as pd
 import plotly_express as px
-import wandb
 
 from vidur.config import SimulationConfig, MetricsConfig
 from vidur.entities import Batch, BatchStage, ExecutionTime, Request

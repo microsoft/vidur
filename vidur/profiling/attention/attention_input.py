@@ -28,5 +28,11 @@ class AttentionInput:
                 return False
         return True
 
+    def is_under_memory_limit(self, max_num_tokens: int):
+        return (
+            self.batch_size * (self.kv_cache_size + self.prefill_chunk_size)
+            <= max_num_tokens
+        )
+
     def __str__(self):
         return f"prefill_chunk_size: {self.prefill_chunk_size}, kv_cache_size: {self.kv_cache_size}, batch_size: {self.batch_size}, is_prefill: {self.is_prefill}"
