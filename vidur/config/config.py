@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from vidur.config.base_poly_config import BasePolyConfig
-from vidur.config.constants import MODEL_NAME_MAPPING, NETWORK_DEVICE_MAPPING
+from vidur.config.constants import NETWORK_DEVICE_MAPPING
 from vidur.config.device_sku_config import BaseDeviceSKUConfig
 from vidur.config.flat_dataclass import create_flat_dataclass
 from vidur.config.model_config import BaseModelConfig
@@ -463,12 +463,9 @@ class ReplicaConfig:
 
     def get_model_config(model_name: str) -> BaseModelConfig:
         model_configs = get_all_subclasses(BaseModelConfig)
-        if model_name not in MODEL_NAME_MAPPING:
-            raise ValueError(f"Model name not found: {model_name}")
-        model_type = MODEL_NAME_MAPPING[model_name]
         for model_config in model_configs:
-            if model_config.get_type() == model_type:
-                return model_config
+            if model_config.get_name() == model_name:
+                return model_config()
         return ValueError(f"Model config not found for model name: {model_name}")
 
 
@@ -476,7 +473,7 @@ class ReplicaConfig:
         device_configs = get_all_subclasses(BaseDeviceSKUConfig)
         for device_config in device_configs:
             if str(device_config.get_type()) == device_name:
-                return device_config
+                return device_config()
         raise ValueError(f"Device config not found for device name: {device_name}")
 
 
@@ -487,7 +484,7 @@ class ReplicaConfig:
         network_type = NETWORK_DEVICE_MAPPING[network_device]
         for node_config in node_configs:
             if node_config.get_type() == network_type:
-                return node_config
+                return node_config()
         raise ValueError(f"Node config not found for network device: {network_device}")
 
     def __post_init__(self):

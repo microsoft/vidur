@@ -153,6 +153,10 @@ class CodeLlama34BModelConfig(Llama2ModelConfig):
     @staticmethod
     def get_type():
         return ModelType.CODE_LLAMA_34B
+    
+    @staticmethod
+    def get_name():
+        return "codellama/CodeLlama-34b-Instruct-hf"
 
 
 @dataclass
@@ -181,6 +185,10 @@ class Llama2_7BModelConfig(Llama2ModelConfig):
     @staticmethod
     def get_type():
         return ModelType.LLAMA_2_7B
+    
+    @staticmethod
+    def get_name():
+        return "meta-llama/Llama-2-7b-hf"
 
 
 @dataclass
@@ -209,6 +217,10 @@ class Llama2_70BModelConfig(Llama2ModelConfig):
     @staticmethod
     def get_type():
         return ModelType.LLAMA_2_70B
+    
+    @staticmethod
+    def get_name():
+        return "meta-llama/Llama-2-70b-hf"
 
 
 @dataclass
@@ -250,6 +262,10 @@ class Llama3_8BModelConfig(Llama2ModelConfig):
     @staticmethod
     def get_type():
         return ModelType.LLAMA_3_70B
+    
+    @staticmethod
+    def get_name():
+        return "meta-llama/Meta-Llama-3-8b"
 
 
 @dataclass
@@ -287,10 +303,13 @@ class Llama3_70BModelConfig(Llama2ModelConfig):
         metadata={"help": "The vocabulary size of the model"},
     )
 
-
     @staticmethod
     def get_type():
         return ModelType.LLAMA_3_70B
+    
+    @staticmethod
+    def get_name():
+        return "meta-llama/Meta-Llama-3-70B"
 
 @dataclass
 class InternLM2ModelConfig(Llama2ModelConfig):
@@ -330,6 +349,10 @@ class InternLM2_20BModelConfig(InternLM2ModelConfig):
     @staticmethod
     def get_type():
         return ModelType.INTERNLM_2_20B
+    
+    @staticmethod
+    def get_name():
+        return "internlm/internlm2-20b"
 
 
 @dataclass
@@ -410,6 +433,10 @@ class Phi2ModelConfig(Llama2ModelConfig):
     @staticmethod
     def get_type():
         return ModelType.PHI2
+    
+    @staticmethod
+    def get_name():
+        return "microsoft/phi-2"
 
 
 @dataclass
@@ -454,3 +481,7 @@ class Qwen72BModelConfig(QwenModelConfig):
     @staticmethod
     def get_type():
         return ModelType.QWEN_72B
+    
+    @staticmethod
+    def get_name():
+        return "Qwen/Qwen-72B"
