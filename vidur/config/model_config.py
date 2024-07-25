@@ -149,10 +149,6 @@ class CodeLlama34BModelConfig(Llama2ModelConfig):
         default=22016,
         metadata={"help": "The hidden dimension of the MLP in the model"},
     )
-
-    @staticmethod
-    def get_type():
-        return ModelType.CODE_LLAMA_34B
     
     @staticmethod
     def get_name():
@@ -181,10 +177,6 @@ class Llama2_7BModelConfig(Llama2ModelConfig):
         default=11008,
         metadata={"help": "The hidden dimension of the MLP in the model"},
     )
-
-    @staticmethod
-    def get_type():
-        return ModelType.LLAMA_2_7B
     
     @staticmethod
     def get_name():
@@ -213,10 +205,6 @@ class Llama2_70BModelConfig(Llama2ModelConfig):
         default=28672,
         metadata={"help": "The hidden dimension of the MLP in the model"},
     )
-
-    @staticmethod
-    def get_type():
-        return ModelType.LLAMA_2_70B
     
     @staticmethod
     def get_name():
@@ -258,11 +246,6 @@ class Llama3_8BModelConfig(Llama2ModelConfig):
         metadata={"help": "The vocabulary size of the model"},
     )
 
-
-    @staticmethod
-    def get_type():
-        return ModelType.LLAMA_3_70B
-    
     @staticmethod
     def get_name():
         return "meta-llama/Meta-Llama-3-8b"
@@ -304,10 +287,6 @@ class Llama3_70BModelConfig(Llama2ModelConfig):
     )
 
     @staticmethod
-    def get_type():
-        return ModelType.LLAMA_3_70B
-    
-    @staticmethod
     def get_name():
         return "meta-llama/Meta-Llama-3-70B"
 
@@ -346,10 +325,6 @@ class InternLM2_20BModelConfig(InternLM2ModelConfig):
         metadata={"help": "The hidden dimension of the MLP in the model"},
     )
 
-    @staticmethod
-    def get_type():
-        return ModelType.INTERNLM_2_20B
-    
     @staticmethod
     def get_name():
         return "internlm/internlm2-20b"
@@ -431,10 +406,6 @@ class Phi2ModelConfig(Llama2ModelConfig):
     )
 
     @staticmethod
-    def get_type():
-        return ModelType.PHI2
-    
-    @staticmethod
     def get_name():
         return "microsoft/phi-2"
 
@@ -478,10 +449,6 @@ class Qwen72BModelConfig(QwenModelConfig):
         metadata={"help": "The hidden dimension of the MLP in the model"},
     )
 
-    @staticmethod
-    def get_type():
-        return ModelType.QWEN_72B
-    
     @staticmethod
     def get_name():
         return "Qwen/Qwen-72B"
