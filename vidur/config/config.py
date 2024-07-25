@@ -461,6 +461,7 @@ class ReplicaConfig:
         metadata={"help": "Network device."},
     )
 
+    @staticmethod
     def get_model_config(model_name: str) -> BaseModelConfig:
         model_configs = get_all_subclasses(BaseModelConfig)
         for model_config in model_configs:
@@ -468,7 +469,7 @@ class ReplicaConfig:
                 return model_config()
         return ValueError(f"Model config not found for model name: {model_name}")
 
-
+    @staticmethod
     def get_device_config(device_name: str) -> BaseDeviceSKUConfig:
         device_configs = get_all_subclasses(BaseDeviceSKUConfig)
         for device_config in device_configs:
@@ -476,7 +477,7 @@ class ReplicaConfig:
                 return device_config()
         raise ValueError(f"Device config not found for device name: {device_name}")
 
-
+    @staticmethod
     def get_node_config(network_device: str) -> BaseNodeSKUConfig:
         node_configs = get_all_subclasses(BaseNodeSKUConfig)
         if network_device not in NETWORK_DEVICE_MAPPING:
@@ -489,9 +490,9 @@ class ReplicaConfig:
 
     def __post_init__(self):
         self.world_size = self.num_pipeline_stages * self.tensor_parallel_size
-        self.model_config: BaseModelConfig = self.get_model_config(self.model_name)
-        self.device_config: BaseDeviceSKUConfig = self.get_device_config(self.device)
-        self.node_config: BaseNodeSKUConfig = self.get_node_config(self.network_device)
+        self.model_config: BaseModelConfig = ReplicaConfig.get_model_config(self.model_name)
+        self.device_config: BaseDeviceSKUConfig = ReplicaConfig.get_device_config(self.device)
+        self.node_config: BaseNodeSKUConfig = ReplicaConfig.get_node_config(self.network_device)
 
 
 @dataclass
