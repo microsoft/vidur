@@ -10,7 +10,7 @@ from vidur.config.device_sku_config import BaseDeviceSKUConfig
 from vidur.config.flat_dataclass import create_flat_dataclass
 from vidur.config.model_config import BaseModelConfig
 from vidur.config.node_sku_config import BaseNodeSKUConfig
-from vidur.config.utils import get_all_subclasses, dataclass_to_dict
+from vidur.config.utils import dataclass_to_dict
 from vidur.logger import init_logger
 from vidur.types import ReplicaSchedulerType, GlobalSchedulerType, ExecutionTimePredictorType, RequestGeneratorType, RequestIntervalGeneratorType, RequestLengthGeneratorType
 
@@ -425,6 +425,11 @@ class MetricsConfig:
         metadata={"help": "Maximum batch index."},
     )
 
+    def __post_init__(self):
+        self.output_dir = None
+        self.num_replicas = None
+        self.num_pipeline_stages = None
+
 
 @dataclass
 class ReplicaConfig:
@@ -457,35 +462,13 @@ class ReplicaConfig:
         metadata={"help": "Network device."},
     )
 
-    @staticmethod
-    def get_model_config(model_name: str) -> BaseModelConfig:
-        model_configs = get_all_subclasses(BaseModelConfig)
-        for model_config in model_configs:
-            if model_config.get_name() == model_name:
-                return model_config()
-        return ValueError(f"Model config not found for model name: {model_name}")
-
-    @staticmethod
-    def get_device_config(device_name: str) -> BaseDeviceSKUConfig:
-        device_configs = get_all_subclasses(BaseDeviceSKUConfig)
-        for device_config in device_configs:
-            if str(device_config.get_type()) == device_name:
-                return device_config()
-        raise ValueError(f"Device config not found for device name: {device_name}")
-
-    @staticmethod
-    def get_node_config(network_device: str) -> BaseNodeSKUConfig:
-        node_configs = get_all_subclasses(BaseNodeSKUConfig)
-        for node_config in node_configs:
-            if str(node_config.get_type()) == network_device:
-                return node_config()
-        raise ValueError(f"Node config not found for network device: {network_device}")
-
     def __post_init__(self):
         self.world_size = self.num_pipeline_stages * self.tensor_parallel_size
-        self.model_config: BaseModelConfig = ReplicaConfig.get_model_config(self.model_name)
-        self.device_config: BaseDeviceSKUConfig = ReplicaConfig.get_device_config(self.device)
-        self.node_config: BaseNodeSKUConfig = ReplicaConfig.get_node_config(self.network_device)
+        self.model_config: BaseModelConfig = BaseModelConfig.create_from_name(self.model_name)
+        self.device_config: BaseDeviceSKUConfig = BaseDeviceSKUConfig.create_from_type_string(self.device)
+        self.node_config: BaseNodeSKUConfig = BaseNodeSKUConfig.create_from_type_string(self.network_device)
+
+        self.max_tokens = None
 
 
 @dataclass
@@ -585,6 +568,18 @@ class BaseExecutionTimePredictorConfig(BasePolyConfig):
         metadata={"help": "Whether to skip CPU overhead modeling."},
     )
 
+    def __post_init__(self):
+        self.num_tensor_parallel_workers = None
+        self.num_pipeline_stages = None
+        self.num_layers_per_pipeline_stage = None
+        self.replica_scheduler_provider = None
+        self.cache_dir = None
+        self.block_size = None
+        self.total_memory_gb = None
+        self.devices_per_node = None
+        self.device = None
+        self.network_device = None
+
 
 @dataclass
 class LinearRegressionExecutionTimePredictorConfig(BaseExecutionTimePredictorConfig):
@@ -637,10 +632,6 @@ class ClusterConfig:
         metadata={"help": "Number of replicas."},
     )
     replica_config: ReplicaConfig = field(default_factory=ReplicaConfig)
-    execution_time_predictor_config: BaseExecutionTimePredictorConfig = field(
-        default_factory=RandomForrestExecutionTimePredictorConfig,
-        metadata={"help": "Execution time predictor config."},
-    )
     global_scheduler_config: BaseGlobalSchedulerConfig = field(
         default_factory=RoundRobinGlobalSchedulerConfig,
         metadata={"help": "Global scheduler config."},
@@ -649,47 +640,10 @@ class ClusterConfig:
         default_factory=SarathiSchedulerConfig,
         metadata={"help": "Replica scheduler config."},
     )
-    metrics_config: MetricsConfig = field(
-        default_factory=MetricsConfig,
-        metadata={"help": "Metrics config."},
-    )
-
-    def update_predictor_config(self):
-        if "{DEVICE}" in self.execution_time_predictor_config.compute_input_file:
-            self.execution_time_predictor_config.compute_input_file = self.execution_time_predictor_config.compute_input_file.replace(
-                "{DEVICE}", self.replica_config.device
-            )
-        if "{MODEL}" in self.execution_time_predictor_config.compute_input_file:
-            self.execution_time_predictor_config.compute_input_file = self.execution_time_predictor_config.compute_input_file.replace(
-                "{MODEL}", self.replica_config.model_name
-            )
-        if "{DEVICE}" in self.execution_time_predictor_config.attention_input_file:
-            self.execution_time_predictor_config.attention_input_file = self.execution_time_predictor_config.attention_input_file.replace(
-                "{DEVICE}", self.replica_config.device
-            )
-        if "{MODEL}" in self.execution_time_predictor_config.attention_input_file:
-            self.execution_time_predictor_config.attention_input_file = self.execution_time_predictor_config.attention_input_file.replace(
-                "{MODEL}", self.replica_config.model_name
-            )
-        if "{NETWORK_DEVICE}" in self.execution_time_predictor_config.all_reduce_input_file:
-            self.execution_time_predictor_config.all_reduce_input_file = self.execution_time_predictor_config.all_reduce_input_file.replace(
-                "{NETWORK_DEVICE}", self.replica_config.network_device
-            )
-        if "{NETWORK_DEVICE}" in self.execution_time_predictor_config.send_recv_input_file:
-            self.execution_time_predictor_config.send_recv_input_file = self.execution_time_predictor_config.send_recv_input_file.replace(
-                "{NETWORK_DEVICE}", self.replica_config.network_device
-            )
-        if "{NETWORK_DEVICE}" in self.execution_time_predictor_config.cpu_overhead_input_file:
-            self.execution_time_predictor_config.cpu_overhead_input_file = self.execution_time_predictor_config.cpu_overhead_input_file.replace(
-                "{NETWORK_DEVICE}", self.replica_config.network_device
-            )
-        if "{MODEL}" in self.execution_time_predictor_config.cpu_overhead_input_file:
-            self.execution_time_predictor_config.cpu_overhead_input_file = self.execution_time_predictor_config.cpu_overhead_input_file.replace(
-                "{MODEL}", self.replica_config.model_name
-            )
 
     def __post_init__(self):
-        self.update_predictor_config()
+        self.output_dir = None
+        self.write_json_trace = None
 
 
 @dataclass
@@ -722,6 +676,14 @@ class SimulationConfig(ABC):
         default_factory=SyntheticRequestGeneratorConfig,
         metadata={"help": "Request generator config."},
     )
+    execution_time_predictor_config: BaseExecutionTimePredictorConfig = field(
+        default_factory=RandomForrestExecutionTimePredictorConfig,
+        metadata={"help": "Execution time predictor config."},
+    )
+    metrics_config: MetricsConfig = field(
+        default_factory=MetricsConfig,
+        metadata={"help": "Metrics config."},
+    )
 
     def __post_init__(self):
         self.output_dir = (
@@ -729,6 +691,11 @@ class SimulationConfig(ABC):
         )
         os.makedirs(self.output_dir, exist_ok=True)
         self.write_config_to_file()
+
+        # Update the config
+        self.update_cluster_config()
+        self.update_metrics_config()
+        self.update_predictor_config()
 
     @classmethod
     def create_from_cli_args(cls):
@@ -748,3 +715,25 @@ class SimulationConfig(ABC):
         config_dict = dataclass_to_dict(self)
         with open(f"{self.output_dir}/config.json", "w") as f:
             json.dump(config_dict, f, indent=4)
+
+    def update_cluster_config(self):
+        self.cluster_config.output_dir = self.output_dir
+        self.cluster_config.replica_config.max_tokens = self.request_generator_config.max_tokens
+        self.cluster_config.write_json_trace = self.metrics_config.write_json_trace
+
+    def update_metrics_config(self):
+        self.metrics_config.output_dir = self.output_dir
+        self.metrics_config.num_replicas = self.cluster_config.num_replicas
+        self.metrics_config.num_pipeline_stages = self.cluster_config.replica_config.num_pipeline_stages
+
+    def update_predictor_config(self):
+        self.execution_time_predictor_config.num_tensor_parallel_workers = self.cluster_config.replica_config.tensor_parallel_size
+        self.execution_time_predictor_config.num_pipeline_stages = self.cluster_config.replica_config.num_pipeline_stages
+        self.execution_time_predictor_config.num_layers_per_pipeline_stage = self.cluster_config.replica_config.model_config.num_layers // self.cluster_config.replica_config.num_pipeline_stages
+        self.execution_time_predictor_config.replica_scheduler_provider = str(self.cluster_config.replica_scheduler_config.get_type())
+        self.execution_time_predictor_config.cache_dir = f"{self.cache_dir}/execution_time_predictor"
+        self.execution_time_predictor_config.block_size = self.cluster_config.replica_scheduler_config.block_size
+        self.execution_time_predictor_config.total_memory_gb = self.cluster_config.replica_config.device_config.total_memory_gb
+        self.execution_time_predictor_config.devices_per_node = self.cluster_config.replica_config.node_config.num_devices_per_node
+        self.execution_time_predictor_config.device = self.cluster_config.replica_config.device
+        self.execution_time_predictor_config.network_device = self.cluster_config.replica_config.network_device

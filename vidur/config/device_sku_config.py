@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from vidur.config.base_poly_config import BasePolyConfig
+from vidur.config.base_fixed_config import BaseFixedConfig
 from vidur.logger import init_logger
 from vidur.types import DeviceSKUType
 
@@ -8,7 +8,7 @@ logger = init_logger(__name__)
 
 
 @dataclass
-class BaseDeviceSKUConfig(BasePolyConfig):
+class BaseDeviceSKUConfig(BaseFixedConfig):
     fp16_tflops: int = field(
         metadata={"help": "The number of TFLOPS the device can achieve in FP16"},
     )

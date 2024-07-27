@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from vidur.config.base_poly_config import BasePolyConfig
+from vidur.config.base_fixed_config import BaseFixedConfig
 from vidur.logger import init_logger
 from vidur.types import NodeSKUType, DeviceSKUType
 
@@ -8,7 +8,7 @@ logger = init_logger(__name__)
 
 
 @dataclass
-class BaseNodeSKUConfig(BasePolyConfig):
+class BaseNodeSKUConfig(BaseFixedConfig):
     num_devices_per_node: int = field(
         metadata={"help": "The number of devices per node"},
     )

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from vidur.config.base_poly_config import BasePolyConfig
+from vidur.config.base_fixed_config import BaseFixedConfig
 from vidur.logger import init_logger
 from vidur.types import NormType, ActivationType
 
@@ -9,7 +9,7 @@ logger = init_logger(__name__)
 
 
 @dataclass
-class BaseModelConfig(BasePolyConfig):
+class BaseModelConfig(BaseFixedConfig):
     num_layers: int = field(
         metadata={"help": "The number of layers in the model"},
     )

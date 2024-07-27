@@ -151,7 +151,7 @@ class JobConfig:
             "replica_config_tensor_parallel_size": self.num_tensor_parallel_workers,
             "replica_config_num_pipeline_stages": self.num_pipeline_stages,
             "vllm_scheduler_config_batch_size_cap": self.batch_size,
-            "light_l_l_m_scheduler_config_batch_size_cap": self.batch_size,
+            "lightllm_scheduler_config_batch_size_cap": self.batch_size,
             "orca_scheduler_config_batch_size_cap": self.batch_size,
             "faster_transformer_scheduler_config_batch_size_cap": self.batch_size,
             "sarathi_scheduler_config_batch_size_cap": self.batch_size,

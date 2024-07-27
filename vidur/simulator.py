@@ -26,21 +26,19 @@ class Simulator:
 
         self._event_queue = []
 
-        self._should_write_json_trace = self._config.cluster_config.metrics_config.write_json_trace
-        self._should_write_chrome_trace = self._config.cluster_config.metrics_config.enable_chrome_trace
-
         self._event_trace = []
         self._event_chrome_trace = []
 
-        self._cluster = Cluster(self._config)
-        self._metric_store = MetricsStore(self._config)
+        self._cluster = Cluster(self._config.cluster_config)
+        self._metric_store = MetricsStore(self._config.metrics_config, self._config.cluster_config.replica_config)
         self._request_generator = RequestGeneratorRegistry.get(
             self._config.request_generator_config.get_type(),
             self._config.request_generator_config,
         )
         self._scheduler = GlobalSchedulerRegistry.get(
             self._config.cluster_config.global_scheduler_config.get_type(),
-            self._config, self._cluster.replicas
+            self._config,
+            self._cluster.replicas
         )
 
         self._init_event_queue()
@@ -65,10 +63,10 @@ class Simulator:
             new_events = event.handle_event(self._scheduler, self._metric_store)
             self._add_events(new_events)
 
-            if self._should_write_json_trace:
+            if self._config.metrics_config.write_json_trace:
                 self._event_trace.append(event.to_dict())
 
-            if self._should_write_chrome_trace:
+            if self._config.metrics_config.enable_chrome_trace:
                 chrome_trace = event.to_chrome_trace()
                 if chrome_trace:
                     self._event_chrome_trace.append(chrome_trace)
@@ -83,12 +81,12 @@ class Simulator:
         self._metric_store.plot()
         logger.info("Metrics written")
 
-        if self._should_write_json_trace:
+        if self._config.metrics_config.write_json_trace:
             self._write_event_trace()
             self._scheduler.write_batching_history()
             logger.info("Json event trace written")
 
-        if self._should_write_chrome_trace:
+        if self._config.metrics_config.enable_chrome_trace:
             self._write_chrome_trace()
             logger.info("Chrome event trace written")
 
