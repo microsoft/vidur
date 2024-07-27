@@ -1,4 +1,4 @@
-from dataclasses import asdict
+from dataclasses import is_dataclass, fields
 from typing import Union, get_args, get_origin
 
 primitive_types = {int, str, float, bool, type(None)}
@@ -60,10 +60,23 @@ def get_inner_type(field_type: type) -> type:
 def is_subclass(cls, parent: type) -> bool:
     return hasattr(cls, "__bases__") and parent in cls.__bases__
 
-def dataclass_to_dict(dataclass_instance):
-    if isinstance(dataclass_instance, list):
-        return [dataclass_to_dict(item) for item in dataclass_instance]
-    elif hasattr(dataclass_instance, '__dataclass_fields__'):
-        return {k: dataclass_to_dict(v) for k, v in asdict(dataclass_instance).items()}
+def dataclass_to_dict(obj):
+    if isinstance(obj, list):
+        return [dataclass_to_dict(item) for item in obj]
+    elif is_dataclass(obj):
+        data = {}
+        for field in fields(obj):
+            value = getattr(obj, field.name)
+            data[field.name] = dataclass_to_dict(value)
+        # Include members created in __post_init__
+        for key, value in obj.__dict__.items():
+            if key not in data:
+                data[key] = dataclass_to_dict(value)
+        # Include the name of the class
+        if hasattr(obj, 'get_type') and callable(getattr(obj, 'get_type')):
+            data['name'] = str(obj.get_type())
+        elif hasattr(obj, 'get_name') and callable(getattr(obj, 'get_name')):
+            data['name'] = obj.get_name()
+        return data
     else:
-        return dataclass_instance
+        return obj

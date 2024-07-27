@@ -56,7 +56,7 @@ class Simulator:
 
     def run(self) -> None:
         logger.info(
-            f"Starting simulation with cluster: {self._cluster} and {len(self._event_queue) - 1} requests"
+            f"Starting simulation with cluster: {self._cluster} and {len(self._event_queue)} requests"
         )
 
         while self._event_queue and not self._terminate:
