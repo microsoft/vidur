@@ -29,8 +29,8 @@ class Simulator:
         self._event_trace = []
         self._event_chrome_trace = []
 
-        self._cluster = Cluster(self._config.cluster_config)
-        self._metric_store = MetricsStore(self._config.metrics_config, self._config.cluster_config.replica_config)
+        self._cluster = Cluster(self._config.cluster_config, self._config.metrics_config, self._config.request_generator_config)
+        self._metric_store = MetricsStore(self._config.metrics_config, self._config.cluster_config)
         self._request_generator = RequestGeneratorRegistry.get(
             self._config.request_generator_config.get_type(),
             self._config.request_generator_config,
@@ -112,12 +112,12 @@ class Simulator:
             self._terminate = True
 
     def _write_event_trace(self) -> None:
-        trace_file = f"{self._config.output_dir}/event_trace.json"
+        trace_file = f"{self._config.metrics_config.output_dir}/event_trace.json"
         with open(trace_file, "w") as f:
             json.dump(self._event_trace, f)
 
     def _write_chrome_trace(self) -> None:
-        trace_file = f"{self._config.output_dir}/chrome_trace.json"
+        trace_file = f"{self._config.metrics_config.output_dir}/chrome_trace.json"
 
         chrome_trace = {"traceEvents": self._event_chrome_trace}
 

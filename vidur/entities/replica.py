@@ -1,6 +1,6 @@
 from math import ceil
 
-from vidur.config import ReplicaConfig
+from vidur.config import ReplicaConfig, BaseRequestGeneratorConfig
 from vidur.entities.base_entity import BaseEntity
 from vidur.logger import init_logger
 
@@ -8,12 +8,13 @@ logger = init_logger(__name__)
 
 
 class Replica(BaseEntity):
-    def __init__(self, replica_config: ReplicaConfig) -> None:
+    def __init__(self, replica_config: ReplicaConfig, generator_config: BaseRequestGeneratorConfig) -> None:
         self._id = Replica.generate_id()
 
         self._replica_config = replica_config
         self._model_config = replica_config.model_config
         self._device_config = replica_config.device_config
+        self._generator_config = generator_config
 
         assert self._model_config.num_layers % self._replica_config.num_pipeline_stages == 0
         assert (
@@ -86,7 +87,7 @@ class Replica(BaseEntity):
 
     @property
     def max_request_tokens(self) -> int:
-        return self._replica_config.max_tokens
+        return self._generator_config.max_tokens
 
     @property
     def per_device_flops(self) -> float:

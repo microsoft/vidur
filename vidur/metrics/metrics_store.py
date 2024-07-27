@@ -6,7 +6,7 @@ import pandas as pd
 import plotly_express as px
 import wandb
 
-from vidur.config import MetricsConfig, ReplicaConfig
+from vidur.config import MetricsConfig, ClusterConfig
 from vidur.entities import Batch, BatchStage, ExecutionTime, Request
 from vidur.logger import init_logger
 from vidur.metrics.cdf_sketch import CDFSketch
@@ -49,9 +49,14 @@ TIME_STR_MS = "Time (ms)"
 
 class MetricsStore:
 
-    def __init__(self, config: MetricsConfig, replica_config: ReplicaConfig) -> None:
+    def __init__(self, config: MetricsConfig, cluster_config: ClusterConfig) -> None:
         self._config = config
         self._last_request_arrived_at = None
+
+        # copy config
+        self._num_replicas = cluster_config.num_replicas
+        self._num_pipeline_stages = cluster_config.replica_config.num_pipeline_stages
+
         # Initialise request metrics
         self._request_metrics_time_distributions: Dict[
             RequestMetricsTimeDistributions, DataSeries
@@ -190,9 +195,9 @@ class MetricsStore:
         # per replica stage metrics
         self._replica_busy_time = []
         self._replica_mfu = []
-        self._mfu_calculator = MFUCalculator(replica_config)
+        self._mfu_calculator = MFUCalculator(cluster_config.replica_config)
 
-        for replica_idx in range(self._config.num_replicas):
+        for replica_idx in range(self._num_replicas):
             self._replica_memory_usage.append(
                 SeriesAverageMeter(
                     TIME_STR,
@@ -205,7 +210,7 @@ class MetricsStore:
             self._replica_busy_time.append([])
             self._replica_mfu.append([])
 
-            for stage_idx in range(self._config.num_pipeline_stages):
+            for stage_idx in range(self._num_pipeline_stages):
                 self._replica_busy_time[replica_idx].append(
                     SeriesAverageMeter(
                         TIME_STR,
@@ -449,11 +454,11 @@ class MetricsStore:
         if not self._config.store_utilization_metrics:
             return
 
-        for replica_idx in range(self._config.num_replicas):
+        for replica_idx in range(self._num_replicas):
             self._replica_memory_usage[replica_idx].print_stats(
                 f"replica_{replica_idx + 1}_memory_usage", base_plot_path
             )
-            for stage_idx in range(self._config.num_pipeline_stages):
+            for stage_idx in range(self._num_pipeline_stages):
                 self._replica_busy_time[replica_idx][stage_idx].print_stats(
                     f"replica_{replica_idx + 1}_stage_{stage_idx + 1}_busy_time_percent",
                     base_plot_path,

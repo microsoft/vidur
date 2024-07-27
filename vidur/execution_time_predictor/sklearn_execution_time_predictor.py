@@ -12,8 +12,12 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 
-from vidur.config import BaseExecutionTimePredictorConfig
-from vidur.config.model_config import BaseModelConfig
+from vidur.config import (
+    BaseExecutionTimePredictorConfig,
+    ReplicaConfig,
+    BaseReplicaSchedulerConfig,
+    MetricsConfig
+)
 from vidur.entities import Batch
 from vidur.execution_time_predictor.base_execution_time_predictor import (
     BaseExecutionTimePredictor,
@@ -24,9 +28,18 @@ logger = init_logger(__name__)
 
 
 class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
-    def __init__(self, config: BaseExecutionTimePredictorConfig, model_config: BaseModelConfig) -> None:
-        super().__init__(config, model_config)
-        os.makedirs(self._config.cache_dir, exist_ok=True)
+    def __init__(self, 
+                 predictor_config: BaseExecutionTimePredictorConfig,
+                 replica_config: ReplicaConfig,
+                 replica_scheduler_config: BaseReplicaSchedulerConfig,
+                 metrics_config: MetricsConfig) -> None:
+        super().__init__(
+            predictor_config=predictor_config,
+            replica_config=replica_config,
+            replica_scheduler_config=replica_scheduler_config,
+            metrics_config=metrics_config
+        )
+        os.makedirs(self._cache_dir, exist_ok=True)
 
         # These overheads are only for GQA models
         self._attention_prefill_batching_overhead_fraction = (
@@ -43,17 +56,18 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             if self._model_config.num_q_heads > self._model_config.num_kv_heads
             else 0
         )
-        if self._config.replica_scheduler_provider == "orca":
+        if self._replica_scheduler_provider == "orca":
             self._max_tokens = self._config.prediction_max_tokens_per_request * self._config.prediction_max_batch_size
         else:
             self._max_tokens = self._config.prediction_max_tokens_per_request
 
-        num_workers = self._config.num_pipeline_stages * self._config.num_tensor_parallel_workers
+        num_workers = self._replica_config.num_pipeline_stages * self._replica_config.tensor_parallel_size
+        devices_per_node = self._replica_config.node_config.num_devices_per_node
         assert (
-            num_workers < self._config.devices_per_node or num_workers % self._config.devices_per_node == 0
+            num_workers < devices_per_node or num_workers % devices_per_node == 0
         ), "Number of workers should be less than devices per node or a multiple of devices per node"
 
-        self._is_multi_node = num_workers > self._config.devices_per_node
+        self._is_multi_node = num_workers > devices_per_node
 
         (
             self._compute_input_file,
@@ -76,9 +90,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         ]
         for i in range(len(input_files)):
             input_files[i] = input_files[i].replace(
-                "{DEVICE}", self._config.device).replace(
+                "{DEVICE}", self._replica_config.device).replace(
                 "{MODEL}", self._model_config.get_name()).replace(
-                "{NETWORK_DEVICE}", self._config.network_device)
+                "{NETWORK_DEVICE}", self._replica_config.network_device)
 
         return tuple(input_files)
 
@@ -93,7 +107,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         logger.debug(f"self._use_gated_mlp: {self._model_config.use_gated_mlp}")
         logger.debug(f"self._vocab_size: {self._model_config.vocab_size}")
         logger.debug(
-            f"self._num_tensor_parallel_workers: {self._config.num_tensor_parallel_workers}"
+            f"self._num_tensor_parallel_workers: {self._replica_config.tensor_parallel_size}"
         )
 
         df = df[
@@ -103,7 +117,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             & (df["n_expanded_embd"] == self._model_config.mlp_hidden_dim)
             & (df["use_gated_mlp"] == self._model_config.use_gated_mlp)
             & (df["vocab_size"] == self._model_config.vocab_size)
-            & (df["num_tensor_parallel_workers"] == self._config.num_tensor_parallel_workers)
+            & (df["num_tensor_parallel_workers"] == self._replica_config.tensor_parallel_size)
         ]
 
         for column in [
@@ -133,15 +147,15 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             (df["n_embd"] == self._model_config.embedding_dim)
             & (df["n_q_head"] == self._model_config.num_q_heads)
             & (df["n_kv_head"] == self._model_config.num_kv_heads)
-            & (df["block_size"] == self._config.block_size)
-            & (df["num_tensor_parallel_workers"] == self._config.num_tensor_parallel_workers)
+            & (df["block_size"] == self._block_size)
+            & (df["num_tensor_parallel_workers"] == self._replica_config.tensor_parallel_size)
         ]
 
     def _load_all_reduce_df(self, file_path: str) -> pd.DataFrame:
         df = self._read_input_file(file_path)
         return df[
-            (df["num_workers"] == self._config.num_tensor_parallel_workers)
-            & (df["devices_per_node"] == self._config.num_tensor_parallel_workers)
+            (df["num_workers"] == self._replica_config.tensor_parallel_size)
+            & (df["devices_per_node"] == self._replica_config.tensor_parallel_size)
             & (df["collective"] == "all_reduce")
         ]
 
@@ -162,7 +176,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         df = self._read_input_file(file_path)
         filtered_df = df[
             (df["model_name"] == self._model_config.get_name())
-            & (df["tensor_parallel_degree"] == self._config.num_tensor_parallel_workers)
+            & (df["tensor_parallel_degree"] == self._replica_config.tensor_parallel_size)
         ]
         return filtered_df
 
@@ -262,12 +276,12 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
     def _load_model_from_cache(self, model_name: str, model_hash: str) -> BaseEstimator:
         with InterProcessReaderWriterLock(
-            f"{self._config.cache_dir}/{model_hash}_model_lock.file"
+            f"{self._cache_dir}/{model_hash}_model_lock.file"
         ).read_lock():
             if self._config.no_cache:
                 return
             # check if model is in cache
-            cache_file = f"{self._config.cache_dir}/{model_name}_{model_hash}.pkl"
+            cache_file = f"{self._cache_dir}/{model_name}_{model_hash}.pkl"
             if not os.path.exists(cache_file):
                 return
 
@@ -279,10 +293,10 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         self, model_name: str, model_hash: str, model: BaseEstimator
     ) -> None:
         with InterProcessReaderWriterLock(
-            f"{self._config.cache_dir}/{model_hash}_model_lock.file"
+            f"{self._cache_dir}/{model_hash}_model_lock.file"
         ).write_lock():
             # store model in cache
-            cache_file = f"{self._config.cache_dir}/{model_name}_{model_hash}.pkl"
+            cache_file = f"{self._cache_dir}/{model_name}_{model_hash}.pkl"
             pickle.dump(model, open(cache_file, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
 
     def _store_training_prediction_data(
@@ -301,7 +315,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         # store the prediction data
         df[feature_cols + [target_col, "prediction"]].to_csv(
-            f"{self._config.cache_dir}/{model_name}_{model_hash}_training_predictions.csv",
+            f"{self._cache_dir}/{model_name}_{model_hash}_training_predictions.csv",
             index=False,
         )
 
@@ -365,9 +379,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         self, model_name: str, model_hash: str, predictions: Dict[Tuple, float]
     ) -> None:
         with InterProcessReaderWriterLock(
-            f"{self._config.cache_dir}/{model_hash}_prediction_lock.file"
+            f"{self._cache_dir}/{model_hash}_prediction_lock.file"
         ).write_lock():
-            cache_file = f"{self._config.cache_dir}/{model_name}_{model_hash}_predictions.pkl"
+            cache_file = f"{self._cache_dir}/{model_name}_{model_hash}_predictions.pkl"
             pickle.dump(
                 predictions, open(cache_file, "wb"), protocol=pickle.HIGHEST_PROTOCOL
             )
@@ -376,11 +390,11 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         self, model_name: str, model_hash: str
     ) -> Dict[Tuple, float]:
         with InterProcessReaderWriterLock(
-            f"{self._config.cache_dir}/{model_hash}_prediction_lock.file"
+            f"{self._cache_dir}/{model_hash}_prediction_lock.file"
         ).read_lock():
             if self._config.no_cache:
                 return
-            cache_file = f"{self._config.cache_dir}/{model_name}_{model_hash}_predictions.pkl"
+            cache_file = f"{self._cache_dir}/{model_name}_{model_hash}_predictions.pkl"
 
             if not os.path.exists(cache_file):
                 return
@@ -413,7 +427,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         X["prediction"] = predictions_array
         X.to_csv(
-            f"{self._config.cache_dir}/{model_name}_{model_hash}_predictions.csv",
+            f"{self._cache_dir}/{model_name}_{model_hash}_predictions.csv",
             index=False,
         )
 
@@ -462,7 +476,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
                 target_col=f"time_stats.{model_name}.median",
             )
 
-        if self._config.num_pipeline_stages > 1:
+        if self._replica_config.num_pipeline_stages > 1:
             send_recv_df = self._load_send_recv_df(self._send_recv_input_file)
             send_recv_df = self._get_send_recv_df_with_derived_features(send_recv_df)
 
@@ -473,7 +487,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
                 target_col="time_stats.send_recv.median",
             )
 
-        if self._config.num_tensor_parallel_workers > 1:
+        if self._replica_config.tensor_parallel_size > 1:
             all_reduce_df = self._load_all_reduce_df(self._all_reduce_input_file)
             all_reduce_df = self._get_all_reduce_df_with_derived_features(all_reduce_df)
 
@@ -572,10 +586,10 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             "add",
         ]
 
-        if self._config.num_pipeline_stages > 1:
+        if self._replica_config.num_pipeline_stages > 1:
             model_names.append("send_recv")
 
-        if self._config.num_tensor_parallel_workers > 1:
+        if self._replica_config.tensor_parallel_size > 1:
             model_names.append("all_reduce")
 
         num_token_range = np.arange(1, self._max_tokens + 1)
@@ -774,7 +788,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             self._predictions["all_reduce"][(batch._total_num_tokens_rounded,)]
             + self._config.nccl_cpu_launch_overhead_ms
             + self._config.nccl_cpu_skew_overhead_per_device_ms
-            * self._config.num_tensor_parallel_workers**1.25
+            * self._replica_config.tensor_parallel_size**1.25
         )
 
     def _get_pipeline_parallel_communication_time(self, batch: Batch) -> float:
@@ -862,7 +876,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
     def to_dict(self) -> dict:
         return {
             "model_provider": str(self._config.get_type()),
-            "num_tensor_parallel_workers": self._config.num_tensor_parallel_workers,
+            "num_tensor_parallel_workers": self._replica_config.tensor_parallel_size,
             "k_fold_cv_splits": self._config.k_fold_cv_splits,
             "num_q_heads": self._model_config.num_q_heads,
             "num_kv_heads": self._model_config.num_kv_heads,
@@ -870,7 +884,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             "mlp_hidden_dim": self._model_config.mlp_hidden_dim,
             "use_gated_mlp": self._model_config.use_gated_mlp,
             "vocab_size": self._model_config.vocab_size,
-            "block_size": self._config.block_size,
+            "block_size": self._block_size,
             "max_tokens": self._max_tokens,
             "compute_input_file": self._compute_input_file,
             "all_reduce_input_file": self._all_reduce_input_file,

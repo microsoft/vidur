@@ -424,11 +424,20 @@ class MetricsConfig:
         default=None,
         metadata={"help": "Maximum batch index."},
     )
+    output_dir: str = field(
+        default="simulator_output",
+        metadata={"help": "Output directory."},
+    )
+    cache_dir: str = field(
+        default="cache",
+        metadata={"help": "Cache directory."},
+    )
 
     def __post_init__(self):
-        self.output_dir = None
-        self.num_replicas = None
-        self.num_pipeline_stages = None
+        self.output_dir = (
+            f"{self.output_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')}"
+        )
+        os.makedirs(self.output_dir, exist_ok=True)
 
 
 @dataclass
@@ -467,8 +476,6 @@ class ReplicaConfig:
         self.model_config: BaseModelConfig = BaseModelConfig.create_from_name(self.model_name)
         self.device_config: BaseDeviceSKUConfig = BaseDeviceSKUConfig.create_from_type_string(self.device)
         self.node_config: BaseNodeSKUConfig = BaseNodeSKUConfig.create_from_type_string(self.network_device)
-
-        self.max_tokens = None
 
 
 @dataclass
@@ -568,18 +575,6 @@ class BaseExecutionTimePredictorConfig(BasePolyConfig):
         metadata={"help": "Whether to skip CPU overhead modeling."},
     )
 
-    def __post_init__(self):
-        self.num_tensor_parallel_workers = None
-        self.num_pipeline_stages = None
-        self.num_layers_per_pipeline_stage = None
-        self.replica_scheduler_provider = None
-        self.cache_dir = None
-        self.block_size = None
-        self.total_memory_gb = None
-        self.devices_per_node = None
-        self.device = None
-        self.network_device = None
-
 
 @dataclass
 class LinearRegressionExecutionTimePredictorConfig(BaseExecutionTimePredictorConfig):
@@ -641,10 +636,6 @@ class ClusterConfig:
         metadata={"help": "Replica scheduler config."},
     )
 
-    def __post_init__(self):
-        self.output_dir = None
-        self.write_json_trace = None
-
 
 @dataclass
 class SimulationConfig(ABC):
@@ -655,14 +646,6 @@ class SimulationConfig(ABC):
     log_level: str = field(
         default="info",
         metadata={"help": "Logging level."},
-    )
-    output_dir: str = field(
-        default="simulator_output",
-        metadata={"help": "Output directory."},
-    )
-    cache_dir: str = field(
-        default="cache",
-        metadata={"help": "Cache directory."},
     )
     time_limit: int = field(
         default=0, # in seconds, 0 is no limit
@@ -686,16 +669,7 @@ class SimulationConfig(ABC):
     )
 
     def __post_init__(self):
-        self.output_dir = (
-            f"{self.output_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')}"
-        )
-        os.makedirs(self.output_dir, exist_ok=True)
         self.write_config_to_file()
-
-        # Update the config
-        self.update_cluster_config()
-        self.update_metrics_config()
-        self.update_predictor_config()
 
     @classmethod
     def create_from_cli_args(cls):
@@ -713,27 +687,5 @@ class SimulationConfig(ABC):
 
     def write_config_to_file(self):
         config_dict = dataclass_to_dict(self)
-        with open(f"{self.output_dir}/config.json", "w") as f:
+        with open(f"{self.metrics_config.output_dir}/config.json", "w") as f:
             json.dump(config_dict, f, indent=4)
-
-    def update_cluster_config(self):
-        self.cluster_config.output_dir = self.output_dir
-        self.cluster_config.replica_config.max_tokens = self.request_generator_config.max_tokens
-        self.cluster_config.write_json_trace = self.metrics_config.write_json_trace
-
-    def update_metrics_config(self):
-        self.metrics_config.output_dir = self.output_dir
-        self.metrics_config.num_replicas = self.cluster_config.num_replicas
-        self.metrics_config.num_pipeline_stages = self.cluster_config.replica_config.num_pipeline_stages
-
-    def update_predictor_config(self):
-        self.execution_time_predictor_config.num_tensor_parallel_workers = self.cluster_config.replica_config.tensor_parallel_size
-        self.execution_time_predictor_config.num_pipeline_stages = self.cluster_config.replica_config.num_pipeline_stages
-        self.execution_time_predictor_config.num_layers_per_pipeline_stage = self.cluster_config.replica_config.model_config.num_layers // self.cluster_config.replica_config.num_pipeline_stages
-        self.execution_time_predictor_config.replica_scheduler_provider = str(self.cluster_config.replica_scheduler_config.get_type())
-        self.execution_time_predictor_config.cache_dir = f"{self.cache_dir}/execution_time_predictor"
-        self.execution_time_predictor_config.block_size = self.cluster_config.replica_scheduler_config.block_size
-        self.execution_time_predictor_config.total_memory_gb = self.cluster_config.replica_config.device_config.total_memory_gb
-        self.execution_time_predictor_config.devices_per_node = self.cluster_config.replica_config.node_config.num_devices_per_node
-        self.execution_time_predictor_config.device = self.cluster_config.replica_config.device
-        self.execution_time_predictor_config.network_device = self.cluster_config.replica_config.network_device
