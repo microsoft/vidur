@@ -6,7 +6,6 @@ import os
 from typing import Optional, List
 
 from vidur.config.base_poly_config import BasePolyConfig
-from vidur.config.constants import NETWORK_DEVICE_MAPPING
 from vidur.config.device_sku_config import BaseDeviceSKUConfig
 from vidur.config.flat_dataclass import create_flat_dataclass
 from vidur.config.model_config import BaseModelConfig
@@ -65,7 +64,7 @@ class TraceRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
 @dataclass
 class PoissonRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
     qps: float = field(
-        default=1.0,
+        default=0.5,
         metadata={"help": "Queries per second for Poisson Request Interval Generator."},
     )
 
@@ -77,7 +76,7 @@ class PoissonRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
 @dataclass
 class GammaRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
     qps: float = field(
-        default=1.0,
+        default=0.2,
         metadata={"help": "Queries per second for Gamma Request Interval Generator."},
     )
     cv: float = field(
@@ -172,7 +171,7 @@ class UniformRequestLengthGeneratorConfig(BaseRequestLengthGeneratorConfig):
 @dataclass
 class FixedRequestLengthGeneratorConfig(BaseRequestLengthGeneratorConfig):
     prefill_tokens: int = field(
-        default=4096,
+        default=2048,
         metadata={"help": "Prefill tokens for Fixed Request Length Generator."},
     )
     decode_tokens: int = field(
@@ -209,7 +208,7 @@ class SyntheticRequestGeneratorConfig(BaseRequestGeneratorConfig):
         metadata={"help": "Interval generator config for Synthetic Request Generator."},
     )
     num_requests: int = field(
-        default=64,
+        default=128,
         metadata={"help": "Number of requests for Synthetic Request Generator."},
     )
     duration: float = field(
@@ -442,7 +441,7 @@ class ReplicaConfig:
         metadata={"help": "Memory margin fraction."},
     )
     num_pipeline_stages: int = field(
-        default=1,
+        default=4,
         metadata={"help": "Number of pipeline stages."},
     )
     tensor_parallel_size: int = field(
@@ -454,7 +453,7 @@ class ReplicaConfig:
         metadata={"help": "Device."},
     )
     network_device: str = field(
-        default="a100_pair_nvlink",
+        default="a100_pairwise_nvlink",
         metadata={"help": "Network device."},
     )
 
@@ -477,11 +476,8 @@ class ReplicaConfig:
     @staticmethod
     def get_node_config(network_device: str) -> BaseNodeSKUConfig:
         node_configs = get_all_subclasses(BaseNodeSKUConfig)
-        if network_device not in NETWORK_DEVICE_MAPPING:
-            raise ValueError(f"Network device not found: {network_device}")
-        network_type = NETWORK_DEVICE_MAPPING[network_device]
         for node_config in node_configs:
-            if node_config.get_type() == network_type:
+            if str(node_config.get_type()) == network_device:
                 return node_config()
         raise ValueError(f"Node config not found for network device: {network_device}")
 
@@ -561,7 +557,7 @@ class BaseExecutionTimePredictorConfig(BasePolyConfig):
         metadata={"help": "Max batch size for prediction."},
     )
     prediction_max_tokens_per_request: int = field(
-        default=8192,
+        default=4096,
         metadata={"help": "Max tokens per request for prediction."},
     )
     attention_decode_batching_overhead_fraction: float = field(
