@@ -9,21 +9,13 @@ logger = init_logger(__name__)
 
 @dataclass
 class BaseNodeSKUConfig(BaseFixedConfig):
-    num_devices_per_node: int = field(
-        metadata={"help": "The number of devices per node"},
-    )
+    num_devices_per_node: int
 
 
 @dataclass
 class A40PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = field(
-        default=DeviceSKUType.A40,
-        metadata={"help": "The device SKU type"},
-    )
-    num_devices_per_node: int = field(
-        default=8,
-        metadata={"help": "The number of devices per node"},
-    )
+    device_sku_type: DeviceSKUType = DeviceSKUType.A40
+    num_devices_per_node: int = 8
 
     @staticmethod
     def get_type():
@@ -32,14 +24,8 @@ class A40PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
 
 @dataclass
 class A100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = field(
-        default=DeviceSKUType.A100,
-        metadata={"help": "The device SKU type"},
-    )
-    num_devices_per_node: int = field(
-        default=8,
-        metadata={"help": "The number of devices per node"},
-    )
+    device_sku_type: DeviceSKUType = DeviceSKUType.A100
+    num_devices_per_node: int = 8
 
     @staticmethod
     def get_type():
@@ -48,14 +34,8 @@ class A100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
 
 @dataclass
 class H100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = field(
-        default=DeviceSKUType.H100,
-        metadata={"help": "The device SKU type"},
-    )
-    num_devices_per_node: int = field(
-        default=8,
-        metadata={"help": "The number of devices per node"},
-    )
+    device_sku_type: DeviceSKUType = DeviceSKUType.H100
+    num_devices_per_node: int = 8
 
     @staticmethod
     def get_type():
@@ -64,14 +44,8 @@ class H100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
 
 @dataclass
 class A100DgxNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = field(
-        default=DeviceSKUType.A100,
-        metadata={"help": "The device SKU type"},
-    )
-    num_devices_per_node: int = field(
-        default=8,
-        metadata={"help": "The number of devices per node"},
-    )
+    device_sku_type: DeviceSKUType = DeviceSKUType.A100
+    num_devices_per_node: int = 8
 
     @staticmethod
     def get_type():
@@ -80,14 +54,8 @@ class A100DgxNodeSKUConfig(BaseNodeSKUConfig):
 
 @dataclass
 class H100DgxNodeSKUConfig(BaseNodeSKUConfig):
-    device_sku_type: DeviceSKUType = field(
-        default=DeviceSKUType.H100,
-        metadata={"help": "The device SKU type"},
-    )
-    num_devices_per_node: int = field(
-        default=8,
-        metadata={"help": "The number of devices per node"},
-    )
+    device_sku_type: DeviceSKUType = DeviceSKUType.H100
+    num_devices_per_node: int = 8
 
     @staticmethod
     def get_type():

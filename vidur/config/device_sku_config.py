@@ -9,24 +9,14 @@ logger = init_logger(__name__)
 
 @dataclass
 class BaseDeviceSKUConfig(BaseFixedConfig):
-    fp16_tflops: int = field(
-        metadata={"help": "The number of TFLOPS the device can achieve in FP16"},
-    )
-    total_memory_gb: int = field(
-        metadata={"help": "The total memory of the device in GB"},
-    )
+    fp16_tflops: int
+    total_memory_gb: int
 
 
 @dataclass
 class A100DeviceSKUConfig(BaseDeviceSKUConfig):
-    fp16_tflops: int = field(
-        default=312,
-        metadata={"help": "The number of TFLOPS the device can achieve in FP16"},
-    )
-    total_memory_gb: int = field(
-        default=80,
-        metadata={"help": "The total memory of the device in GB"},
-    )
+    fp16_tflops: int = 312
+    total_memory_gb: int = 80
 
     @staticmethod
     def get_type():
@@ -35,14 +25,8 @@ class A100DeviceSKUConfig(BaseDeviceSKUConfig):
 
 @dataclass
 class A40DeviceSKUConfig(BaseDeviceSKUConfig):
-    fp16_tflops: int = field(
-        default=150,
-        metadata={"help": "The number of TFLOPS the device can achieve in FP16"},
-    )
-    total_memory_gb: int = field(
-        default=45,
-        metadata={"help": "The total memory of the device in GB"},
-    )
+    fp16_tflops: int = 150
+    total_memory_gb: int = 45
 
     @staticmethod
     def get_type():
@@ -51,14 +35,8 @@ class A40DeviceSKUConfig(BaseDeviceSKUConfig):
 
 @dataclass
 class H100DeviceSKUConfig(BaseDeviceSKUConfig):
-    fp16_tflops: int = field(
-        default=1000,
-        metadata={"help": "The number of TFLOPS the device can achieve in FP16"},
-    )
-    total_memory_gb: int = field(
-        default=80,
-        metadata={"help": "The total memory of the device in GB"},
-    )
+    fp16_tflops: int = 1000
+    total_memory_gb: int = 80
 
     @staticmethod
     def get_type():
