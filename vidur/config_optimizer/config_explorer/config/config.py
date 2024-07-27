@@ -239,8 +239,8 @@ class SimulationConfig:
     def to_config_dict(self):
         return {
             **self.job_config.to_config_dict(),
-            "output_dir": self.get_run_dir(),
-            "cache_dir": self.cache_dir,
+            "metrics_config_output_dir": self.get_run_dir(),
+            "metrics_config_cache_dir": self.cache_dir,
             "poisson_request_interval_generator_config_qps": self.qps,
             "gamma_request_interval_generator_config_qps": self.qps,
             "time_limit": self.time_limit * 60,  # to seconds
