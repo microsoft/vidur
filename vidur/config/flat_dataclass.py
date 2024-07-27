@@ -57,13 +57,17 @@ def reconstruct_original_dataclass(self) -> Any:
                 config_type = getattr(self, f"{original_field_name}_type")
                 # find all subclasses of field_type and check which one matches the config_type
                 for subclass in get_all_subclasses(field_type):
-                    if subclass.get_type() == config_type:
+                    if str(subclass.get_type()) == config_type:
                         args[original_field_name] = instances[subclass]
                         break
             elif hasattr(field_type, "__dataclass_fields__"):
                 args[original_field_name] = instances[field_type]
             else:
-                args[original_field_name] = getattr(self, prefixed_field_name)
+                value = getattr(self, prefixed_field_name)
+                if callable(value):
+                    # to handle default factory values
+                    value = value()
+                args[original_field_name] = value
 
         instances[_cls] = _cls(**args)
 
@@ -148,7 +152,7 @@ def create_flat_dataclass(input_dataclass: Any) -> Any:
                 )
 
                 type_field_name = f"{field.name}_type"
-                default_value = field.default_factory().get_type()
+                default_value = str(field.default_factory().get_type())
                 meta_fields_with_defaults.append(
                     (type_field_name, type(default_value), default_value)
                 )

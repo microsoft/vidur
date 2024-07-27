@@ -126,6 +126,10 @@ class Llama2ModelConfig(BaseModelConfig):
         metadata={"help": "Whether to use tensor parallelism in the model"},
     )
 
+    @staticmethod
+    def get_name():
+        return "meta-llama/Llama-2-Config"
+
 
 @dataclass
 class CodeLlama34BModelConfig(Llama2ModelConfig):

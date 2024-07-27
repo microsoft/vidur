@@ -37,7 +37,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         self._k_fold_cv_splits = (
             predictor_config.k_fold_cv_splits
         )
-        self._model_name = str(model_config.get_type())
+        self._model_name = model_config.get_name()
         self._num_q_heads = model_config.num_q_heads
         self._num_kv_heads = model_config.num_kv_heads
         self._embedding_dim = model_config.embedding_dim
@@ -48,7 +48,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         self._norm = model_config.norm
         self._post_attn_norm = model_config.post_attn_norm
 
-        self._model_provider = str(model_config.get_type())
+        self._model_provider = str(config.cluster_config.execution_time_predictor_config.get_type())
 
         # These overheads are only for GQA models
         self._attention_prefill_batching_overhead_fraction = (

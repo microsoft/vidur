@@ -4,6 +4,7 @@ from typing import Dict, List
 
 import pandas as pd
 import plotly_express as px
+import wandb
 
 from vidur.config import SimulationConfig, MetricsConfig
 from vidur.entities import Batch, BatchStage, ExecutionTime, Request
@@ -50,10 +51,10 @@ class MetricsStore:
 
     def __init__(self, config: SimulationConfig):
         self._config: SimulationConfig = config
-        metrics_config: MetricsConfig = metrics_config
+        metrics_config: MetricsConfig = config.cluster_config.metrics_config
 
         self._num_replicas = config.cluster_config.num_replicas
-        self._num_stages = config.cluster_config.replica_scheduler_config.num_pipeline_stages
+        self._num_stages = config.cluster_config.replica_config.num_pipeline_stages
         self._should_write_metrics = metrics_config.write_metrics
         self._subsamples = metrics_config.subsamples
         self._save_table_to_wandb = metrics_config.save_table_to_wandb

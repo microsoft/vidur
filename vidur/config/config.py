@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
+import json
+import os
 from typing import Optional, List
 
 from vidur.config.base_poly_config import BasePolyConfig
@@ -9,7 +11,7 @@ from vidur.config.device_sku_config import BaseDeviceSKUConfig
 from vidur.config.flat_dataclass import create_flat_dataclass
 from vidur.config.model_config import BaseModelConfig
 from vidur.config.node_sku_config import BaseNodeSKUConfig
-from vidur.config.utils import get_all_subclasses
+from vidur.config.utils import get_all_subclasses, dataclass_to_dict
 from vidur.logger import init_logger
 from vidur.types import ReplicaSchedulerType, GlobalSchedulerType, ExecutionTimePredictorType, RequestGeneratorType, RequestIntervalGeneratorType, RequestLengthGeneratorType
 
@@ -213,11 +215,6 @@ class SyntheticRequestGeneratorConfig(BaseRequestGeneratorConfig):
     duration: float = field(
         default=None,
         metadata={"help": "Duration of the synthetic request generator."},
-    )
-    max_tokens: int = field(
-        init=False,
-        default=4096,
-        metadata={"help": "Maximum tokens for the synthetic request generator."},
     )
 
     def __post_init__(self):
@@ -564,7 +561,7 @@ class BaseExecutionTimePredictorConfig(BasePolyConfig):
         metadata={"help": "Max batch size for prediction."},
     )
     prediction_max_tokens_per_request: int = field(
-        default=4096,
+        default=8192,
         metadata={"help": "Max tokens per request for prediction."},
     )
     attention_decode_batching_overhead_fraction: float = field(
@@ -734,6 +731,8 @@ class SimulationConfig(ABC):
         self.output_dir = (
             f"{self.output_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')}"
         )
+        os.makedirs(self.output_dir, exist_ok=True)
+        self.write_config_to_file()
 
     @classmethod
     def create_from_cli_args(cls):
@@ -748,3 +747,8 @@ class SimulationConfig(ABC):
             return self.__dict__
 
         return self.__flat_config__.__dict__
+
+    def write_config_to_file(self):
+        config_dict = dataclass_to_dict(self)
+        with open(f"{self.output_dir}/config.json", "w") as f:
+            json.dump(config_dict, f, indent=4)

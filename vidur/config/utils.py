@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from typing import Union, get_args, get_origin
 
 primitive_types = {int, str, float, bool, type(None)}
@@ -58,3 +59,11 @@ def get_inner_type(field_type: type) -> type:
 
 def is_subclass(cls, parent: type) -> bool:
     return hasattr(cls, "__bases__") and parent in cls.__bases__
+
+def dataclass_to_dict(dataclass_instance):
+    if isinstance(dataclass_instance, list):
+        return [dataclass_to_dict(item) for item in dataclass_instance]
+    elif hasattr(dataclass_instance, '__dataclass_fields__'):
+        return {k: dataclass_to_dict(v) for k, v in asdict(dataclass_instance).items()}
+    else:
+        return dataclass_instance
