@@ -1,6 +1,7 @@
 import argparse
 import glob
 import os
+import platform
 import shlex
 from subprocess import Popen
 
@@ -48,8 +49,7 @@ class CapacitySearch:
         scheduler_config: SimulationConfig,
     ):
         cpu_affinity_command = ""
-        if self.cpu_core_id is not None:
-            self.cpu_core_id = self.cpu_core_id
+        if self.cpu_core_id is not None and platform.system() != "Darwin":
             cpu_affinity_command = f"taskset --cpu-list {self.cpu_core_id}"
 
         command = f"nice -n 1 {cpu_affinity_command} python -m vidur.main {scheduler_config.to_args()}"
