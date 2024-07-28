@@ -14,9 +14,9 @@ from sklearn.model_selection import GridSearchCV
 
 from vidur.config import (
     BaseExecutionTimePredictorConfig,
-    ReplicaConfig,
     BaseReplicaSchedulerConfig,
-    MetricsConfig
+    MetricsConfig,
+    ReplicaConfig,
 )
 from vidur.entities import Batch
 from vidur.execution_time_predictor.base_execution_time_predictor import (
@@ -28,40 +28,44 @@ logger = init_logger(__name__)
 
 
 class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
-    def __init__(self, 
-                 predictor_config: BaseExecutionTimePredictorConfig,
-                 replica_config: ReplicaConfig,
-                 replica_scheduler_config: BaseReplicaSchedulerConfig,
-                 metrics_config: MetricsConfig) -> None:
+    def __init__(
+        self,
+        predictor_config: BaseExecutionTimePredictorConfig,
+        replica_config: ReplicaConfig,
+        replica_scheduler_config: BaseReplicaSchedulerConfig,
+        metrics_config: MetricsConfig,
+    ) -> None:
         super().__init__(
             predictor_config=predictor_config,
             replica_config=replica_config,
             replica_scheduler_config=replica_scheduler_config,
-            metrics_config=metrics_config
+            metrics_config=metrics_config,
         )
         os.makedirs(self._cache_dir, exist_ok=True)
 
         # These overheads are only for GQA models
         self._attention_prefill_batching_overhead_fraction = (
-            (
-                self._config.attention_prefill_batching_overhead_fraction
-            )
+            (self._config.attention_prefill_batching_overhead_fraction)
             if self._model_config.num_q_heads > self._model_config.num_kv_heads
             else 0
         )
         self._attention_decode_batching_overhead_fraction = (
-            (
-                self._config.attention_decode_batching_overhead_fraction
-            )
+            (self._config.attention_decode_batching_overhead_fraction)
             if self._model_config.num_q_heads > self._model_config.num_kv_heads
             else 0
         )
         if self._replica_scheduler_provider == "orca":
-            self._max_tokens = self._config.prediction_max_tokens_per_request * self._config.prediction_max_batch_size
+            self._max_tokens = (
+                self._config.prediction_max_tokens_per_request
+                * self._config.prediction_max_batch_size
+            )
         else:
             self._max_tokens = self._config.prediction_max_tokens_per_request
 
-        num_workers = self._replica_config.num_pipeline_stages * self._replica_config.tensor_parallel_size
+        num_workers = (
+            self._replica_config.num_pipeline_stages
+            * self._replica_config.tensor_parallel_size
+        )
         devices_per_node = self._replica_config.node_config.num_devices_per_node
         assert (
             num_workers < devices_per_node or num_workers % devices_per_node == 0
@@ -74,7 +78,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             self._attention_input_file,
             self._all_reduce_input_file,
             self._send_recv_input_file,
-            self._cpu_overhead_input_file
+            self._cpu_overhead_input_file,
         ) = self._get_input_files()
 
         self._models = self._train_models()
@@ -89,10 +93,12 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             self._config.cpu_overhead_input_file,
         ]
         for i in range(len(input_files)):
-            input_files[i] = input_files[i].replace(
-                "{DEVICE}", self._replica_config.device).replace(
-                "{MODEL}", self._model_config.get_name()).replace(
-                "{NETWORK_DEVICE}", self._replica_config.network_device)
+            input_files[i] = (
+                input_files[i]
+                .replace("{DEVICE}", self._replica_config.device)
+                .replace("{MODEL}", self._model_config.get_name())
+                .replace("{NETWORK_DEVICE}", self._replica_config.network_device)
+            )
 
         return tuple(input_files)
 
@@ -117,7 +123,10 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             & (df["n_expanded_embd"] == self._model_config.mlp_hidden_dim)
             & (df["use_gated_mlp"] == self._model_config.use_gated_mlp)
             & (df["vocab_size"] == self._model_config.vocab_size)
-            & (df["num_tensor_parallel_workers"] == self._replica_config.tensor_parallel_size)
+            & (
+                df["num_tensor_parallel_workers"]
+                == self._replica_config.tensor_parallel_size
+            )
         ]
 
         for column in [
@@ -148,7 +157,10 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             & (df["n_q_head"] == self._model_config.num_q_heads)
             & (df["n_kv_head"] == self._model_config.num_kv_heads)
             & (df["block_size"] == self._block_size)
-            & (df["num_tensor_parallel_workers"] == self._replica_config.tensor_parallel_size)
+            & (
+                df["num_tensor_parallel_workers"]
+                == self._replica_config.tensor_parallel_size
+            )
         ]
 
     def _load_all_reduce_df(self, file_path: str) -> pd.DataFrame:
@@ -176,7 +188,10 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         df = self._read_input_file(file_path)
         filtered_df = df[
             (df["model_name"] == self._model_config.get_name())
-            & (df["tensor_parallel_degree"] == self._replica_config.tensor_parallel_size)
+            & (
+                df["tensor_parallel_degree"]
+                == self._replica_config.tensor_parallel_size
+            )
         ]
         return filtered_df
 
@@ -627,9 +642,13 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
     def _predict_for_attention_layer_models(self) -> Dict[str, Any]:
         predictions = {}
 
-        decode_batch_size_range = np.arange(1, self._config.prediction_max_batch_size + 1)
+        decode_batch_size_range = np.arange(
+            1, self._config.prediction_max_batch_size + 1
+        )
         decode_kv_cache_size_range = np.arange(
-            0, self._config.prediction_max_tokens_per_request + 1, self._config.kv_cache_prediction_granularity
+            0,
+            self._config.prediction_max_tokens_per_request + 1,
+            self._config.kv_cache_prediction_granularity,
         )
         decode_prefill_chunk_size_range = [0]
         decode_batch_size, decode_kv_cache_size, decode_prefill_chunk_size = zip(
@@ -642,7 +661,9 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         prefill_batch_size_range = [1]
         prefill_kv_cache_size_range = np.arange(
-            0, self._config.prediction_max_tokens_per_request + 1, self._config.kv_cache_prediction_granularity
+            0,
+            self._config.prediction_max_tokens_per_request + 1,
+            self._config.kv_cache_prediction_granularity,
         )
         prefill_prefill_chunk_size_range = np.arange(
             1, self._config.prediction_max_prefill_chunk_size + 1
@@ -718,7 +739,11 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         decode_batch_size = len(decode_kv_cache_sizes)
         decode_avg_kv_cache_size = int(np.mean(decode_kv_cache_sizes))
         decode_avg_kv_cache_size = (
-            (decode_avg_kv_cache_size + self._config.kv_cache_prediction_granularity - 1)
+            (
+                decode_avg_kv_cache_size
+                + self._config.kv_cache_prediction_granularity
+                - 1
+            )
             // self._config.kv_cache_prediction_granularity
         ) * self._config.kv_cache_prediction_granularity
 

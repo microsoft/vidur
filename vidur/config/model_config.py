@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from vidur.config.base_fixed_config import BaseFixedConfig
 from vidur.logger import init_logger
-from vidur.types import NormType, ActivationType
+from vidur.types import ActivationType, NormType
 
 logger = init_logger(__name__)
 
@@ -58,7 +58,7 @@ class CodeLlama34BModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 8
     embedding_dim: int = 8192
     mlp_hidden_dim: int = 22016
-    
+
     @staticmethod
     def get_name():
         return "codellama/CodeLlama-34b-Instruct-hf"
@@ -71,7 +71,7 @@ class Llama2_7BModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 32
     embedding_dim: int = 4096
     mlp_hidden_dim: int = 11008
-    
+
     @staticmethod
     def get_name():
         return "meta-llama/Llama-2-7b-hf"
@@ -84,7 +84,7 @@ class Llama2_70BModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 8
     embedding_dim: int = 8192
     mlp_hidden_dim: int = 28672
-    
+
     @staticmethod
     def get_name():
         return "meta-llama/Llama-2-70b-hf"
@@ -120,6 +120,7 @@ class Llama3_70BModelConfig(Llama2ModelConfig):
     @staticmethod
     def get_name():
         return "meta-llama/Meta-Llama-3-70B"
+
 
 @dataclass
 class InternLM2ModelConfig(Llama2ModelConfig):

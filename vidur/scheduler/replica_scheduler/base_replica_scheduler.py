@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from vidur.config import BaseRequestGeneratorConfig, ReplicaConfig, BaseReplicaSchedulerConfig
+from vidur.config import (
+    BaseReplicaSchedulerConfig,
+    BaseRequestGeneratorConfig,
+    ReplicaConfig,
+)
 from vidur.entities import Batch, Replica, Request
 from vidur.execution_time_predictor import BaseExecutionTimePredictor
 from vidur.logger import init_logger

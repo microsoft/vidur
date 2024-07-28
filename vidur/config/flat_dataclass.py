@@ -1,5 +1,9 @@
 import json
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, BooleanOptionalAction
+from argparse import (
+    ArgumentDefaultsHelpFormatter,
+    ArgumentParser,
+    BooleanOptionalAction,
+)
 from collections import defaultdict, deque
 from dataclasses import MISSING, fields, make_dataclass
 from typing import Any, get_args
@@ -114,7 +118,7 @@ def create_from_cli_args(cls) -> Any:
             arg_params["default"] = field.default_factory()
         else:
             arg_params["required"] = True
-        
+
         if nargs:
             arg_params["nargs"] = nargs
 

@@ -1,4 +1,4 @@
-from dataclasses import is_dataclass, fields
+from dataclasses import fields, is_dataclass
 from typing import Union, get_args, get_origin
 
 primitive_types = {int, str, float, bool, type(None)}
@@ -78,10 +78,10 @@ def dataclass_to_dict(obj):
             if key not in data:
                 data[key] = dataclass_to_dict(value)
         # Include the name of the class
-        if hasattr(obj, 'get_type') and callable(getattr(obj, 'get_type')):
-            data['name'] = str(obj.get_type())
-        elif hasattr(obj, 'get_name') and callable(getattr(obj, 'get_name')):
-            data['name'] = obj.get_name()
+        if hasattr(obj, "get_type") and callable(getattr(obj, "get_type")):
+            data["name"] = str(obj.get_type())
+        elif hasattr(obj, "get_name") and callable(getattr(obj, "get_name")):
+            data["name"] = obj.get_name()
         return data
     else:
         return obj

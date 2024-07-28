@@ -14,7 +14,7 @@ class BaseFixedConfig(ABC):
             if subclass.get_type() == type_:
                 return subclass()
         raise ValueError(f"[{cls.__name__}] Invalid type: {type_}")
-    
+
     @classmethod
     def create_from_name(cls, name: str) -> Any:
         for subclass in get_all_subclasses(cls):

@@ -8,15 +8,26 @@ class ParamCounter:
         self._replica_config = replica_config
         self._model_config = self._replica_config.model_config
 
-        assert self._model_config.num_q_heads % self._replica_config.tensor_parallel_size == 0
-        assert self._model_config.num_layers % self._replica_config.num_pipeline_stages == 0
-        assert self._model_config.embedding_dim % self._replica_config.tensor_parallel_size == 0
+        assert (
+            self._model_config.num_q_heads % self._replica_config.tensor_parallel_size
+            == 0
+        )
+        assert (
+            self._model_config.num_layers % self._replica_config.num_pipeline_stages
+            == 0
+        )
+        assert (
+            self._model_config.embedding_dim % self._replica_config.tensor_parallel_size
+            == 0
+        )
         assert self._model_config.embedding_dim % self._model_config.num_q_heads == 0
 
         self._num_layers_per_pipeline_stage = (
             self._model_config.num_layers // self._replica_config.num_pipeline_stages
         )
-        self._attention_head_dim = self._model_config.embedding_dim // self._model_config.num_q_heads
+        self._attention_head_dim = (
+            self._model_config.embedding_dim // self._model_config.num_q_heads
+        )
         self._q_heads_per_tensor_parallel_worker = (
             self._model_config.num_q_heads // self._replica_config.tensor_parallel_size
         )

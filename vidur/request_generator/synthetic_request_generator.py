@@ -2,9 +2,7 @@ from typing import List
 
 from vidur.config import SyntheticRequestGeneratorConfig
 from vidur.entities import Request
-from vidur.request_generator.base_request_generator import (
-    BaseRequestGenerator,
-)
+from vidur.request_generator.base_request_generator import BaseRequestGenerator
 from vidur.request_generator.request_interval_generator_registry import (
     RequestIntervalGeneratorRegistry,
 )

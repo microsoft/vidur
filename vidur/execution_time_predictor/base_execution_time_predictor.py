@@ -2,19 +2,21 @@ from abc import ABC, abstractmethod
 
 from vidur.config import (
     BaseExecutionTimePredictorConfig,
-    ReplicaConfig,
     BaseReplicaSchedulerConfig,
-    MetricsConfig
+    MetricsConfig,
+    ReplicaConfig,
 )
 from vidur.entities import Batch, ExecutionTime
 
 
 class BaseExecutionTimePredictor(ABC):
-    def __init__(self, 
-                 predictor_config: BaseExecutionTimePredictorConfig,
-                 replica_config: ReplicaConfig,
-                 replica_scheduler_config: BaseReplicaSchedulerConfig,
-                 metrics_config: MetricsConfig) -> None:
+    def __init__(
+        self,
+        predictor_config: BaseExecutionTimePredictorConfig,
+        replica_config: ReplicaConfig,
+        replica_scheduler_config: BaseReplicaSchedulerConfig,
+        metrics_config: MetricsConfig,
+    ) -> None:
         self._config = predictor_config
         self._replica_config = replica_config
         self._model_config = replica_config.model_config
@@ -23,7 +25,9 @@ class BaseExecutionTimePredictor(ABC):
         self._replica_scheduler_provider = str(replica_scheduler_config.get_type())
         self._block_size = replica_scheduler_config.block_size
         self._cache_dir = metrics_config.cache_dir
-        self._num_layers_per_pipeline_stage = self._model_config.num_layers // self._replica_config.num_pipeline_stages
+        self._num_layers_per_pipeline_stage = (
+            self._model_config.num_layers // self._replica_config.num_pipeline_stages
+        )
 
     def get_execution_time(self, batch: Batch, pipeline_stage: int) -> ExecutionTime:
         if pipeline_stage == self._replica_config.num_pipeline_stages - 1:

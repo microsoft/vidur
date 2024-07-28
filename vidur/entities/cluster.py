@@ -1,6 +1,6 @@
 import json
 
-from vidur.config import ClusterConfig, MetricsConfig, BaseRequestGeneratorConfig
+from vidur.config import BaseRequestGeneratorConfig, ClusterConfig, MetricsConfig
 from vidur.entities.base_entity import BaseEntity
 from vidur.entities.replica import Replica
 from vidur.logger import init_logger
@@ -9,7 +9,12 @@ logger = init_logger(__name__)
 
 
 class Cluster(BaseEntity):
-    def __init__(self, cluster_config: ClusterConfig, metrics_config: MetricsConfig, generator_config: BaseRequestGeneratorConfig) -> None:
+    def __init__(
+        self,
+        cluster_config: ClusterConfig,
+        metrics_config: MetricsConfig,
+        generator_config: BaseRequestGeneratorConfig,
+    ) -> None:
         self._id = Cluster.generate_id()
         self._config = cluster_config
 

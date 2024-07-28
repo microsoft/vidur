@@ -29,8 +29,14 @@ class Simulator:
         self._event_trace = []
         self._event_chrome_trace = []
 
-        self._cluster = Cluster(self._config.cluster_config, self._config.metrics_config, self._config.request_generator_config)
-        self._metric_store = MetricsStore(self._config.metrics_config, self._config.cluster_config)
+        self._cluster = Cluster(
+            self._config.cluster_config,
+            self._config.metrics_config,
+            self._config.request_generator_config,
+        )
+        self._metric_store = MetricsStore(
+            self._config.metrics_config, self._config.cluster_config
+        )
         self._request_generator = RequestGeneratorRegistry.get(
             self._config.request_generator_config.get_type(),
             self._config.request_generator_config,
@@ -38,7 +44,7 @@ class Simulator:
         self._scheduler = GlobalSchedulerRegistry.get(
             self._config.cluster_config.global_scheduler_config.get_type(),
             self._config,
-            self._cluster.replicas
+            self._cluster.replicas,
         )
 
         self._init_event_queue()

@@ -5,9 +5,7 @@ import pandas as pd
 
 from vidur.config import TraceRequestGeneratorConfig
 from vidur.entities import Request
-from vidur.request_generator.base_request_generator import (
-    BaseRequestGenerator,
-)
+from vidur.request_generator.base_request_generator import BaseRequestGenerator
 
 logger = logging.getLogger(__name__)
 

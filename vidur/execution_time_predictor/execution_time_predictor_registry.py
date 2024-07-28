@@ -13,6 +13,7 @@ class ExecutionTimePredictorRegistry(BaseRegistry):
     def get_key_from_str(cls, key_str: str) -> ExecutionTimePredictorType:
         return ExecutionTimePredictorType.from_str(key_str)
 
+
 ExecutionTimePredictorRegistry.register(
     ExecutionTimePredictorType.RANDOM_FORREST, RandomForrestExecutionTimePredictor
 )

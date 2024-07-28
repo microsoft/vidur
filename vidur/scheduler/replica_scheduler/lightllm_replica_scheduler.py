@@ -14,9 +14,7 @@ class LightLLMReplicaScheduler(BaseReplicaScheduler):
 
         self._preempted_requests: List[Request] = []
         self._num_running_batches = 0
-        self._max_micro_batch_size = (
-            self._config.batch_size_cap // self._num_stages
-        )
+        self._max_micro_batch_size = self._config.batch_size_cap // self._num_stages
         assert (
             self._config.block_size == 1
         ), "LightLLM scheduler only supports block size of 1."

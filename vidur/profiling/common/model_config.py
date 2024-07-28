@@ -1,7 +1,7 @@
+from dataclasses import asdict
 from typing import Any, Dict, Optional
 
 import torch
-from dataclasses import asdict
 from sarathi.config import ParallelConfig
 
 from vidur.config.model_config import BaseModelConfig

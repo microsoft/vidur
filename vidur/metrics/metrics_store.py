@@ -6,7 +6,7 @@ import pandas as pd
 import plotly_express as px
 import wandb
 
-from vidur.config import MetricsConfig, ClusterConfig
+from vidur.config import ClusterConfig, MetricsConfig
 from vidur.entities import Batch, BatchStage, ExecutionTime, Request
 from vidur.logger import init_logger
 from vidur.metrics.cdf_sketch import CDFSketch
@@ -632,9 +632,9 @@ class MetricsStore:
     def on_batch_end(
         self, time: float, batch: Batch, replica_id: int, memory_usage_percent: int
     ) -> None:
-        if (self._config.min_batch_index and batch.id < self._config.min_batch_index) or (
-            self._config.max_batch_index and batch.id > self._config.max_batch_index
-        ):
+        if (
+            self._config.min_batch_index and batch.id < self._config.min_batch_index
+        ) or (self._config.max_batch_index and batch.id > self._config.max_batch_index):
             return
 
         for request in batch.completed_requests:

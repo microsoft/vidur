@@ -1,9 +1,9 @@
+import json
+import os
 from abc import ABC
 from dataclasses import dataclass, field
 from datetime import datetime
-import json
-import os
-from typing import Optional, List
+from typing import List, Optional
 
 from vidur.config.base_poly_config import BasePolyConfig
 from vidur.config.device_sku_config import BaseDeviceSKUConfig
@@ -12,7 +12,14 @@ from vidur.config.model_config import BaseModelConfig
 from vidur.config.node_sku_config import BaseNodeSKUConfig
 from vidur.config.utils import dataclass_to_dict
 from vidur.logger import init_logger
-from vidur.types import ReplicaSchedulerType, GlobalSchedulerType, ExecutionTimePredictorType, RequestGeneratorType, RequestIntervalGeneratorType, RequestLengthGeneratorType
+from vidur.types import (
+    ExecutionTimePredictorType,
+    GlobalSchedulerType,
+    ReplicaSchedulerType,
+    RequestGeneratorType,
+    RequestIntervalGeneratorType,
+    RequestLengthGeneratorType,
+)
 
 logger = init_logger(__name__)
 
@@ -53,7 +60,9 @@ class TraceRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
     )
     time_scale_factor: float = field(
         default=0.3,
-        metadata={"help": "Time scale factor for the trace request interval generator."},
+        metadata={
+            "help": "Time scale factor for the trace request interval generator."
+        },
     )
 
     @staticmethod
@@ -81,7 +90,9 @@ class GammaRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
     )
     cv: float = field(
         default=0.5,
-        metadata={"help": "Coefficient of variation for Gamma Request Interval Generator."},
+        metadata={
+            "help": "Coefficient of variation for Gamma Request Interval Generator."
+        },
     )
 
     @staticmethod
@@ -104,11 +115,15 @@ class TraceRequestLengthGeneratorConfig(BaseRequestLengthGeneratorConfig):
     )
     prefill_scale_factor: float = field(
         default=1,
-        metadata={"help": "Prefill scale factor for the trace request length generator."},
+        metadata={
+            "help": "Prefill scale factor for the trace request length generator."
+        },
     )
     decode_scale_factor: float = field(
         default=1,
-        metadata={"help": "Decode scale factor for the trace request length generator."},
+        metadata={
+            "help": "Decode scale factor for the trace request length generator."
+        },
     )
     max_tokens: int = field(
         default=4096,
@@ -160,7 +175,9 @@ class UniformRequestLengthGeneratorConfig(BaseRequestLengthGeneratorConfig):
     )
     prefill_to_decode_ratio: float = field(
         default=20.0,
-        metadata={"help": "Prefill to decode ratio for Uniform Request Length Generator."},
+        metadata={
+            "help": "Prefill to decode ratio for Uniform Request Length Generator."
+        },
     )
 
     @staticmethod
@@ -194,7 +211,6 @@ class BaseRequestGeneratorConfig(BasePolyConfig):
         default=4096,
         metadata={"help": "Maximum tokens."},
     )
-
 
 
 @dataclass
@@ -473,9 +489,15 @@ class ReplicaConfig:
 
     def __post_init__(self):
         self.world_size = self.num_pipeline_stages * self.tensor_parallel_size
-        self.model_config: BaseModelConfig = BaseModelConfig.create_from_name(self.model_name)
-        self.device_config: BaseDeviceSKUConfig = BaseDeviceSKUConfig.create_from_type_string(self.device)
-        self.node_config: BaseNodeSKUConfig = BaseNodeSKUConfig.create_from_type_string(self.network_device)
+        self.model_config: BaseModelConfig = BaseModelConfig.create_from_name(
+            self.model_name
+        )
+        self.device_config: BaseDeviceSKUConfig = (
+            BaseDeviceSKUConfig.create_from_type_string(self.device)
+        )
+        self.node_config: BaseNodeSKUConfig = BaseNodeSKUConfig.create_from_type_string(
+            self.network_device
+        )
 
 
 @dataclass
@@ -558,7 +580,7 @@ class BaseExecutionTimePredictorConfig(BasePolyConfig):
         default=0.1,
         metadata={"help": "Attention prefill batching overhead fraction."},
     )
-    nccl_cpu_launch_overhead_ms: float =  field(
+    nccl_cpu_launch_overhead_ms: float = field(
         default=0.02,
         metadata={"help": "NCCL CPU launch overhead in ms."},
     )
@@ -648,7 +670,7 @@ class SimulationConfig(ABC):
         metadata={"help": "Logging level."},
     )
     time_limit: int = field(
-        default=0, # in seconds, 0 is no limit
+        default=0,  # in seconds, 0 is no limit
         metadata={"help": "Time limit for simulation in seconds. 0 means no limit."},
     )
     cluster_config: ClusterConfig = field(

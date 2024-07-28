@@ -15,9 +15,7 @@ class VLLMReplicaScheduler(BaseReplicaScheduler):
         self._num_running_batches = 0
         # For vLLM and its derivatives, we only need to set a loose max batch size
         # Memory requirements are handled explicitly by the scheduler
-        self._max_micro_batch_size = (
-            self._config.batch_size_cap // self._num_stages
-        )
+        self._max_micro_batch_size = self._config.batch_size_cap // self._num_stages
         self._watermark_blocks = int(
             self._config.watermark_blocks_fraction * self._config.num_blocks
         )
@@ -34,7 +32,9 @@ class VLLMReplicaScheduler(BaseReplicaScheduler):
     def _can_allocate_request(self, request: Request) -> bool:
         if request.id not in self._allocation_map:
             # new request
-            num_required_blocks = ceil((request.num_prefill_tokens) / self._config.block_size)
+            num_required_blocks = ceil(
+                (request.num_prefill_tokens) / self._config.block_size
+            )
             return (
                 self._config.num_blocks
                 - self._num_allocated_blocks
@@ -48,7 +48,9 @@ class VLLMReplicaScheduler(BaseReplicaScheduler):
     def _allocate_request(self, request: Request) -> None:
         if request.id not in self._allocation_map:
             # new request
-            num_required_blocks = ceil((request.num_prefill_tokens) / self._config.block_size)
+            num_required_blocks = ceil(
+                (request.num_prefill_tokens) / self._config.block_size
+            )
             self.allocate(request.id, num_required_blocks)
             return
 

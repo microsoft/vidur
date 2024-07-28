@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from vidur.config.base_fixed_config import BaseFixedConfig
 from vidur.logger import init_logger
-from vidur.types import NodeSKUType, DeviceSKUType
+from vidur.types import DeviceSKUType, NodeSKUType
 
 logger = init_logger(__name__)
 

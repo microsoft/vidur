@@ -1,6 +1,6 @@
 from math import ceil
 
-from vidur.config import ReplicaConfig, BaseRequestGeneratorConfig
+from vidur.config import BaseRequestGeneratorConfig, ReplicaConfig
 from vidur.entities.base_entity import BaseEntity
 from vidur.logger import init_logger
 
@@ -8,7 +8,11 @@ logger = init_logger(__name__)
 
 
 class Replica(BaseEntity):
-    def __init__(self, replica_config: ReplicaConfig, generator_config: BaseRequestGeneratorConfig) -> None:
+    def __init__(
+        self,
+        replica_config: ReplicaConfig,
+        generator_config: BaseRequestGeneratorConfig,
+    ) -> None:
         self._id = Replica.generate_id()
 
         self._replica_config = replica_config
@@ -16,9 +20,13 @@ class Replica(BaseEntity):
         self._device_config = replica_config.device_config
         self._generator_config = generator_config
 
-        assert self._model_config.num_layers % self._replica_config.num_pipeline_stages == 0
         assert (
-            self._model_config.embedding_dim % self._replica_config.tensor_parallel_size == 0
+            self._model_config.num_layers % self._replica_config.num_pipeline_stages
+            == 0
+        )
+        assert (
+            self._model_config.embedding_dim % self._replica_config.tensor_parallel_size
+            == 0
         )
 
     @property
@@ -67,11 +75,15 @@ class Replica(BaseEntity):
 
     @property
     def q_heads_per_tensor_parallel_worker(self) -> int:
-        return self._model_config.num_q_heads // self._replica_config.tensor_parallel_size
+        return (
+            self._model_config.num_q_heads // self._replica_config.tensor_parallel_size
+        )
 
     @property
     def kv_heads_per_tensor_parallel_worker(self) -> int:
-        return ceil(self._model_config.num_kv_heads / self._replica_config.tensor_parallel_size)
+        return ceil(
+            self._model_config.num_kv_heads / self._replica_config.tensor_parallel_size
+        )
 
     @property
     def num_tensor_parallel_workers(self) -> int:
