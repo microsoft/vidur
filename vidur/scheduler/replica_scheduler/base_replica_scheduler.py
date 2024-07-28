@@ -21,25 +21,25 @@ class BaseReplicaScheduler(ABC):
         num_stages: int,
         execution_time_predictor: BaseExecutionTimePredictor,
     ) -> None:
+        self._config = replica_scheduler_config
         self._replica_config = replica_config
         self._request_generator_config = request_generator_config
-        self._replica_scheduler_config = replica_scheduler_config
         self._replica_id = replica.id
         self._num_stages = num_stages
 
         self._max_blocks_per_sequence = (
-            self._request_generator_config.max_tokens // self._replica_scheduler_config.block_size
+            self._request_generator_config.max_tokens // self._config.block_size
         )
 
         memory_planner = MemoryPlanner(self._replica_config, replica)
 
-        if not self._replica_scheduler_config.num_blocks:
-            self._replica_scheduler_config.num_blocks = (
+        if not self._config.num_blocks:
+            self._config.num_blocks = (
                 self._max_blocks_per_sequence * memory_planner.get_max_request_slots()
             )
         self._max_batch_size = min(
             memory_planner.get_max_batch_size(),
-            self._replica_scheduler_config.batch_size_cap,
+            self._config.batch_size_cap,
         )
 
         logger.debug(
@@ -74,7 +74,7 @@ class BaseReplicaScheduler(ABC):
 
     @property
     def memory_usage_percent(self) -> int:
-        return (self._num_allocated_blocks * 100) / self._replica_scheduler_config.num_blocks
+        return (self._num_allocated_blocks * 100) / self._config.num_blocks
 
     def is_empty(self) -> bool:
         return (
@@ -101,7 +101,7 @@ class BaseReplicaScheduler(ABC):
         return self._replica_stage_schedulers[stage_id]
 
     def can_allocate(self, num_blocks: int) -> bool:
-        return self._replica_scheduler_config.num_blocks - self._num_allocated_blocks >= num_blocks
+        return self._config.num_blocks - self._num_allocated_blocks >= num_blocks
 
     def allocate(self, request_id: int, num_blocks: int) -> None:
         self._num_allocated_blocks += num_blocks
@@ -110,7 +110,7 @@ class BaseReplicaScheduler(ABC):
         else:
             self._allocation_map[request_id] += num_blocks
 
-        assert self._num_allocated_blocks <= self._replica_scheduler_config.num_blocks
+        assert self._num_allocated_blocks <= self._config.num_blocks
 
     def free(self, *request_ids: List[int]) -> None:
         for request_id in request_ids:

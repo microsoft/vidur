@@ -15,10 +15,10 @@ class LightLLMReplicaScheduler(BaseReplicaScheduler):
         self._preempted_requests: List[Request] = []
         self._num_running_batches = 0
         self._max_micro_batch_size = (
-            self._replica_scheduler_config.batch_size_cap // self._num_stages
+            self._config.batch_size_cap // self._num_stages
         )
         assert (
-            self._replica_scheduler_config.block_size == 1
+            self._config.block_size == 1
         ), "LightLLM scheduler only supports block size of 1."
         assert (
             self._num_stages == 1
@@ -63,7 +63,7 @@ class LightLLMReplicaScheduler(BaseReplicaScheduler):
 
         need_max_token_num = (left_out_len_array * size_array + cum_run_len_array).max()
 
-        return need_max_token_num < self._replica_scheduler_config.num_blocks
+        return need_max_token_num < self._config.num_blocks
 
     def _allocate_request(self, request: Request) -> None:
         if request.id not in self._allocation_map:
@@ -86,10 +86,10 @@ class LightLLMReplicaScheduler(BaseReplicaScheduler):
 
             next_num_tokens = self._get_request_next_num_tokens(request)
 
-            if num_batch_tokens + next_num_tokens > self._replica_scheduler_config.max_tokens_in_batch:
+            if num_batch_tokens + next_num_tokens > self._config.max_tokens_in_batch:
                 break
 
-            if len(self._allocation_map) == self._replica_scheduler_config.batch_size_cap:
+            if len(self._allocation_map) == self._config.batch_size_cap:
                 break
 
             if len(requests) == self._max_micro_batch_size:
@@ -142,7 +142,7 @@ class LightLLMReplicaScheduler(BaseReplicaScheduler):
                 self._num_waiting_iters = 0
             return batch
 
-        if self._num_waiting_iters >= self._replica_scheduler_config.max_waiting_iters:
+        if self._num_waiting_iters >= self._config.max_waiting_iters:
             self._num_waiting_iters = 0
             batch = self._get_prefill_batch()
             if batch:
