@@ -26,10 +26,18 @@ We have a [live demo](https://vidur.westus2.cloudapp.azure.com/) that captures t
 * __Instructions on adding a new model to existing or new SKUs can be found [here](docs/profiling.md)__.
 * All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length by passing additional CLI params:
 
+For random forrest:
 ```text
---sklearn_execution_time_predictor_prediction_max_prefill_chunk_size 16384 \
---sklearn_execution_time_predictor_prediction_max_batch_size 512 \
---sklearn_execution_time_predictor_prediction_max_tokens_per_request 16384 \
+--random_forrest_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
+--random_forrest_execution_time_predictor_config_prediction_max_batch_size 512 \
+--random_forrest_execution_time_predictor_config_prediction_max_tokens_per_request 16384 \
+```
+
+For linear regression:
+```text
+--linear_regression_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
+--linear_regression_execution_time_predictor_config_prediction_max_batch_size 512 \
+--linear_regression_execution_time_predictor_config_prediction_max_tokens_per_request 16384 \
 ```
 
 * Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
@@ -97,26 +105,20 @@ or a big example with all the parameters,
 
 ```sh
 python -m vidur.main  \
---replica_device a100 \
---replica_model_name meta-llama/Llama-2-7b-hf  \
---cluster_num_replicas 1 \
---replica_num_tensor_parallel_workers 1 \
---replica_num_pipeline_stages 1 \
---request_generator_provider synthetic \
---synthetic_request_generator_length_provider trace \
---synthetic_request_generator_interval_provider static \
---request_generator_max_tokens 4096 \
---trace_request_length_generator_trace_file ./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv \
---synthetic_request_generator_num_requests 128  \
---request_generator_provider synthetic \
---synthetic_request_generator_length_provider trace \
---synthetic_request_generator_interval_provider static \
---request_generator_max_tokens 4096 \
---trace_request_length_generator_trace_file ./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv \
---synthetic_request_generator_num_requests 128  \
---replica_scheduler_provider vllm  \
---replica_scheduler_batch_size_cap 256  \
---vllm_scheduler_max_tokens_in_batch 4096
+--replica_config_device a100 \
+--replica_config_model_name meta-llama/Llama-2-7b-hf  \
+--cluster_config_num_replicas 1 \
+--replica_config_tensor_parallel_size 1 \
+--replica_config_num_pipeline_stages 1 \
+--request_generator_config_type synthetic \
+--length_generator_config_type trace \
+--interval_generator_config_type static \
+--[trace|zipf|uniform|fixed]_request_length_generator_config_max_tokens 4096 \
+--trace_request_length_generator_config_trace_file ./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv \
+--synthetic_request_generator_config_num_requests 128  \
+--replica_scheduler_config_type vllm  \
+--[vllm|lightllm|orca|faster_transformer|sarathi]_scheduler_config_batch_size_cap 256  \
+--[vllm|lightllm]_scheduler_config_max_tokens_in_batch 4096
 ```
 
 The simulator supports a plethora of parameters for the simulation description which can be found [here](docs/launch_parameters.md).
