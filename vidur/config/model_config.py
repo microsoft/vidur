@@ -103,7 +103,7 @@ class Llama3_8BModelConfig(Llama2ModelConfig):
 
     @staticmethod
     def get_name():
-        return "meta-llama/Meta-Llama-3-8b"
+        return "meta-llama/Meta-Llama-3-8B"
 
 
 @dataclass
