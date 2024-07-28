@@ -17,11 +17,11 @@ class BaseGlobalScheduler(ABC):
         self._num_replicas = len(self._replicas)
 
         execution_time_predictor = ExecutionTimePredictorRegistry.get(
-            self._config.execution_time_predictor_config.get_type(),
-            predictor_config=self._config.execution_time_predictor_config,
-            replica_config=self._config.cluster_config.replica_config,
-            replica_scheduler_config=self._config.cluster_config.replica_scheduler_config,
-            metrics_config=self._config.metrics_config,
+            config.execution_time_predictor_config.get_type(),
+            predictor_config=config.execution_time_predictor_config,
+            replica_config=config.cluster_config.replica_config,
+            replica_scheduler_config=config.cluster_config.replica_scheduler_config,
+            metrics_config=config.metrics_config,
         )
         self._replica_schedulers = {
             replica_id: ReplicaSchedulerRegistry.get(
