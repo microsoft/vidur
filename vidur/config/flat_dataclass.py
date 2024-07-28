@@ -1,5 +1,5 @@
 import json
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, BooleanOptionalAction
 from collections import defaultdict, deque
 from dataclasses import MISSING, fields, make_dataclass
 from typing import Any, get_args
@@ -8,6 +8,7 @@ from vidur.config.base_poly_config import BasePolyConfig
 from vidur.config.utils import (
     get_all_subclasses,
     get_inner_type,
+    is_bool,
     is_composed_of_primitives,
     is_dict,
     is_list,
@@ -83,6 +84,7 @@ def create_from_cli_args(cls) -> Any:
 
     for field in fields(cls):
         nargs = None
+        action = None
         field_type = field.type
         help_text = field.metadata.get("help", None)
 
@@ -96,24 +98,27 @@ def create_from_cli_args(cls) -> Any:
         elif is_dict(field.type):
             assert is_composed_of_primitives(field.type)
             field_type = json.loads
+        elif is_bool(field.type):
+            action = BooleanOptionalAction
+
+        arg_params = {
+            "type": field_type,
+            "action": action,
+            "help": help_text,
+        }
 
         # handle cases with default and default factory args
         if field.default is not MISSING:
-            parser.add_argument(
-                f"--{field.name}", type=field_type, default=field.default, nargs=nargs, help=help_text
-            )
+            arg_params["default"] = field.default
         elif field.default_factory is not MISSING:
-            parser.add_argument(
-                f"--{field.name}",
-                type=field_type,
-                default=field.default_factory(),
-                nargs=nargs,
-                help=help_text,
-            )
+            arg_params["default"] = field.default_factory()
         else:
-            parser.add_argument(
-                f"--{field.name}", type=field_type, required=True, nargs=nargs, help=help_text
-            )
+            arg_params["required"] = True
+        
+        if nargs:
+            arg_params["nargs"] = nargs
+
+        parser.add_argument(f"--{field.name}", **arg_params)
 
     args = parser.parse_args()
 

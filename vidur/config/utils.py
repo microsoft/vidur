@@ -53,12 +53,17 @@ def is_dict(field_type: type) -> bool:
     return get_origin(field_type) is dict
 
 
+def is_bool(field_type: type) -> bool:
+    return field_type is bool
+
+
 def get_inner_type(field_type: type) -> type:
     return next(t for t in get_args(field_type) if t is not type(None))
 
 
 def is_subclass(cls, parent: type) -> bool:
     return hasattr(cls, "__bases__") and parent in cls.__bases__
+
 
 def dataclass_to_dict(obj):
     if isinstance(obj, list):
