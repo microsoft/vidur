@@ -1,4 +1,5 @@
 import os
+import platform
 import socket
 import time
 from typing import Optional
@@ -7,7 +8,20 @@ import ray
 
 
 def get_ip() -> str:
-    return socket.gethostbyname(socket.gethostname())
+    # special handling for macos
+    if platform.system() == "Darwin":
+        return "127.0.0.1"
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(0)
+    try:
+        s.connect(("10.254.254.254", 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = "127.0.0.1"
+    finally:
+        s.close()
+    return ip
 
 
 def get_nodes() -> list[str]:
@@ -17,6 +31,11 @@ def get_nodes() -> list[str]:
         for x in cluster_resources_keys
         if x.startswith("node:") and x != "node:__internal_head__"
     ]
+
+    # special handling for macos, ensure that we only have one node
+    if platform.system() == "Darwin":
+        assert len(ip_addresses) == 1
+
     return ip_addresses
 
 

@@ -1,6 +1,3 @@
-from vidur.execution_time_predictor.dummy_execution_time_predictor import (
-    DummyExecutionTimePredictor,
-)
 from vidur.execution_time_predictor.linear_regression_execution_time_predictor import (
     LinearRegressionExecutionTimePredictor,
 )
@@ -17,9 +14,6 @@ class ExecutionTimePredictorRegistry(BaseRegistry):
         return ExecutionTimePredictorType.from_str(key_str)
 
 
-ExecutionTimePredictorRegistry.register(
-    ExecutionTimePredictorType.DUMMY, DummyExecutionTimePredictor
-)
 ExecutionTimePredictorRegistry.register(
     ExecutionTimePredictorType.RANDOM_FORREST, RandomForrestExecutionTimePredictor
 )

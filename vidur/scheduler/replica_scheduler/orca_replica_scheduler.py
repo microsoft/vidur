@@ -10,9 +10,6 @@ class OrcaReplicaScheduler(BaseReplicaScheduler):
 
         self._preempted_requests = []
         self._num_running_batches = 0
-        self._use_single_prefill_per_batch = (
-            self._config.orca_scheduler_use_single_prefill_per_batch
-        )
 
     def on_batch_end(self, batch: Batch) -> None:
         self._num_running_batches -= 1
@@ -26,7 +23,6 @@ class OrcaReplicaScheduler(BaseReplicaScheduler):
     def _get_next_batch(self) -> Batch:
         requests = []
         num_tokens = []
-        contains_prefill = False
 
         # all preempted_requests will have prefill completed
         while self._preempted_requests:
@@ -45,16 +41,12 @@ class OrcaReplicaScheduler(BaseReplicaScheduler):
             if not self.can_allocate(self._max_blocks_per_sequence):
                 break
 
-            if self._use_single_prefill_per_batch and contains_prefill:
-                break
-
             request = self._request_queue.pop(0)
 
             self.allocate(request.id, self._max_blocks_per_sequence)
             next_num_tokens = self._get_request_next_num_tokens(request)
             requests.append(request)
             num_tokens.append(next_num_tokens)
-            contains_prefill = True
 
         if not requests:
             return

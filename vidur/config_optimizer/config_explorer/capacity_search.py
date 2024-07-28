@@ -1,6 +1,7 @@
 import argparse
 import glob
 import os
+import platform
 import shlex
 from subprocess import Popen
 
@@ -48,12 +49,11 @@ class CapacitySearch:
         scheduler_config: SimulationConfig,
     ):
         cpu_affinity_command = ""
-        if self.cpu_core_id is not None:
-            self.cpu_core_id = self.cpu_core_id
+        if self.cpu_core_id is not None and platform.system() != "Darwin":
             cpu_affinity_command = f"taskset --cpu-list {self.cpu_core_id}"
 
         command = f"nice -n 1 {cpu_affinity_command} python -m vidur.main {scheduler_config.to_args()}"
-        logger.debug(f"Running command: {command}", flush=True)
+        logger.debug(f"Running command: {command}")
 
         return command
 
@@ -81,7 +81,6 @@ class CapacitySearch:
 
         logger.info(
             f"{simulator_config.to_human_readable_name()} - Scheduling delay (P{self.args.scheduling_delay_slo_quantile}): {scheduling_delay}",
-            flush=True,
         )
         return is_under_scheduling_delay_sla, scheduling_delay
 
@@ -120,7 +119,6 @@ class CapacitySearch:
         except Exception as e:
             logger.error(
                 f"Error running: {self.job_config.get_human_readable_name()}, failed with error: {e}",
-                flush=True,
             )
             return False, None
 
@@ -130,7 +128,6 @@ class CapacitySearch:
         """
         logger.info(
             f"Starting search for {self.job_config.get_human_readable_name()}",
-            flush=True,
         )
 
         left = 0
@@ -175,7 +172,6 @@ class CapacitySearch:
 
         logger.info(
             f"Max QPS under SLO for {self.job_config.get_human_readable_name()}: {max_qps_under_sla}",
-            flush=True,
         )
 
         self.release_cpu_core_id()

@@ -1,10 +1,11 @@
+from dataclasses import asdict
 from typing import Any, Dict, Optional
 
 import torch
-import yaml
 from sarathi.config import ParallelConfig
 
-from vidur.constants import MODEL_CONFIG_DIR
+from vidur.config.model_config import BaseModelConfig
+from vidur.types import ActivationType, NormType
 
 
 class ModelConfig:
@@ -20,8 +21,8 @@ class ModelConfig:
         use_gated_mlp: bool,
         use_bias: bool,
         use_qkv_bias: bool,
-        activation: str,
-        norm: str,
+        activation: ActivationType,
+        norm: NormType,
         post_attn_norm: bool,
         vocab_size: int,
         is_neox_style: Optional[bool] = True,
@@ -41,8 +42,8 @@ class ModelConfig:
         self.vocab_size = vocab_size
         self.use_bias = use_bias
         self.use_qkv_bias = use_qkv_bias
-        self.activation = activation
-        self.norm = norm
+        self.activation = str(activation)
+        self.norm = str(norm)
         self.post_attn_norm = post_attn_norm
         self.no_tensor_parallel = no_tensor_parallel
         self.partial_rotary_factor = partial_rotary_factor
@@ -60,11 +61,10 @@ class ModelConfig:
 
     @staticmethod
     def from_model_name(model_name: str):
-        model_config_path = f"{MODEL_CONFIG_DIR}/{model_name}.yml"
-        with open(model_config_path, "r") as f:
-            model_config = yaml.safe_load(f)
+        model_config: BaseModelConfig = BaseModelConfig.create_from_name(model_name)
+        model_config_dict = asdict(model_config)
 
-        return ModelConfig(model_name, **model_config)
+        return ModelConfig(model_name, **model_config_dict)
 
     def get_num_q_heads(self, parallel_config: ParallelConfig):
         return self.num_q_heads // parallel_config.tensor_parallel_size

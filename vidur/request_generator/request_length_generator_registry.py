@@ -15,9 +15,7 @@ from vidur.utils.base_registry import BaseRegistry
 
 
 class RequestLengthGeneratorRegistry(BaseRegistry):
-    @classmethod
-    def get_key_from_str(cls, key_str: str) -> RequestLengthGeneratorType:
-        return RequestLengthGeneratorType.from_str(key_str)
+    pass
 
 
 RequestLengthGeneratorRegistry.register(

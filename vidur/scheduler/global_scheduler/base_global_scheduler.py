@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple
 
-from vidur.config import Config
+from vidur.config import SimulationConfig
 from vidur.entities import Replica, Request
 from vidur.execution_time_predictor import ExecutionTimePredictorRegistry
 from vidur.scheduler.replica_scheduler.replica_scheduler_registry import (
@@ -10,23 +10,28 @@ from vidur.scheduler.replica_scheduler.replica_scheduler_registry import (
 
 
 class BaseGlobalScheduler(ABC):
-    def __init__(self, config: Config, replicas: Dict[int, Replica]):
+    def __init__(self, config: SimulationConfig, replicas: Dict[int, Replica]):
         self._config = config
         self._replicas = replicas
 
         self._num_replicas = len(self._replicas)
 
-        execution_time_predictor = ExecutionTimePredictorRegistry.get_from_str(
-            self._config.execution_time_predictor_provider,
-            self._config,
+        execution_time_predictor = ExecutionTimePredictorRegistry.get(
+            config.execution_time_predictor_config.get_type(),
+            predictor_config=config.execution_time_predictor_config,
+            replica_config=config.cluster_config.replica_config,
+            replica_scheduler_config=config.cluster_config.replica_scheduler_config,
+            metrics_config=config.metrics_config,
         )
         self._replica_schedulers = {
-            replica_id: ReplicaSchedulerRegistry.get_from_str(
-                config.replica_scheduler_provider,
-                config,
-                replica,
-                replica.num_pipeline_stages,
-                execution_time_predictor,
+            replica_id: ReplicaSchedulerRegistry.get(
+                config.cluster_config.replica_scheduler_config.get_type(),
+                replica_config=config.cluster_config.replica_config,
+                replica_scheduler_config=config.cluster_config.replica_scheduler_config,
+                request_generator_config=config.request_generator_config,
+                replica=replica,
+                num_stages=replica.num_pipeline_stages,
+                execution_time_predictor=execution_time_predictor,
             )
             for replica_id, replica in replicas.items()
         }

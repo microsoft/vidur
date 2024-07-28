@@ -1,28 +1,43 @@
 from abc import ABC, abstractmethod
 
-from vidur.config import Config
+from vidur.config import (
+    BaseExecutionTimePredictorConfig,
+    BaseReplicaSchedulerConfig,
+    MetricsConfig,
+    ReplicaConfig,
+)
 from vidur.entities import Batch, ExecutionTime
 
 
 class BaseExecutionTimePredictor(ABC):
-    def __init__(self, config: Config) -> None:
-        self._num_tensor_parallel_workers = config.replica_num_tensor_parallel_workers
-        self._num_pipeline_stages = config.replica_num_pipeline_stages
-        self._num_layers = config.replica_num_layers
+    def __init__(
+        self,
+        predictor_config: BaseExecutionTimePredictorConfig,
+        replica_config: ReplicaConfig,
+        replica_scheduler_config: BaseReplicaSchedulerConfig,
+        metrics_config: MetricsConfig,
+    ) -> None:
+        self._config = predictor_config
+        self._replica_config = replica_config
+        self._model_config = replica_config.model_config
+
+        # get configs
+        self._replica_scheduler_provider = str(replica_scheduler_config.get_type())
+        self._block_size = replica_scheduler_config.block_size
+        self._cache_dir = metrics_config.cache_dir
         self._num_layers_per_pipeline_stage = (
-            config.replica_num_layers // config.replica_num_pipeline_stages
+            self._model_config.num_layers // self._replica_config.num_pipeline_stages
         )
-        self._replica_scheduler_provider = config.replica_scheduler_provider
 
     def get_execution_time(self, batch: Batch, pipeline_stage: int) -> ExecutionTime:
-        if pipeline_stage == self._num_pipeline_stages - 1:
+        if pipeline_stage == self._replica_config.num_pipeline_stages - 1:
             pipeline_parallel_communication_time = 0
         else:
             pipeline_parallel_communication_time = (
                 self._get_pipeline_parallel_communication_time(batch)
             )
 
-        if self._num_tensor_parallel_workers == 1:
+        if self._replica_config.tensor_parallel_size == 1:
             tensor_parallel_communication_time = 0
         else:
             tensor_parallel_communication_time = (

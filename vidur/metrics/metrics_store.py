@@ -4,9 +4,9 @@ from typing import Dict, List
 
 import pandas as pd
 import plotly_express as px
-
 import wandb
-from vidur.config import Config
+
+from vidur.config import ClusterConfig, MetricsConfig
 from vidur.entities import Batch, BatchStage, ExecutionTime, Request
 from vidur.logger import init_logger
 from vidur.metrics.cdf_sketch import CDFSketch
@@ -30,7 +30,7 @@ logger = init_logger(__name__)
 
 def if_write_metrics(func):
     def wrapper(self, *args, **kwargs):
-        if self._should_write_metrics:
+        if self._config.write_metrics:
             return func(self, *args, **kwargs)
 
     return wrapper
@@ -48,37 +48,14 @@ TIME_STR_MS = "Time (ms)"
 
 
 class MetricsStore:
-    def __init__(self, config: Config):
+
+    def __init__(self, config: MetricsConfig, cluster_config: ClusterConfig) -> None:
         self._config = config
-        self._num_replicas = config.cluster_num_replicas
-        self._num_stages = config.replica_num_pipeline_stages
-        self._should_write_metrics = config.write_metrics
-        self._subsamples = config.metrics_store_subsamples
-        self._save_table_to_wandb = config.metrics_store_save_table_to_wandb
-        self._save_plots = config.metrics_store_store_plots
-        self._keep_individual_batch_metrics = (
-            config.metrics_store_keep_individual_batch_metrics
-        )
-
-        self._wandb_project = config.metrics_store_wandb_project
-        self._wandb_group = config.metrics_store_wandb_group
-        self._wandb_run_name = config.metrics_store_wandb_run_name
-
-        self._min_batch_idx = config.metrics_store_min_batch_idx
-        self._max_batch_idx = config.metrics_store_max_batch_idx
-
         self._last_request_arrived_at = None
-        self._should_store_token_completion_metrics = (
-            config.metrics_store_store_token_completion_metrics
-        )
-        self._should_store_utilization_metrics = (
-            config.metrics_store_store_utilization_metrics
-        )
-        self._should_store_batch_metrics = config.metrics_store_store_batch_metrics
-        self._should_store_operation_metrics = (
-            config.metrics_store_store_operation_metrics
-        )
-        self._should_store_request_metrics = config.metrics_store_store_request_metrics
+
+        # copy config
+        self._num_replicas = cluster_config.num_replicas
+        self._num_pipeline_stages = cluster_config.replica_config.num_pipeline_stages
 
         # Initialise request metrics
         self._request_metrics_time_distributions: Dict[
@@ -88,9 +65,9 @@ class MetricsStore:
             self._request_metrics_time_distributions[metric_name] = DataSeries(
                 REQUEST_ID_STR,
                 metric_name.value,
-                self._subsamples,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.subsamples,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
 
         self._token_metrics_time_distribution: Dict[
@@ -99,8 +76,8 @@ class MetricsStore:
         for metric_name in TokenMetricsTimeDistribution:
             self._token_metrics_time_distribution[metric_name] = CDFSketch(
                 metric_name.value,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
 
         self._request_metrics_histogram: Dict[RequestMetricsHistogram, DataSeries] = {}
@@ -108,9 +85,9 @@ class MetricsStore:
             self._request_metrics_histogram[metric_name] = DataSeries(
                 REQUEST_ID_STR,
                 metric_name.value,
-                self._subsamples,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.subsamples,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
 
         # Initialise batch metrics
@@ -123,15 +100,15 @@ class MetricsStore:
         for metric_name in BatchMetricsCountDistribution:
             self._batch_metrics_count_distribution[metric_name] = CDFSketch(
                 metric_name.value,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
             self._batch_metrics_count_distribution_per_batch[metric_name] = DataSeries(
                 BATCH_ID_STR,
                 metric_name.value,
-                self._subsamples,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.subsamples,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
 
         self._batch_metrics_time_distribution: Dict[
@@ -143,15 +120,15 @@ class MetricsStore:
         for metric_name in BatchMetricsTimeDistribution:
             self._batch_metrics_time_distribution[metric_name] = CDFSketch(
                 metric_name.value,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
             self._batch_metrics_time_distribution_per_batch[metric_name] = DataSeries(
                 BATCH_ID_STR,
                 metric_name.value,
-                self._subsamples,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.subsamples,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
 
         # Initialise completion metrics
@@ -162,9 +139,9 @@ class MetricsStore:
             self._request_completion_metrics_time_series[metric_name] = DataSeries(
                 TIME_STR,
                 metric_name.value,
-                self._subsamples,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.subsamples,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
         self._token_completion_metrics_time_series: Dict[
             TokenCompletionMetricsTimeSeries, DataSeries
@@ -173,9 +150,9 @@ class MetricsStore:
             self._token_completion_metrics_time_series[metric_name] = DataSeries(
                 TIME_STR,
                 metric_name.value,
-                self._subsamples,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.subsamples,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
 
         # Initialise operation metrics
@@ -184,15 +161,15 @@ class MetricsStore:
         for metric_name in OperationMetrics:
             self._operation_metrics[metric_name] = CDFSketch(
                 metric_name.value,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
             self._operation_metrics_per_batch[metric_name] = DataSeries(
                 BATCH_ID_STR,
                 metric_name.value,
-                self._subsamples,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.subsamples,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
 
         self._cpu_operation_metrics: Dict[CpuOperationMetrics, CDFSketch] = {}
@@ -202,15 +179,15 @@ class MetricsStore:
         for metric_name in CpuOperationMetrics:
             self._cpu_operation_metrics[metric_name] = CDFSketch(
                 metric_name.value,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
             self._cpu_operation_metrics_per_batch[metric_name] = DataSeries(
                 BATCH_ID_STR,
                 metric_name.value,
-                self._subsamples,
-                self._save_table_to_wandb,
-                self._save_plots,
+                self._config.subsamples,
+                self._config.save_table_to_wandb,
+                self._config.store_plots,
             )
 
         # per replica metrics
@@ -218,14 +195,14 @@ class MetricsStore:
         # per replica stage metrics
         self._replica_busy_time = []
         self._replica_mfu = []
-        self._mfu_calculator = MFUCalculator(config)
+        self._mfu_calculator = MFUCalculator(cluster_config.replica_config)
 
         for replica_idx in range(self._num_replicas):
             self._replica_memory_usage.append(
                 SeriesAverageMeter(
                     TIME_STR,
                     MEMORY_USAGE_STR,
-                    self._save_table_to_wandb,
+                    self._config.save_table_to_wandb,
                 )
             )
             self._replica_memory_usage[replica_idx].put(0, 0)
@@ -233,12 +210,12 @@ class MetricsStore:
             self._replica_busy_time.append([])
             self._replica_mfu.append([])
 
-            for stage_idx in range(self._num_stages):
+            for stage_idx in range(self._num_pipeline_stages):
                 self._replica_busy_time[replica_idx].append(
                     SeriesAverageMeter(
                         TIME_STR,
                         BUSY_TIME_PERCENT,
-                        save_table_to_wandb=self._save_table_to_wandb,
+                        save_table_to_wandb=self._config.save_table_to_wandb,
                     )
                 )
                 self._replica_busy_time[replica_idx][stage_idx].put(0, 0)
@@ -247,7 +224,7 @@ class MetricsStore:
                     SeriesAverageMeter(
                         TIME_STR,
                         UTILIZATION_STR,
-                        save_table_to_wandb=self._save_table_to_wandb,
+                        save_table_to_wandb=self._config.save_table_to_wandb,
                     )
                 )
                 self._replica_mfu[replica_idx][stage_idx].put(0, 0)
@@ -256,16 +233,16 @@ class MetricsStore:
 
     def _init_wandb(self):
         if (
-            not self._should_write_metrics
-            or not self._wandb_project
-            or not self._wandb_group
+            not self._config.write_metrics
+            or not self._config.wandb_project
+            or not self._config.wandb_group
         ):
             return
 
         wandb.init(
-            project=self._wandb_project,
-            group=self._wandb_group,
-            name=self._wandb_run_name,
+            project=self._config.wandb_project,
+            group=self._config.wandb_group,
+            name=self._config.wandb_run_name,
             config=self._config.to_dict(),
         )
 
@@ -283,7 +260,7 @@ class MetricsStore:
             [dataseries._to_df() for dataseries in dataseries_list],
         )
         merged_df.to_csv(f"{base_path}/{file_name}.csv", index=False)
-        if wandb.run and self._save_table_to_wandb:
+        if wandb.run and self._config.save_table_to_wandb:
             wand_table = wandb.Table(dataframe=merged_df)
             wandb.log({f"{file_name}_table": wand_table}, step=0)
 
@@ -311,7 +288,7 @@ class MetricsStore:
                 },
                 step=0,
             )
-        if self._save_plots:
+        if self._config.store_plots:
             fig = px.bar(
                 x=list(data.keys()),
                 y=list(data.values()),
@@ -320,7 +297,7 @@ class MetricsStore:
             fig.write_image(f"{base_path}/{plot_name}.png")
 
     def _store_operation_metrics(self, base_plot_path: str):
-        if not self._should_store_operation_metrics:
+        if not self._config.store_operation_metrics:
             return
 
         total_operation_runtimes: Dict[str, float] = {}
@@ -347,7 +324,7 @@ class MetricsStore:
             total_operation_runtimes,
         )
 
-        if not self._keep_individual_batch_metrics:
+        if not self._config.keep_individual_batch_metrics:
             return
 
         for dataseries in self._operation_metrics_per_batch.values():
@@ -385,7 +362,7 @@ class MetricsStore:
         )
 
     def _store_request_metrics(self, base_plot_path: str):
-        if not self._should_store_request_metrics:
+        if not self._config.store_request_metrics:
             return
 
         all_request_metrics = list(
@@ -406,7 +383,7 @@ class MetricsStore:
             dataseries.plot_cdf(base_plot_path, dataseries._y_name, TIME_STR)
 
     def _store_batch_metrics(self, base_plot_path: str):
-        if not self._should_store_batch_metrics:
+        if not self._config.store_batch_metrics:
             return
 
         for dataseries in self._batch_metrics_time_distribution.values():
@@ -420,7 +397,7 @@ class MetricsStore:
         for dataseries in self._batch_metrics_count_distribution.values():
             dataseries.plot_cdf(base_plot_path, dataseries._metric_name, COUNT_STR)
 
-        if not self._keep_individual_batch_metrics:
+        if not self._config.keep_individual_batch_metrics:
             return
 
         for dataseries in self._batch_metrics_time_distribution_per_batch.values():
@@ -456,13 +433,13 @@ class MetricsStore:
         )
 
     def _store_completion_metrics(self, base_plot_path: str):
-        if self._should_store_request_metrics:
+        if self._config.store_request_metrics:
             for dataseries in self._request_completion_metrics_time_series.values():
                 dataseries.plot_step(
                     base_plot_path, f"{dataseries._y_name}_time_series", COUNT_STR
                 )
 
-        if not self._should_store_token_completion_metrics:
+        if not self._config.store_token_completion_metrics:
             return
 
         for dataseries in self._token_metrics_time_distribution.values():
@@ -474,14 +451,14 @@ class MetricsStore:
             )
 
     def _store_utilization_metrics(self, base_plot_path: str):
-        if not self._should_store_utilization_metrics:
+        if not self._config.store_utilization_metrics:
             return
 
         for replica_idx in range(self._num_replicas):
             self._replica_memory_usage[replica_idx].print_stats(
                 f"replica_{replica_idx + 1}_memory_usage", base_plot_path
             )
-            for stage_idx in range(self._num_stages):
+            for stage_idx in range(self._num_pipeline_stages):
                 self._replica_busy_time[replica_idx][stage_idx].print_stats(
                     f"replica_{replica_idx + 1}_stage_{stage_idx + 1}_busy_time_percent",
                     base_plot_path,
@@ -504,7 +481,7 @@ class MetricsStore:
 
     @if_write_metrics
     def on_request_arrival(self, time: float, request: Request) -> None:
-        if not self._should_store_request_metrics:
+        if not self._config.store_request_metrics:
             return
 
         self._request_completion_metrics_time_series[
@@ -531,7 +508,7 @@ class MetricsStore:
 
     @if_write_metrics
     def _on_request_end(self, time: float, request: Request) -> None:
-        if not self._should_store_request_metrics:
+        if not self._config.store_request_metrics:
             return
 
         self._request_completion_metrics_time_series[
@@ -603,7 +580,7 @@ class MetricsStore:
         # if prefill has just finished in this iteration, update the prefill completion time series
         if (
             time == request.prefill_completed_at
-            and self._should_store_token_completion_metrics
+            and self._config.store_token_completion_metrics
         ):
             self._token_completion_metrics_time_series[
                 TokenCompletionMetricsTimeSeries.PREFILL_COMPLETIONS
@@ -616,7 +593,7 @@ class MetricsStore:
         if not request.has_started_decode:
             return
 
-        if not self._should_store_token_completion_metrics:
+        if not self._config.store_token_completion_metrics:
             return
 
         self._token_metrics_time_distribution[
@@ -655,21 +632,21 @@ class MetricsStore:
     def on_batch_end(
         self, time: float, batch: Batch, replica_id: int, memory_usage_percent: int
     ) -> None:
-        if (self._min_batch_idx and batch.id < self._min_batch_idx) or (
-            self._max_batch_idx and batch.id > self._max_batch_idx
-        ):
+        if (
+            self._config.min_batch_index and batch.id < self._config.min_batch_index
+        ) or (self._config.max_batch_index and batch.id > self._config.max_batch_index):
             return
 
         for request in batch.completed_requests:
             self._on_request_end(time, request)
 
-        if self._should_store_utilization_metrics:
+        if self._config.store_utilization_metrics:
             self._replica_memory_usage[replica_id - 1].put(time, memory_usage_percent)
 
         for request in batch.requests:
             self._update_per_token_execution_times(time, request, batch)
 
-        if not self._should_store_batch_metrics:
+        if not self._config.store_batch_metrics:
             return
 
         self._push_metric(
@@ -700,7 +677,7 @@ class MetricsStore:
     def on_replica_schedule(
         self, time: float, replica_id: int, memory_usage_percent: int
     ) -> None:
-        if not self._should_store_utilization_metrics:
+        if not self._config.store_utilization_metrics:
             return
 
         self._replica_memory_usage[replica_id - 1].put(time, memory_usage_percent)
@@ -714,14 +691,14 @@ class MetricsStore:
         batch_stage: BatchStage,
         execution_time: ExecutionTime,
     ) -> None:
-        if not self._should_store_utilization_metrics:
+        if not self._config.store_utilization_metrics:
             return
 
         self._replica_busy_time[replica_id - 1][stage_id - 1].put(time, 100)
         mfu = self._mfu_calculator.get_mfu(batch_stage)
         self._replica_mfu[replica_id - 1][stage_id - 1].put(time, mfu)
 
-        if not self._should_store_operation_metrics:
+        if not self._config.store_operation_metrics:
             return
 
         batch_id = batch_stage._batch_id
@@ -833,7 +810,7 @@ class MetricsStore:
     def on_batch_stage_end(
         self, batch_stage: BatchStage, time: float, replica_id: int, stage_id: int
     ) -> None:
-        if not self._should_store_utilization_metrics:
+        if not self._config.store_utilization_metrics:
             return
         self._replica_busy_time[replica_id - 1][stage_id - 1].put(time, 0)
         self._replica_mfu[replica_id - 1][stage_id - 1].put(time, 0)
