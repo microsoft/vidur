@@ -25,7 +25,7 @@ class A40PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
 @dataclass
 class A100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
     device_sku_type: DeviceSKUType = DeviceSKUType.A100
-    num_devices_per_node: int = 8
+    num_devices_per_node: int = 4
 
     @staticmethod
     def get_type():
@@ -35,7 +35,7 @@ class A100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
 @dataclass
 class H100PairwiseNvlinkNodeSKUConfig(BaseNodeSKUConfig):
     device_sku_type: DeviceSKUType = DeviceSKUType.H100
-    num_devices_per_node: int = 8
+    num_devices_per_node: int = 4
 
     @staticmethod
     def get_type():
