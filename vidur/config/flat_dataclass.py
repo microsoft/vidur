@@ -90,7 +90,7 @@ def create_from_cli_args(cls) -> Any:
         nargs = None
         action = None
         field_type = field.type
-        help_text = field.metadata.get("help", None)
+        help_text = cls.metadata_mapping[field.name].get("help", None)
 
         if is_list(field.type):
             assert is_composed_of_primitives(field.type)
@@ -113,7 +113,10 @@ def create_from_cli_args(cls) -> Any:
 
         # handle cases with default and default factory args
         if field.default is not MISSING:
-            arg_params["default"] = field.default
+            value = field.default
+            if callable(value):
+                value = value()
+            arg_params["default"] = value
         elif field.default_factory is not MISSING:
             arg_params["default"] = field.default_factory()
         else:
@@ -121,7 +124,6 @@ def create_from_cli_args(cls) -> Any:
 
         if nargs:
             arg_params["nargs"] = nargs
-
         parser.add_argument(f"--{field.name}", **arg_params)
 
     args = parser.parse_args()
@@ -139,6 +141,7 @@ def create_flat_dataclass(input_dataclass: Any) -> Any:
     processed_classes = set()
     dataclass_args = defaultdict(list)
     dataclass_dependencies = defaultdict(set)
+    metadata_mapping = {}
 
     def process_dataclass(_input_dataclass, prefix=""):
         if _input_dataclass in processed_classes:
@@ -165,6 +168,7 @@ def create_flat_dataclass(input_dataclass: Any) -> Any:
                 meta_fields_with_defaults.append(
                     (type_field_name, type(default_value), default_value)
                 )
+                metadata_mapping[type_field_name] = field.metadata
 
                 assert hasattr(field_type, "__dataclass_fields__")
                 for subclass in get_all_subclasses(field_type):
@@ -202,6 +206,7 @@ def create_flat_dataclass(input_dataclass: Any) -> Any:
             dataclass_args[_input_dataclass].append(
                 (prefixed_name, field.name, field_type)
             )
+            metadata_mapping[prefixed_name] = field.metadata
 
     process_dataclass(input_dataclass)
 
@@ -211,6 +216,7 @@ def create_flat_dataclass(input_dataclass: Any) -> Any:
     # Metadata fields
     FlatClass.dataclass_args = dataclass_args
     FlatClass.dataclass_dependencies = dataclass_dependencies
+    FlatClass.metadata_mapping = metadata_mapping
 
     # Helper methods
     FlatClass.reconstruct_original_dataclass = reconstruct_original_dataclass
