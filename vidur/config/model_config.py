@@ -24,7 +24,7 @@ class BaseModelConfig(BaseFixedConfig):
     post_attn_norm: bool
     vocab_size: int
     is_neox_style: Optional[bool] = True
-    rope_theta: Optional[int] = None
+    rope_theta: Optional[float] = None
     rope_scaling: Optional[Dict[str, Any]] = None
     partial_rotary_factor: float = 1.0
     no_tensor_parallel: bool = False
@@ -41,7 +41,7 @@ class Llama2ModelConfig(BaseModelConfig):
     post_attn_norm: bool = True
     vocab_size: int = 32768
     is_neox_style: Optional[bool] = True
-    rope_theta: Optional[int] = 10000
+    rope_theta: Optional[float] = 10000
     rope_scaling: Optional[Dict[str, Any]] = None
     partial_rotary_factor: float = 1.0
     no_tensor_parallel: bool = False
@@ -58,7 +58,7 @@ class CodeLlama34BModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 8
     embedding_dim: int = 8192
     mlp_hidden_dim: int = 22016
-    rope_theta: Optional[int] = 1000000
+    rope_theta: Optional[float] = 1000000
 
     @staticmethod
     def get_name():
@@ -101,7 +101,7 @@ class Llama3_8BModelConfig(Llama2ModelConfig):
     embedding_dim: int = 4096
     mlp_hidden_dim: int = 14336
     max_position_embeddings: int = 4096
-    rope_theta: Optional[int] = 500000
+    rope_theta: Optional[float] = 500000
     vocab_size: int = 128256
 
     @staticmethod
@@ -117,7 +117,7 @@ class Llama3_70BModelConfig(Llama2ModelConfig):
     embedding_dim: int = 8192
     mlp_hidden_dim: int = 28672
     max_position_embeddings: int = 8192
-    rope_theta: Optional[int] = 500000
+    rope_theta: Optional[float] = 500000
     vocab_size: int = 128256
 
     @staticmethod
@@ -157,7 +157,7 @@ class InternLM2_20BModelConfig(InternLM2ModelConfig):
     num_kv_heads: int = 8
     embedding_dim: int = 6144
     mlp_hidden_dim: int = 16384
-    rope_theta: Optional[int] = 1000000
+    rope_theta: Optional[float] = 1000000
 
     @staticmethod
     def get_name():
@@ -180,7 +180,7 @@ class Phi2ModelConfig(Llama2ModelConfig):
     post_attn_norm: bool = False
     vocab_size: int = 51200
     rope_scaling: Optional[Dict[str, Any]] = None
-    rope_theta: Optional[int] = 10000
+    rope_theta: Optional[float] = 10000
     partial_rotary_factor: float = 0.4
     no_tensor_parallel: bool = True
 
@@ -207,7 +207,7 @@ class Qwen72BModelConfig(QwenModelConfig):
     num_kv_heads: int = 64
     embedding_dim: int = 8192
     mlp_hidden_dim: int = 24576
-    rope_theta: Optional[int] = 1000000
+    rope_theta: Optional[float] = 1000000
 
     @staticmethod
     def get_name():
