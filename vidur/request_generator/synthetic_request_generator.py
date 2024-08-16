@@ -81,8 +81,8 @@ class SyntheticRequestGenerator(BaseRequestGenerator):
 
     def generate_requests(self) -> List[Request]:
         assert (
-            self.config.num_requests
-            or self.config.duration
+            self.config.duration
+            or self.config.num_requests
             or self.config.interval_generator_config.get_type()
             == RequestLengthGeneratorRegistry.TRACE
         )
