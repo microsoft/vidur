@@ -59,7 +59,7 @@ class TraceRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
         metadata={"help": "End time of the trace request interval generator."},
     )
     time_scale_factor: float = field(
-        default=0.3,
+        default=1.0,
         metadata={
             "help": "Time scale factor for the trace request interval generator."
         },
@@ -125,10 +125,6 @@ class TraceRequestLengthGeneratorConfig(BaseRequestLengthGeneratorConfig):
             "help": "Decode scale factor for the trace request length generator."
         },
     )
-    max_tokens: int = field(
-        default=4096,
-        metadata={"help": "Maximum tokens for the trace request length generator."},
-    )
 
     @staticmethod
     def get_type():
@@ -149,10 +145,6 @@ class ZipfRequestLengthGeneratorConfig(BaseRequestLengthGeneratorConfig):
         default=1024,
         metadata={"help": "Minimum tokens for Zipf Request Length Generator."},
     )
-    max_tokens: int = field(
-        default=4096,
-        metadata={"help": "Maximum tokens for Zipf Request Length Generator."},
-    )
     prefill_to_decode_ratio: float = field(
         default=20.0,
         metadata={"help": "Prefill to decode ratio for Zipf Request Length Generator."},
@@ -168,10 +160,6 @@ class UniformRequestLengthGeneratorConfig(BaseRequestLengthGeneratorConfig):
     min_tokens: int = field(
         default=1024,
         metadata={"help": "Minimum tokens for Uniform Request Length Generator."},
-    )
-    max_tokens: int = field(
-        default=4096,
-        metadata={"help": "Maximum tokens for Uniform Request Length Generator."},
     )
     prefill_to_decode_ratio: float = field(
         default=20.0,
@@ -207,10 +195,6 @@ class BaseRequestGeneratorConfig(BasePolyConfig):
         default=42,
         metadata={"help": "Seed for the random number generator."},
     )
-    max_tokens: int = field(
-        default=4096,
-        metadata={"help": "Maximum tokens."},
-    )
 
 
 @dataclass
@@ -223,11 +207,11 @@ class SyntheticRequestGeneratorConfig(BaseRequestGeneratorConfig):
         default_factory=PoissonRequestIntervalGeneratorConfig,
         metadata={"help": "Interval generator config for Synthetic Request Generator."},
     )
-    num_requests: int = field(
-        default=128,
+    num_requests: Optional[int] = field(
+        default=None,
         metadata={"help": "Number of requests for Synthetic Request Generator."},
     )
-    duration: float = field(
+    duration: Optional[float] = field(
         default=None,
         metadata={"help": "Duration of the synthetic request generator."},
     )
@@ -243,23 +227,19 @@ class SyntheticRequestGeneratorConfig(BaseRequestGeneratorConfig):
 @dataclass
 class TraceRequestGeneratorConfig(BaseRequestGeneratorConfig):
     trace_file: str = field(
-        default="data/processed_traces/sydney_enterprise.csv",
+        default="data/processed_traces/splitwise_conv.csv",
         metadata={"help": "Path to the trace request generator file."},
     )
-    date: str = field(
-        default="2023-08-21",
-        metadata={"help": "Date for the trace request generator."},
-    )
     prefill_scale_factor: float = field(
-        default=0.3,
+        default=1.0,
         metadata={"help": "Prefill scale factor for the trace request generator."},
     )
     decode_scale_factor: float = field(
-        default=1,
+        default=1.0,
         metadata={"help": "Decode scale factor for the trace request generator."},
     )
     time_scale_factor: float = field(
-        default=0.04,
+        default=1.0,
         metadata={"help": "Time scale factor for the trace request generator."},
     )
     max_tokens: int = field(
@@ -274,34 +254,26 @@ class TraceRequestGeneratorConfig(BaseRequestGeneratorConfig):
 
 @dataclass
 class BaseReplicaSchedulerConfig(BasePolyConfig):
-    max_num_seqs: int = field(
+    batch_size_cap: int = field(
         default=128,
-        metadata={"help": "Maximum number of sequences."},
-    )
-    watermark_blocks_fraction: float = field(
-        default=0.01,
-        metadata={"help": "Watermark blocks fraction."},
+        metadata={"help": "Maximum batch size cap."},
     )
     block_size: int = field(
         default=16,
         metadata={"help": "Block size."},
     )
+    watermark_blocks_fraction: float = field(
+        default=0.01,
+        metadata={"help": "Watermark blocks fraction."},
+    )
     num_blocks: Optional[int] = field(
         default=None,
         metadata={"help": "Number of blocks."},
-    )
-    batch_size_cap: int = field(
-        default=128,
-        metadata={"help": "Maximum batch size cap."},
     )
 
 
 @dataclass
 class VllmSchedulerConfig(BaseReplicaSchedulerConfig):
-    max_batched_tokens: int = field(
-        default=None,
-        metadata={"help": "Maximum batched tokens for vLLM."},
-    )
     max_tokens_in_batch: int = field(
         default=4096,
         metadata={"help": "Maximum tokens in batch for vLLM."},
@@ -314,10 +286,6 @@ class VllmSchedulerConfig(BaseReplicaSchedulerConfig):
 
 @dataclass
 class LightllmSchedulerConfig(BaseReplicaSchedulerConfig):
-    max_batched_tokens: int = field(
-        default=None,
-        metadata={"help": "Maximum batched tokens for LightLLM."},
-    )
     max_tokens_in_batch: int = field(
         default=4096,
         metadata={"help": "Maximum tokens in batch for LightLLM."},
@@ -462,16 +430,12 @@ class ReplicaConfig:
         default="meta-llama/Llama-2-7b-hf",
         metadata={"help": "Model name."},
     )
-    gpu_memory_utilization: float = field(
-        default=0.8,
-        metadata={"help": "GPU memory utilization."},
-    )
     memory_margin_fraction: float = field(
         default=0.1,
         metadata={"help": "Memory margin fraction."},
     )
     num_pipeline_stages: int = field(
-        default=4,
+        default=1,
         metadata={"help": "Number of pipeline stages."},
     )
     tensor_parallel_size: int = field(
