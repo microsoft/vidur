@@ -34,14 +34,14 @@ class TraceReplayRequestGenerator(BaseRequestGenerator):
         self.trace_df["num_prefill_tokens"] = self.trace_df[
             "num_prefill_tokens"
         ].astype(int)
-        self.trace_df["num_decode_tokens"] = self.trace_df[
-            "num_decode_tokens"
-        ].astype(int)
+        self.trace_df["num_decode_tokens"] = self.trace_df["num_decode_tokens"].astype(
+            int
+        )
 
         # make sure that there is at least one prefill and decode token
-        self.trace_df["num_prefill_tokens"] = self.trace_df[
-            "num_prefill_tokens"
-        ].clip(lower=1)
+        self.trace_df["num_prefill_tokens"] = self.trace_df["num_prefill_tokens"].clip(
+            lower=1
+        )
         self.trace_df["num_decode_tokens"] = self.trace_df["num_decode_tokens"].clip(
             lower=1
         )
