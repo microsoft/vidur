@@ -49,7 +49,9 @@ TIME_STR_MS = "Time (ms)"
 
 class MetricsStore:
 
-    def __init__(self, config: MetricsConfig, cluster_config: ClusterConfig, config_dict: Dict) -> None:
+    def __init__(
+        self, config: MetricsConfig, cluster_config: ClusterConfig, config_dict: Dict
+    ) -> None:
         self._config = config
         self._config_dict = config_dict
         self._last_request_arrived_at = None
