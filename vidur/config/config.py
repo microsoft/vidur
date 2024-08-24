@@ -208,7 +208,7 @@ class SyntheticRequestGeneratorConfig(BaseRequestGeneratorConfig):
         metadata={"help": "Interval generator config for Synthetic Request Generator."},
     )
     num_requests: Optional[int] = field(
-        default=None,
+        default=128,
         metadata={"help": "Number of requests for Synthetic Request Generator."},
     )
     duration: Optional[float] = field(

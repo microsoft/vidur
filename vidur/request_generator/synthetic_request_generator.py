@@ -9,6 +9,7 @@ from vidur.request_generator.request_interval_generator_registry import (
 from vidur.request_generator.request_length_generator_registry import (
     RequestLengthGeneratorRegistry,
 )
+from vidur.types import RequestIntervalGeneratorType
 from vidur.utils.random import set_seeds
 
 
@@ -67,7 +68,7 @@ class SyntheticRequestGenerator(BaseRequestGenerator):
         else:
             assert (
                 self.config.interval_generator_config.get_type()
-                == RequestLengthGeneratorRegistry.TRACE
+                == RequestIntervalGeneratorType.TRACE
             )
 
             while True:
@@ -84,7 +85,7 @@ class SyntheticRequestGenerator(BaseRequestGenerator):
             self.config.duration
             or self.config.num_requests
             or self.config.interval_generator_config.get_type()
-            == RequestLengthGeneratorRegistry.TRACE
+            == RequestIntervalGeneratorType.TRACE
         )
 
         set_seeds(self.config.seed)

@@ -34,9 +34,7 @@ class Simulator:
             self._config.metrics_config,
             self._config.request_generator_config,
         )
-        self._metric_store = MetricsStore(
-            self._config.metrics_config, self._config.cluster_config
-        )
+        self._metric_store = MetricsStore(self._config)
         self._request_generator = RequestGeneratorRegistry.get(
             self._config.request_generator_config.get_type(),
             self._config.request_generator_config,
