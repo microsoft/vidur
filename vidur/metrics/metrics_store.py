@@ -6,7 +6,7 @@ import pandas as pd
 import plotly_express as px
 import wandb
 
-from vidur.config import ClusterConfig, MetricsConfig
+from vidur.config import SimulationConfig
 from vidur.entities import Batch, BatchStage, ExecutionTime, Request
 from vidur.logger import init_logger
 from vidur.metrics.cdf_sketch import CDFSketch
@@ -49,16 +49,14 @@ TIME_STR_MS = "Time (ms)"
 
 class MetricsStore:
 
-    def __init__(
-        self, config: MetricsConfig, cluster_config: ClusterConfig, config_dict: Dict
-    ) -> None:
-        self._config = config
-        self._config_dict = config_dict
+    def __init__(self, simulation_config: SimulationConfig) -> None:
+        self._simulation_config = simulation_config
+        self._config = self._simulation_config.metrics_config
         self._last_request_arrived_at = None
 
         # copy config
-        self._num_replicas = cluster_config.num_replicas
-        self._num_pipeline_stages = cluster_config.replica_config.num_pipeline_stages
+        self._num_replicas = self._simulation_config.cluster_config.num_replicas
+        self._num_pipeline_stages = self._simulation_config.cluster_config.replica_config.num_pipeline_stages
 
         # Initialise request metrics
         self._request_metrics_time_distributions: Dict[
@@ -198,7 +196,7 @@ class MetricsStore:
         # per replica stage metrics
         self._replica_busy_time = []
         self._replica_mfu = []
-        self._mfu_calculator = MFUCalculator(cluster_config.replica_config)
+        self._mfu_calculator = MFUCalculator(self._simulation_config.cluster_config.replica_config)
 
         for replica_idx in range(self._num_replicas):
             self._replica_memory_usage.append(
@@ -246,7 +244,7 @@ class MetricsStore:
             project=self._config.wandb_project,
             group=self._config.wandb_group,
             name=self._config.wandb_run_name,
-            config=self._config_dict,
+            config=self._simulation_config.to_dict(),
         )
 
     def _save_as_csv(
