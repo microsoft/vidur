@@ -49,8 +49,9 @@ TIME_STR_MS = "Time (ms)"
 
 class MetricsStore:
 
-    def __init__(self, config: MetricsConfig, cluster_config: ClusterConfig) -> None:
+    def __init__(self, config: MetricsConfig, cluster_config: ClusterConfig, config_dict: Dict) -> None:
         self._config = config
+        self._config_dict = config_dict
         self._last_request_arrived_at = None
 
         # copy config
@@ -243,7 +244,7 @@ class MetricsStore:
             project=self._config.wandb_project,
             group=self._config.wandb_group,
             name=self._config.wandb_run_name,
-            config=self._config.to_dict(),
+            config=self._config_dict,
         )
 
     def _save_as_csv(
