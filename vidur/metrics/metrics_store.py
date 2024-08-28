@@ -48,7 +48,6 @@ TIME_STR_MS = "Time (ms)"
 
 
 class MetricsStore:
-
     def __init__(self, simulation_config: SimulationConfig) -> None:
         self._simulation_config = simulation_config
         self._config = self._simulation_config.metrics_config
@@ -176,9 +175,9 @@ class MetricsStore:
             )
 
         self._cpu_operation_metrics: Dict[CpuOperationMetrics, CDFSketch] = {}
-        self._cpu_operation_metrics_per_batch: Dict[CpuOperationMetrics, DataSeries] = (
-            {}
-        )
+        self._cpu_operation_metrics_per_batch: Dict[
+            CpuOperationMetrics, DataSeries
+        ] = {}
         for metric_name in CpuOperationMetrics:
             self._cpu_operation_metrics[metric_name] = CDFSketch(
                 metric_name.value,
@@ -646,7 +645,7 @@ class MetricsStore:
             self._on_request_end(time, request)
 
         if self._config.store_utilization_metrics:
-            self._replica_memory_usage[replica_id - 1].put(time, memory_usage_percent)
+            self._replica_memory_usage[replica_id].put(time, memory_usage_percent)
 
         for request in batch.requests:
             self._update_per_token_execution_times(time, request, batch)
@@ -685,7 +684,7 @@ class MetricsStore:
         if not self._config.store_utilization_metrics:
             return
 
-        self._replica_memory_usage[replica_id - 1].put(time, memory_usage_percent)
+        self._replica_memory_usage[replica_id].put(time, memory_usage_percent)
 
     @if_write_metrics
     def on_replica_stage_schedule(
@@ -699,9 +698,9 @@ class MetricsStore:
         if not self._config.store_utilization_metrics:
             return
 
-        self._replica_busy_time[replica_id - 1][stage_id - 1].put(time, 100)
+        self._replica_busy_time[replica_id][stage_id - 1].put(time, 100)
         mfu = self._mfu_calculator.get_mfu(batch_stage)
-        self._replica_mfu[replica_id - 1][stage_id - 1].put(time, mfu)
+        self._replica_mfu[replica_id][stage_id - 1].put(time, mfu)
 
         if not self._config.store_operation_metrics:
             return
@@ -817,5 +816,5 @@ class MetricsStore:
     ) -> None:
         if not self._config.store_utilization_metrics:
             return
-        self._replica_busy_time[replica_id - 1][stage_id - 1].put(time, 0)
-        self._replica_mfu[replica_id - 1][stage_id - 1].put(time, 0)
+        self._replica_busy_time[replica_id][stage_id - 1].put(time, 0)
+        self._replica_mfu[replica_id][stage_id - 1].put(time, 0)
