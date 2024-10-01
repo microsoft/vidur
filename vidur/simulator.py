@@ -87,7 +87,6 @@ class Simulator:
 
         if self._config.metrics_config.write_json_trace:
             self._write_event_trace()
-            self._scheduler.write_batching_history()
             logger.info("Json event trace written")
 
         if self._config.metrics_config.enable_chrome_trace:
