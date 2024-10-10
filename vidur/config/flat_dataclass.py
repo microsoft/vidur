@@ -61,10 +61,15 @@ def reconstruct_original_dataclass(self) -> Any:
             if is_subclass(field_type, BasePolyConfig):
                 config_type = getattr(self, f"{original_field_name}_type")
                 # find all subclasses of field_type and check which one matches the config_type
+                config_type_matched = False
                 for subclass in get_all_subclasses(field_type):
                     if str(subclass.get_type()) == config_type:
+                        config_type_matched = True
                         args[original_field_name] = instances[subclass]
                         break
+                assert (
+                    config_type_matched
+                ), f"Invalid type {config_type} for {prefixed_field_name}_type. Valid types: {[str(subclass.get_type()) for subclass in get_all_subclasses(field_type)]}"
             elif hasattr(field_type, "__dataclass_fields__"):
                 args[original_field_name] = instances[field_type]
             else:
