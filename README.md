@@ -1,12 +1,22 @@
 # Vidur: LLM Inference System Simulator
 
-Vidur is a high-fidelity and extensible LLM inference simulator. It can help you with:
+Vidur is a high-fidelity and extensible LLM inference system simulator. It can help you with:
+
+1. Study the system performance of models under different workloads and configurations.
+
+    | TTFT | TPOT | Request E2E Time | Batch Size |
+    | --- | --- | --- | --- |
+    | ![TTFT](./assets/prefill_e2e_time.png) | ![TPOT](./assets/decode_time_execution_plus_preemption_normalized.png) | ![Request E2E Time](./assets/request_e2e_time.png) | ![Batch Size](./assets/batch_size.png) |
+
+    *`Llama-3-8B` running the [AzureLLMInferenceTrace2023_conv](https://github.com/Azure/AzurePublicDataset/blob/master/data/AzureLLMInferenceTrace_conv.csv) trace on single `A100 80GB` at 6.45 QPS*
 
 1. Capacity planning and finding the best deployment configuration for your LLM deployments.
-2. Test new research ideas like new scheduling algorithms, optimizations like speculative decoding, etc.
-3. Study the system performance of models under different workloads and configurations.
+   ![Config Search](./assets/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.jpeg)
+*Capacity per dollar for different deployment configurations vs TTFT-P90 and TBT-P99 for LLaMA2-70B.*
+1. Quickly test new research ideas like new scheduling algorithms, optimizations like speculative decoding, etc.
 
-... all without access to GPUs except for a quick initial profiling phase. We highly recommend checking out our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) and [talk](https://mlsys.org/virtual/2024/poster/2667) for more details.
+... all without access to GPUs except for a quick initial profiling phase 🎉. We highly recommend checking out our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) and [talk](https://mlsys.org/virtual/2024/poster/2667) for more details.
+
 
 ## Supported Models
 
@@ -23,11 +33,13 @@ __Instructions on adding a new model to existing or new SKUs can be found [here]
 | `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
 
 * All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length by passing additional CLI params:
+
     ```text
     --random_forrest_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
     --random_forrest_execution_time_predictor_config_prediction_max_batch_size 512 \
     --random_forrest_execution_time_predictor_config_prediction_max_tokens_per_request 16384
     ```
+
 * Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
 * In DGX nodes, there are 8 GPUs, fully connected via NVLink. So TP1, TP2, TP4 and TP8 are supported.
 * In 4x pairwise NVLink nodes, there are 4 GPUs, so TP1, TP2 and TP4 are supported. TP4 here is less performant than TP4 in DGX nodes because (GPU1, GPU2) are connected via NVLink and (GPU3, GPU4) are connected via NVLink. but between these layers, the interconnect is slower.
@@ -116,12 +128,6 @@ python -m vidur.main -h
 ## Simulator Output
 
 * The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output/<TIMESTAMP>` directory. __A description of all the logged metrics can be found [here](docs/metrics.md).__
-
-* For the big example above, some of the metrics captured are:
-    | Batch Size | TTFT | TPOT | Request E2E Time |
-    | --- | --- | --- | --- |
-    | ![Batch Size](./assets/batch_size.png) | ![TTFT](./assets/prefill_e2e_time.png) | ![TPOT](./assets/decode_time_execution_plus_preemption_normalized.png) | ![Request E2E Time](./assets/request_e2e_time.png) |
-
 * Vidur exports chrome traces of each simulation. The trace can be found in the `simulator_output` directory. The trace can be opened by navigating to `chrome://tracing/` or `edge://tracing/` and loading the trace.
 
     ![Chrome Trace](./assets/chrome_trace.png)
