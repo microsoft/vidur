@@ -1,17 +1,26 @@
-# Vidur: LLM Inference Simulator
+# Vidur: LLM Inference System Simulator
 
-Vidur is a high-fidelity and extensible LLM inference simulator. It can help you with:
+Vidur is a high-fidelity and extensible LLM inference system simulator. It can help you with:
+
+1. Study the system performance of models under different workloads and configurations.
+
+    | TTFT | TPOT | Request E2E Time | Batch Size |
+    | --- | --- | --- | --- |
+    | ![TTFT](./assets/prefill_e2e_time.png) | ![TPOT](./assets/decode_time_execution_plus_preemption_normalized.png) | ![Request E2E Time](./assets/request_e2e_time.png) | ![Batch Size](./assets/batch_size.png) |
+
+    *`Llama-3-8B` running the [AzureLLMInferenceTrace2023_conv](https://github.com/Azure/AzurePublicDataset/blob/master/data/AzureLLMInferenceTrace_conv.csv) trace on single `A100 80GB` at 6.45 QPS*
 
 1. Capacity planning and finding the best deployment configuration for your LLM deployments.
-2. Test new research ideas like new scheduling algorithms, optimizations like speculative decoding, etc.
-3. Study the system performance of models under different workloads and configurations.
+   ![Config Search](./assets/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.jpeg)
+*Capacity per dollar for different deployment configurations vs TTFT-P90 and TBT-P99 for LLaMA2-70B.*
+1. Quickly test new research ideas like new scheduling algorithms, optimizations like speculative decoding, etc.
 
-... all without access to GPUs except for a quick initial profiling phase.
+... all without access to GPUs except for a quick initial profiling phase 🎉. We highly recommend checking out our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) and [talk](https://mlsys.org/virtual/2024/poster/2667) for more details.
 
-Please refer to our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) for more details.
-We have a [live demo](https://vidur.westus2.cloudapp.azure.com/) that captures the capabilities of the system.
 
 ## Supported Models
+
+__Instructions on adding a new model to existing or new SKUs can be found [here](docs/profiling.md)__.
 
 | Model / Device | A100 80GB DGX | H100 DGX | 4xA100 80GB Pairwise NVLink Node | 8xA40 Pairwise NVLink Node |
 | --- | --- | --- | --- | --- |
@@ -23,33 +32,18 @@ We have a [live demo](https://vidur.westus2.cloudapp.azure.com/) that captures t
 | `internlm/internlm-20b` | ✅ | ✅ | ✅ | ✅ |
 | `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
 
-* __Instructions on adding a new model to existing or new SKUs can be found [here](docs/profiling.md)__.
 * All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length by passing additional CLI params:
 
-For random forrest:
-```text
---random_forrest_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
---random_forrest_execution_time_predictor_config_prediction_max_batch_size 512 \
---random_forrest_execution_time_predictor_config_prediction_max_tokens_per_request 16384 \
-```
-
-For linear regression:
-```text
---linear_regression_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
---linear_regression_execution_time_predictor_config_prediction_max_batch_size 512 \
---linear_regression_execution_time_predictor_config_prediction_max_tokens_per_request 16384 \
-```
+    ```text
+    --random_forrest_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
+    --random_forrest_execution_time_predictor_config_prediction_max_batch_size 512 \
+    --random_forrest_execution_time_predictor_config_prediction_max_tokens_per_request 16384
+    ```
 
 * Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
 * In DGX nodes, there are 8 GPUs, fully connected via NVLink. So TP1, TP2, TP4 and TP8 are supported.
 * In 4x pairwise NVLink nodes, there are 4 GPUs, so TP1, TP2 and TP4 are supported. TP4 here is less performant than TP4 in DGX nodes because (GPU1, GPU2) are connected via NVLink and (GPU3, GPU4) are connected via NVLink. but between these layers, the interconnect is slower.
 * You can use any combination of TP and PP. For example, you can run LLaMA2-70B on TP2-PP2 on a 4xA100 80GB Pairwise NVLink Node.
-
-## Chrome Trace
-
-Vidur exports chrome traces of each simulation. The trace can be found in the `simulator_output` directory. The trace can be opened by navigating to `chrome://tracing/` or `edge://tracing/` and loading the trace.
-
-![Chrome Trace](./assets/chrome_trace.png)
 
 ## Setup
 
@@ -80,7 +74,7 @@ conda env create -p ./env -f ./environment.yml
 conda env update -f environment-dev.yml
 ```
 
-## Setting up wandb (Optional)
+### Setting up wandb (Optional)
 
 First, setup your account on `https://<your-org>.wandb.io/` or public wandb, obtain the api key and then run the following command,
 
@@ -106,24 +100,37 @@ or a big example with all the parameters,
 ```sh
 python -m vidur.main  \
 --replica_config_device a100 \
---replica_config_model_name meta-llama/Llama-2-7b-hf  \
+--replica_config_model_name meta-llama/Meta-Llama-3-8B \
 --cluster_config_num_replicas 1 \
 --replica_config_tensor_parallel_size 1 \
 --replica_config_num_pipeline_stages 1 \
 --request_generator_config_type synthetic \
+--synthetic_request_generator_config_num_requests 512  \
 --length_generator_config_type trace \
---interval_generator_config_type static \
---[trace|zipf|uniform|fixed]_request_length_generator_config_max_tokens 4096 \
---trace_request_length_generator_config_trace_file ./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv \
---synthetic_request_generator_config_num_requests 128  \
---replica_scheduler_config_type vllm  \
---[vllm|lightllm|orca|faster_transformer|sarathi]_scheduler_config_batch_size_cap 256  \
---[vllm|lightllm]_scheduler_config_max_tokens_in_batch 4096
+--trace_request_length_generator_config_max_tokens 16384 \
+--trace_request_length_generator_config_trace_file ./data/processed_traces/splitwise_conv.csv \
+--interval_generator_config_type poisson \
+--poisson_request_interval_generator_config_qps 6.45 \
+--replica_scheduler_config_type sarathi  \
+--sarathi_scheduler_config_batch_size_cap 512  \
+--sarathi_scheduler_config_chunk_size 512 \
+--random_forrest_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
+--random_forrest_execution_time_predictor_config_prediction_max_batch_size 512 \
+--random_forrest_execution_time_predictor_config_prediction_max_tokens_per_request 16384
 ```
 
-The simulator supports a plethora of parameters for the simulation description which can be found [here](docs/launch_parameters.md).
+or to get information on all parameters,
 
-The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output` directory along with the chrome trace. A description of all the logged metrics can be found [here](docs/metrics.md).
+```sh
+python -m vidur.main -h
+```
+
+## Simulator Output
+
+* The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output/<TIMESTAMP>` directory. __A description of all the logged metrics can be found [here](docs/metrics.md).__
+* Vidur exports chrome traces of each simulation. The trace can be found in the `simulator_output` directory. The trace can be opened by navigating to `chrome://tracing/` or `edge://tracing/` and loading the trace.
+
+    ![Chrome Trace](./assets/chrome_trace.png)
 
 ## Formatting Code
 
