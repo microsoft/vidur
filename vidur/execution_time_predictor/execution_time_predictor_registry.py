@@ -1,6 +1,9 @@
 from vidur.execution_time_predictor.linear_regression_execution_time_predictor import (
     LinearRegressionExecutionTimePredictor,
 )
+from vidur.execution_time_predictor.hybrid_execution_time_predictor import (
+    HybridForestExecutionTimePredictor,
+)
 from vidur.execution_time_predictor.random_forrest_execution_time_predictor import (
     RandomForrestExecutionTimePredictor,
 )
@@ -19,4 +22,8 @@ ExecutionTimePredictorRegistry.register(
 )
 ExecutionTimePredictorRegistry.register(
     ExecutionTimePredictorType.LINEAR_REGRESSION, LinearRegressionExecutionTimePredictor
+)
+
+ExecutionTimePredictorRegistry.register(
+    ExecutionTimePredictorType.HYBRID_FOREST, HybridForestExecutionTimePredictor
 )

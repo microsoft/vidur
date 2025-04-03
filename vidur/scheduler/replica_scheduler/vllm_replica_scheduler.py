@@ -76,17 +76,21 @@ class VLLMReplicaScheduler(BaseReplicaScheduler):
             next_num_tokens = self._get_request_next_num_tokens(request)
 
             if not self._can_allocate_request(request):
+                print("{} Cannot allocate request".format(request.id))
                 break
 
             new_num_tokens = num_tokens + [next_num_tokens]
             new_num_batch_tokens = len(new_num_tokens) * max(new_num_tokens)
             if new_num_batch_tokens > self._config.max_tokens_in_batch:
+                print("{} Batch size exceeds max_tokens_in_batch 85".format(request.id))
                 break
 
             if len(self._allocation_map) == self._config.batch_size_cap:
+                print("{} Batch size exceeds batch_size_cap 89".format(request.id))
                 break
 
             if len(requests) == self._max_micro_batch_size:
+                print("{} Batch size exceeds max_micro_batch_size 93".format(request.id))
                 break
 
             request = self._request_queue.pop(0)
@@ -95,6 +99,7 @@ class VLLMReplicaScheduler(BaseReplicaScheduler):
             requests.append(request)
             num_tokens.append(next_num_tokens)
             num_batch_tokens += next_num_tokens
+            
 
         if requests:
             return Batch(self._replica_id, requests, num_tokens)
@@ -104,6 +109,7 @@ class VLLMReplicaScheduler(BaseReplicaScheduler):
         # all preempted_requests will have prefill completed
         while self._preempted_requests:
             if len(requests) == self._max_micro_batch_size:
+                print("{} Batch size exceeds max_micro_batch_size (preempt 112)".format(request.id))
                 break
 
             request = self._preempted_requests.pop(0)
@@ -118,6 +124,7 @@ class VLLMReplicaScheduler(BaseReplicaScheduler):
                     request.restart()
                     self.free(request.id)
                     self._request_queue = [request] + self._request_queue
+                    print("{} No preempted requests to free (preempt 127)".format(request.id))
                     break
             else:
                 self._allocate_request(request)
@@ -126,6 +133,7 @@ class VLLMReplicaScheduler(BaseReplicaScheduler):
                 num_tokens.append(next_num_tokens)
 
         if not requests:
+            
             return
 
         return Batch(self._replica_id, requests, num_tokens)

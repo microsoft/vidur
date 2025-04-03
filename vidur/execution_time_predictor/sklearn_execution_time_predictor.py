@@ -282,6 +282,7 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         config_str = str(self.to_dict())
 
         if df is None:
+            # import pdb; pdb.set_trace()
             combined_str = f"{config_str}_{model_name}"
         else:
             df_hash_str = hashlib.md5(df.to_json().encode("utf-8")).hexdigest()

@@ -604,7 +604,69 @@ class RandomForrestExecutionTimePredictorConfig(BaseExecutionTimePredictorConfig
     @staticmethod
     def get_type():
         return ExecutionTimePredictorType.RANDOM_FORREST
-
+    
+@dataclass
+class HybridForestExecutionTimePredictorConfig(BaseExecutionTimePredictorConfig):
+    num_estimators: List[int] = field(
+        default_factory=lambda: [250, 500, 750],
+        metadata={"help": "Number of estimators for random forest."},
+    )
+    max_depth: List[int] = field(
+        default_factory=lambda: [8, 16, 32],
+        metadata={"help": "Maximum depth for random forest."},
+    )
+    min_samples_split: List[int] = field(
+        default_factory=lambda: [2, 5, 10],
+        metadata={"help": "Minimum samples split for random forest."},
+    )
+    # Boundary parameters
+    boundary_method : str = field(
+        default_factory=lambda: ["auto", "percentile"],
+        metadata={"help": "Method to determine boundaries."},
+    )
+    lower_boundary : float = field(
+        default_factory=lambda: [None],
+        metadata={"help": "Lower boundary for switching to linear regression."},
+    )
+    upper_boundary : float = field(
+        default_factory=lambda: [None],
+        metadata={"help": "Upper boundary for switching to linear regression."},
+    )
+    percentile_range : tuple = field(
+        default_factory=lambda: [(1, 99)],
+        metadata={"help": "Percentile range to use if boundary_method='percentile'."},
+    )
+    # rf_params : dict = field(
+    #     default=None,
+    #     metadata={"help": "Parameters to pass to RandomForestRegressor."},
+    # )
+    # lr_params : dict = field(
+    #     default=None,
+    #     metadata={"help": "Parameters to pass to LinearRegression."},
+    # )
+    feature_idx : int = field(
+        default_factory=lambda: [0], 
+        metadata={"help": "Index of the feature to use for boundary condition when X is multidimensional."},
+    )
+    polynomial_degree: List[int] = field(
+        default_factory=lambda: [1,2],
+        metadata={"help": "Polynomial degree for linear regression."},
+    )
+    polynomial_include_bias: List[bool] = field(
+        default_factory=lambda: [True],
+        metadata={"help": "Polynomial include bias for linear regression."},
+    )
+    polynomial_interaction_only: List[bool] = field(
+        default_factory=lambda: [True],
+        metadata={"help": "Polynomial interaction only for linear regression."},
+    )
+    fit_intercept: List[bool] = field(
+        default_factory=lambda: [True, False],
+        metadata={"help": "Fit intercept for linear regression."},
+    )
+    @staticmethod
+    def get_type():
+        return ExecutionTimePredictorType.HYBRID_FOREST
 
 @dataclass
 class ClusterConfig:
@@ -646,7 +708,7 @@ class SimulationConfig(ABC):
         metadata={"help": "Request generator config."},
     )
     execution_time_predictor_config: BaseExecutionTimePredictorConfig = field(
-        default_factory=RandomForrestExecutionTimePredictorConfig,
+        default_factory=HybridForestExecutionTimePredictorConfig,
         metadata={"help": "Execution time predictor config."},
     )
     metrics_config: MetricsConfig = field(
