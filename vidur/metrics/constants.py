@@ -1,4 +1,4 @@
-""" File to store names for different metrics captured """
+"""File to store names for different metrics captured"""
 
 import enum
 
