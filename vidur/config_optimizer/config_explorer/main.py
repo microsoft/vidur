@@ -1,10 +1,10 @@
 """
-Automated search for capacity for different systems via latency vs qps data.
-A system is characterised by:
-1. trace
-2. model
-3. sku
-4. scheduler
+    Automated search for capacity for different systems via latency vs qps data.
+    A system is characterised by:
+    1. trace
+    2. model
+    3. sku
+    4. scheduler
 """
 
 import argparse
@@ -26,19 +26,20 @@ def get_args():
     parser.add_argument(
         "--min-search-granularity",
         type=float,
-        default=1,
+        default=2.5,
         help="Minimum search granularity for capacity (%)",
     )
     parser.add_argument("--output-dir", type=str, required=True)
-    parser.add_argument("--cache-dir", type=str, default="./cache")
+    parser.add_argument("--cache-dir", type=str, default="./cache_tmpfs")
     parser.add_argument("--config-path", type=str, required=True)
-    parser.add_argument("--max-iterations", type=int, default=10)
+    parser.add_argument("--scheduling-delay-slo-value", type=float, default=5.0)
+    parser.add_argument("--scheduling-delay-slo-quantile", type=float, default=0.99)
+    parser.add_argument("--max-iterations", type=int, default=20)
     parser.add_argument(
-        "--time-limit", type=int, default=180, help="Time limit in minutes"
+        "--time-limit", type=int, default=30, help="Time limit in minutes"
     )
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--skip-cache-warmup", action="store_true")
-    parser.add_argument("--min-qps", type=float, default=0.1)
 
     args = parser.parse_args()
 
@@ -55,6 +56,11 @@ if __name__ == "__main__":
     args = get_args()
 
     config = yaml.safe_load(open(args.config_path))
+
+    assert (
+        args.scheduling_delay_slo_quantile >= 0
+        and args.scheduling_delay_slo_quantile <= 1
+    )
 
     os.makedirs(args.output_dir, exist_ok=True)
 

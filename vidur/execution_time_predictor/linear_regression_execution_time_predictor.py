@@ -3,8 +3,9 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import PolynomialFeatures
 
 from vidur.config import (
-    CacheConfig,
+    BaseReplicaSchedulerConfig,
     LinearRegressionExecutionTimePredictorConfig,
+    MetricsConfig,
     ReplicaConfig,
 )
 from vidur.execution_time_predictor.sklearn_execution_time_predictor import (
@@ -17,13 +18,15 @@ class LinearRegressionExecutionTimePredictor(SklearnExecutionTimePredictor):
         self,
         predictor_config: LinearRegressionExecutionTimePredictorConfig,
         replica_config: ReplicaConfig,
-        cache_config: CacheConfig,
+        replica_scheduler_config: BaseReplicaSchedulerConfig,
+        metrics_config: MetricsConfig,
     ) -> None:
         # will trigger model training
         super().__init__(
             predictor_config=predictor_config,
             replica_config=replica_config,
-            cache_config=cache_config,
+            replica_scheduler_config=replica_scheduler_config,
+            metrics_config=metrics_config,
         )
 
     def _get_grid_search_params(self):

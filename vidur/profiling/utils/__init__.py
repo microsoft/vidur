@@ -5,9 +5,11 @@ from math import floor
 from typing import List
 
 import torch
+from sarathi.config import ParallelConfig
 
 from vidur.profiling.attention.attention_input import AttentionInput
 from vidur.profiling.collectives.collectives_input import CollectivesInput
+from vidur.profiling.common.model_config import ModelConfig
 
 
 class ProfileMethod(enum.Enum):
@@ -51,17 +53,19 @@ def get_attention_batch_sizes_to_profile(min_batch_size: int, max_batch_size: in
     )
 
 
-def get_attention_prefill_chunk_sizes_to_profile(max_seq_len: int, max_chunk_size: int):
+def get_attention_prefill_chunk_sizes_to_profile(max_seq_len: int):
+    # PREFILL_CHUNK_SIZE_SPACE = [64, 128, 256, 512, 768, 1024, 1536, 2048, 3076, 4096, 8192, 16384]
+    # PREFILL_CHUNK_SIZE_SPACE = range(128, 128 * 1024, 128)
     PREFILL_CHUNK_SIZE_SPACE = (
-        list(range(32, 128 + 1, 32))
-        + list(range(256, 1024 + 1, 128))
-        + list(range(1024, 4 * 1024 + 1, 512))
-        + list(range(4 * 1024, 16 * 1024 + 1, 512))
-        + list(range(16 * 1024, 64 * 1024 + 1, 1024))
+        list(range(64, 128 + 1, 16))
+        + list(range(128, 1024 + 1, 32))
+        + list(range(1024, 4 * 1024 + 1, 64))
+        + list(range(4 * 1024, 16 * 1024 + 1, 128))
+        + list(range(16 * 1024, 64 * 1024 + 1, 256))
     )
     prefill_chunk_sizes_to_profile = []
     for prefill_chunk_size in PREFILL_CHUNK_SIZE_SPACE:
-        if prefill_chunk_size <= max_seq_len and prefill_chunk_size <= max_chunk_size:
+        if prefill_chunk_size <= max_seq_len:
             prefill_chunk_sizes_to_profile.append(prefill_chunk_size)
         else:
             break
@@ -89,12 +93,11 @@ def get_attention_input_combinations(
     max_batch_size: int,
     profile_only_prefill: bool,
     profile_only_decode: bool,
-    max_chunk_size: int,
 ):
     input_combinations = []
     # Chunked Prefills
     prefill_chunk_sizes_to_profile = get_attention_prefill_chunk_sizes_to_profile(
-        max_seq_len, max_chunk_size
+        max_seq_len
     )
     for prefill_chunk_size in prefill_chunk_sizes_to_profile:
         num_partitions = max_seq_len // prefill_chunk_size
@@ -106,9 +109,8 @@ def get_attention_input_combinations(
             product([prefill_chunk_size], kv_cache_sizes_to_profile, [1], [True])
         )
     # Full prefills
-    if max_seq_len <= max_chunk_size:
-        prefill_lengths_to_profile = get_seq_lengths_to_profile(max_seq_len)
-        input_combinations.extend(product(prefill_lengths_to_profile, [0], [1], [True]))
+    prefill_lengths_to_profile = get_seq_lengths_to_profile(max_seq_len)
+    input_combinations.extend(product(prefill_lengths_to_profile, [0], [1], [True]))
     # Decodes
     kv_cache_sizes_to_profile = get_seq_lengths_to_profile(max_seq_len)
     batch_sizes_to_profile = get_attention_batch_sizes_to_profile(
@@ -147,8 +149,8 @@ def get_attention_input_combinations(
 
 
 def get_max_num_blocks(
-    model_config: "ModelConfig",
-    parallel_config: "ParallelConfig",
+    model_config: ModelConfig,
+    parallel_config: ParallelConfig,
     block_size: int,
     dtype: torch.dtype,
     gpu_memory_utilization: float = 0.9,

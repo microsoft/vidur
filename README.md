@@ -20,31 +20,61 @@ Vidur is a high-fidelity and extensible LLM inference system simulator. It can h
 
 ## Supported Models
 
-| Model / Device | H100 DGX | A100 80GB DGX | 4xA100 80GB Pairwise NVLink Node | 8xA40 Pairwise NVLink Node |
+__Instructions on adding a new model to existing or new SKUs can be found [here](docs/profiling.md)__.
+
+| Model / Device | A100 80GB DGX | H100 DGX | 4xA100 80GB Pairwise NVLink Node | 8xA40 Pairwise NVLink Node |
 | --- | --- | --- | --- | --- |
-| `meta-llama/Meta-Llama-3-8B` | ✅ | ✅ | ✅ | ❌ |
-| `meta-llama/Meta-Llama-3-70B` | ✅ | ✅ | ✅ | ❌ |
+| `meta-llama/Meta-Llama-3-8B` | ✅ | ❌ | ✅ | ❌ |
+| `meta-llama/Meta-Llama-3-70B` | ✅ | ❌ | ✅ | ❌ |
 | `meta-llama/Llama-2-7b-hf` | ✅ | ✅ | ✅ | ✅ |
 | `codellama/CodeLlama-34b-Instruct-hf"` | ✅ | ✅ | ✅ | ✅ |
 | `meta-llama/Llama-2-70b-hf` | ✅ | ✅ | ✅ | ✅ |
 | `internlm/internlm-20b` | ✅ | ✅ | ✅ | ✅ |
 | `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
 
-* __Instructions on adding a new model to existing or new SKUs can be found [here](docs/profiling.md)__.
-* All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length.
+* All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length by passing additional CLI params:
+
+    ```text
+    --random_forrest_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
+    --random_forrest_execution_time_predictor_config_prediction_max_batch_size 512 \
+    --random_forrest_execution_time_predictor_config_prediction_max_tokens_per_request 16384
+    ```
+
 * Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
 * In DGX nodes, there are 8 GPUs, fully connected via NVLink. So TP1, TP2, TP4 and TP8 are supported.
 * In 4x pairwise NVLink nodes, there are 4 GPUs, so TP1, TP2 and TP4 are supported. TP4 here is less performant than TP4 in DGX nodes because (GPU1, GPU2) are connected via NVLink and (GPU3, GPU4) are connected via NVLink. but between these layers, the interconnect is slower.
 * You can use any combination of TP and PP. For example, you can run LLaMA2-70B on TP2-PP2 on a 4xA100 80GB Pairwise NVLink Node.
 
-## Setup (using `uv`)
+## Setup
 
-1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/#installation-methods)
-2. At project root, run `uv venv` to create a new virtual environment.
-3. Activate the environment using `source .venv/bin/activate`.
-4. Install dependencies using `uv sync`. The environment is now ready for use.
+### Using `mamba`
 
-## Setting up wandb (Optional)
+To run the simulator, create a mamba environment with the given dependency file.
+
+```sh
+mamba env create -p ./env -f ./environment.yml
+mamba env update -f environment-dev.yml
+```
+
+### Using `venv`
+
+1. Ensure that you have Python 3.10 installed on your system. Refer <https://www.bitecode.dev/p/installing-python-the-bare-minimum>
+2. `cd` into the repository root
+3. Create a virtual environment using `venv` module using `python3.10 -m venv .venv`
+4. Activate the virtual environment using `source .venv/bin/activate`
+5. Install the dependencies using `python -m pip install -r requirements.txt`
+6. Run `deactivate` to deactivate the virtual environment
+
+### Using `conda` (Least recommended)
+
+To run the simulator, create a conda environment with the given dependency file.
+
+```sh
+conda env create -p ./env -f ./environment.yml
+conda env update -f environment-dev.yml
+```
+
+### Setting up wandb (Optional)
 
 First, setup your account on `https://<your-org>.wandb.io/` or public wandb, obtain the api key and then run the following command,
 
@@ -52,37 +82,48 @@ First, setup your account on `https://<your-org>.wandb.io/` or public wandb, obt
 wandb login --host https://<your-org>.wandb.io
 ```
 
-To opt out of wandb, set `export WANDB_MODE=disabled` in your shell or add this in `~/.zshrc` or `~/.bashrc`. Remember to reload using `source ~/.zshrc` or `source ~/.bashrc`.
+To opt out of wandb, pick any one of the following methods:
+
+1. `export WANDB_MODE=disabled` in your shell or add this in `~/.zshrc` or `~/.bashrc`. Remember to reload using `source ~/.zshrc`.
+2. Set `wandb_project` and `wandb_group` as `""` in `vidur/config/default.yml`. Also, remove these CLI params from the shell command with which the simulator is invoked.
 
 ## Running the simulator
 
-To run the simulator, execute the following command from the repository root:
+To run the simulator, execute the following command from the repository root,
 
 ```sh
-python -m vidur.main \
---time_limit 10800 \
+python -m vidur.main
+```
+
+or a big example with all the parameters,
+
+```sh
+python -m vidur.main  \
+--replica_config_device a100 \
 --replica_config_model_name meta-llama/Meta-Llama-3-8B \
---replica_config_device h100 \
---replica_config_network_device h100_dgx \
---cluster_config_num_replicas 8 \
+--cluster_config_num_replicas 1 \
 --replica_config_tensor_parallel_size 1 \
 --replica_config_num_pipeline_stages 1 \
 --request_generator_config_type synthetic \
---synthetic_request_generator_config_num_requests 128 \
+--synthetic_request_generator_config_num_requests 512  \
 --length_generator_config_type trace \
---trace_request_length_generator_config_trace_file ./data/processed_traces/mooncake_conversation_trace.csv \
+--trace_request_length_generator_config_max_tokens 16384 \
+--trace_request_length_generator_config_trace_file ./data/processed_traces/splitwise_conv.csv \
 --interval_generator_config_type poisson \
---poisson_request_interval_generator_config_qps 8.0 \
---global_scheduler_config_type round_robin \
---replica_scheduler_config_type vllm_v1 \
---vllm_v1_scheduler_config_chunk_size 512 \
---vllm_v1_scheduler_config_batch_size_cap 512 \
---cache_config_enable_prefix_caching
+--poisson_request_interval_generator_config_qps 6.45 \
+--replica_scheduler_config_type sarathi  \
+--sarathi_scheduler_config_batch_size_cap 512  \
+--sarathi_scheduler_config_chunk_size 512 \
+--random_forrest_execution_time_predictor_config_prediction_max_prefill_chunk_size 16384 \
+--random_forrest_execution_time_predictor_config_prediction_max_batch_size 512 \
+--random_forrest_execution_time_predictor_config_prediction_max_tokens_per_request 16384
 ```
 
-The command above simulates a scenario with a H100 DGX node running 8 replicas of the `Meta-Llama-3-8B` model, with synthetic requests generated at a QPS of 8. The `mooncake_conversation` trace file is used for request lengths, and the scheduler is set to `vllm_v1` which has been taken from the [vLLM V1](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/sched/scheduler.py).
+or to get information on all parameters,
 
-__The simulator supports a plethora of parameters for different simulation scenarios, see [docs/how_to_run.md](docs/how_to_run.md). Also run `python -m vidur.main -n` to get helptext on all parameters.__
+```sh
+python -m vidur.main -h
+```
 
 ## Simulator Output
 

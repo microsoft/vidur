@@ -1,31 +1,9 @@
-from vidur.scheduler.global_scheduler.lop_batch_end_global_scheduler import (
-    LOPBatchEndGlobalScheduler,
-)
-from vidur.scheduler.global_scheduler.lop_binary_global_scheduler import (
-    LOPBinaryGlobalScheduler,
-)
-from vidur.scheduler.global_scheduler.lop_global_scheduler import LOPGlobalScheduler
-from vidur.scheduler.global_scheduler.lop_uncached_global_scheduler import (
-    LOPUncachedGlobalScheduler,
-)
 from vidur.scheduler.global_scheduler.lor_global_scheduler import LORGlobalScheduler
 from vidur.scheduler.global_scheduler.random_global_scheduler import (
     RandomGlobalScheduler,
 )
-from vidur.scheduler.global_scheduler.ranked_sticky_lop_uncached_global_scheduler import (
-    RankedStickyLOPUncachedGlobalScheduler,
-)
 from vidur.scheduler.global_scheduler.round_robin_global_scheduler import (
     RoundRobinGlobalScheduler,
-)
-from vidur.scheduler.global_scheduler.sticky_lor_scheduler import (
-    StickyLORGlobalScheduler,
-)
-from vidur.scheduler.global_scheduler.sticky_round_robin_global_scheduler import (
-    StickyRoundRobinGlobalScheduler,
-)
-from vidur.scheduler.global_scheduler.tolerant_sticky_lop_uncached_global_scheduler import (
-    TolerantStickyLOPUncachedGlobalScheduler,
 )
 from vidur.types import GlobalSchedulerType
 from vidur.utils.base_registry import BaseRegistry
@@ -42,27 +20,3 @@ GlobalSchedulerRegistry.register(
     GlobalSchedulerType.ROUND_ROBIN, RoundRobinGlobalScheduler
 )
 GlobalSchedulerRegistry.register(GlobalSchedulerType.LOR, LORGlobalScheduler)
-GlobalSchedulerRegistry.register(GlobalSchedulerType.LOP, LOPGlobalScheduler)
-GlobalSchedulerRegistry.register(
-    GlobalSchedulerType.LOP_BINARY, LOPBinaryGlobalScheduler
-)
-GlobalSchedulerRegistry.register(
-    GlobalSchedulerType.LOP_BATCH_END, LOPBatchEndGlobalScheduler
-)
-GlobalSchedulerRegistry.register(
-    GlobalSchedulerType.LOP_UNCACHED, LOPUncachedGlobalScheduler
-)
-GlobalSchedulerRegistry.register(
-    GlobalSchedulerType.STICKY_ROUND_ROBIN, StickyRoundRobinGlobalScheduler
-)
-GlobalSchedulerRegistry.register(
-    GlobalSchedulerType.STICKY_LOR, StickyLORGlobalScheduler
-)
-GlobalSchedulerRegistry.register(
-    GlobalSchedulerType.RANKED_STICKY_LOP_UNCACHED,
-    RankedStickyLOPUncachedGlobalScheduler,
-)
-GlobalSchedulerRegistry.register(
-    GlobalSchedulerType.TOLERANT_STICKY_LOP_UNCACHED,
-    TolerantStickyLOPUncachedGlobalScheduler,
-)

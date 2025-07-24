@@ -1,17 +1,23 @@
 from typing import List
 
 from vidur.events import BaseEvent
-from vidur.metrics.cluster_metrics_store import ClusterMetricsStore
+from vidur.logger import init_logger
+from vidur.metrics import MetricsStore
 from vidur.scheduler import BaseGlobalScheduler
 from vidur.types import EventType
+
+logger = init_logger(__name__)
 
 
 class GlobalScheduleEvent(BaseEvent):
     def __init__(self, time: float):
         super().__init__(time, EventType.GLOBAL_SCHEDULE)
 
+        self._replica_set = []
+        self._request_mapping = []
+
     def handle_event(
-        self, scheduler: BaseGlobalScheduler, metrics_store: ClusterMetricsStore
+        self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
     ) -> List[BaseEvent]:
         from vidur.events.replica_schedule_event import ReplicaScheduleEvent
 
@@ -30,7 +36,7 @@ class GlobalScheduleEvent(BaseEvent):
     def to_dict(self):
         return {
             "time": self.time,
-            "event_type": str(self.event_type),
+            "event_type": self.event_type,
             "replica_set": self._replica_set,
             "request_mapping": [
                 (replica_id, request.id)

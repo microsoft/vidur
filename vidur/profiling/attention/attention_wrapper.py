@@ -2,7 +2,14 @@ from math import ceil
 from typing import List
 
 import numpy as np
+import sarathi.metrics.cuda_timer
 import torch
+
+from vidur.profiling.common.cuda_timer import CudaTimer
+
+# monkey patching the CudaTimer class to use the sarathi implementation
+sarathi.metrics.cuda_timer.CudaTimer = CudaTimer
+
 from sarathi.config import ParallelConfig
 from sarathi.model_executor.attention import (
     AttentionBackend,
@@ -30,10 +37,9 @@ class AttentionWrapper:
         attention_backend: AttentionBackend,
         dtype: torch.dtype,
     ):
-        self.time_stats_store = TimerStatsStore(profile_method="CUDA_EVENT")
+        self.time_stats_store = TimerStatsStore(profile_method="kineto")
 
         self._model_config = model_config
-        self._model_config.max_model_len = max_model_len
         self._parallel_config = parallel_config
         self._dtype = dtype
         self._device = torch.device("cuda")
@@ -96,11 +102,14 @@ class AttentionWrapper:
             num_blocks = ceil(
                 (num_tokens_per_seq + attention_input.kv_cache_size) / self._block_size
             )
+            # TODO(nitinkedia7): Investigate why high=max_num_blocks fails with a CUDA illegal memory access
             seq_metadata = SequenceMetadataProxy(
                 is_prompt=attention_input.is_prefill,
                 total_len=num_tokens_per_seq + attention_input.kv_cache_size,
                 processed_len=attention_input.kv_cache_size,
-                block_table=np.arange(num_blocks, dtype=np.int32),
+                block_table=np.random.default_rng()
+                .integers(low=0, high=self.max_num_blocks - 1, size=num_blocks)
+                .tolist(),
             )
             seq_metadata_list.append(seq_metadata)
         return seq_metadata_list, query, key, value, self.kv_cache

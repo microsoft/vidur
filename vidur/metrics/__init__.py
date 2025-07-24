@@ -1,3 +1,3 @@
-from vidur.metrics.cluster_metrics_store import ClusterMetricsStore
+from vidur.metrics.metrics_store import MetricsStore
 
-__all__ = [ClusterMetricsStore]
+__all__ = [MetricsStore]

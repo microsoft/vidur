@@ -1,7 +1,8 @@
+import os
 import platform
 import socket
 import time
-from typing import Optional, Tuple
+from typing import Optional
 
 import ray
 
@@ -51,14 +52,14 @@ def run_on_each_node(func, *args, **kwargs):
 
 @ray.remote
 class CpuAssignmentManager:
-    def __init__(self, num_threads_per_node: int):
+    def __init__(self):
         self._nodes = get_nodes()
         # remove "node:" prefix
         self._nodes = [node[5:] for node in self._nodes]
-        self._num_cores = num_threads_per_node
+        self._num_cores = os.cpu_count() - 2
         self._core_mapping = {node: [False] * self._num_cores for node in self._nodes}
 
-    def get_cpu_core_id(self) -> Tuple[Optional[str], Optional[int]]:
+    def get_cpu_core_id(self) -> Optional[int]:
         for node in self._nodes:
             for i, is_core_assigned in enumerate(self._core_mapping[node]):
                 if not is_core_assigned:
@@ -71,8 +72,8 @@ class CpuAssignmentManager:
 
 
 class RayParallelRunner:
-    def __init__(self, num_threads_per_node: int):
-        self._cpu_assignment_manager = CpuAssignmentManager.remote(num_threads_per_node)
+    def __init__(self):
+        self._cpu_assignment_manager = CpuAssignmentManager.remote()
 
     def map(self, func, collection):
         # try to assign a core to each task

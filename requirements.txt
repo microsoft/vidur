@@ -1,0 +1,10 @@
+numpy
+pandas
+scikit-learn
+wandb
+kaleido
+ddsketch
+plotly_express
+matplotlib
+seaborn
+fasteners

@@ -1,5 +1,4 @@
 import logging
-from typing import Generator
 
 import pandas as pd
 
@@ -17,35 +16,31 @@ class TraceRequestIntervalGenerator(BaseRequestIntervalGenerator):
     inter-request times, number of tokens.
     """
 
-    def __init__(
-        self,
-        config: TraceRequestIntervalGeneratorConfig,
-        random_number_generator: Generator,
-    ):
-        super().__init__(config, random_number_generator)
+    def __init__(self, config: TraceRequestIntervalGeneratorConfig):
+        super().__init__(config)
 
         # load into a pd dataframe
         self.trace_df = pd.read_csv(config.trace_file)
 
-        self.trace_df["arrived_at"] = pd.to_datetime(self.trace_df["arrived_at"])
+        self.trace_df["arrival_time"] = pd.to_datetime(self.trace_df["arrival_time"])
         # restrict trace_df to be a subset of rows that have the same date
         self.trace_df = self.trace_df[
-            (self.trace_df["arrived_at"] > config.start_time)
-            & (self.trace_df["arrived_at"] < config.end_time)
+            (self.trace_df["arrival_time"] > config.start_time)
+            & (self.trace_df["arrival_time"] < config.end_time)
         ]
 
         # change back to seconds
-        self.trace_df["arrived_at"] = (
-            self.trace_df["arrived_at"] - self.trace_df["arrived_at"].min()
+        self.trace_df["arrival_time"] = (
+            self.trace_df["arrival_time"] - self.trace_df["arrival_time"].min()
         ) // pd.Timedelta("1s")
 
         # rescale the time to change QPS
-        self.trace_df["arrived_at"] = (
-            self.trace_df["arrived_at"] * config.time_scale_factor
+        self.trace_df["arrival_time"] = (
+            self.trace_df["arrival_time"] * config.time_scale_factor
         )
 
         # compute the inter-request time
-        self.trace_df["inter_request_time"] = self.trace_df["arrived_at"].diff()
+        self.trace_df["inter_request_time"] = self.trace_df["arrival_time"].diff()
 
         self.next_request_idx = 1
 
@@ -55,7 +50,7 @@ class TraceRequestIntervalGenerator(BaseRequestIntervalGenerator):
 
     def get_next_inter_request_time(self) -> float:
         if self.next_request_idx >= len(self.trace_df):
-            self.next_request_idx = 1
+            return None
 
         inter_request_time = self.trace_df.iloc[self.next_request_idx][
             "inter_request_time"

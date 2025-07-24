@@ -3,17 +3,19 @@ from typing import List
 from vidur.entities.batch import Batch
 from vidur.entities.batch_stage import BatchStage
 from vidur.events import BaseEvent
-from vidur.metrics import ClusterMetricsStore
+from vidur.logger import init_logger
+from vidur.metrics import MetricsStore
 from vidur.scheduler import BaseGlobalScheduler
 from vidur.types import EventType
-from vidur.types.replica_id import ReplicaId
+
+logger = init_logger(__name__)
 
 
 class BatchStageEndEvent(BaseEvent):
     def __init__(
         self,
         time: float,
-        replica_id: ReplicaId,
+        replica_id: int,
         stage_id: int,
         is_last_stage: bool,
         batch: Batch,
@@ -29,13 +31,13 @@ class BatchStageEndEvent(BaseEvent):
         self._batch_stage = batch_stage
 
     def handle_event(
-        self, global_scheduler: BaseGlobalScheduler, metrics_store: ClusterMetricsStore
+        self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
     ) -> List[BaseEvent]:
         from vidur.events.batch_end_event import BatchEndEvent
         from vidur.events.batch_stage_arrival_event import BatchStageArrivalEvent
         from vidur.events.replica_stage_schedule_event import ReplicaStageScheduleEvent
 
-        global_scheduler.get_replica_stage_scheduler(
+        scheduler.get_replica_stage_scheduler(
             self._replica_id, self._stage_id
         ).on_stage_end()
 
@@ -72,7 +74,7 @@ class BatchStageEndEvent(BaseEvent):
     def to_dict(self):
         return {
             "time": self.time,
-            "event_type": str(self.event_type),
+            "event_type": self.event_type,
             "replica_id": self._replica_id,
             "stage_id": self._stage_id,
             "batch_id": self._batch.id,

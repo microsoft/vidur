@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 from vidur.config.base_fixed_config import BaseFixedConfig
@@ -15,7 +15,7 @@ class BaseModelConfig(BaseFixedConfig):
     num_kv_heads: int
     embedding_dim: int
     mlp_hidden_dim: int
-    max_model_len: int
+    max_position_embeddings: int
     use_gated_mlp: bool
     use_bias: bool
     use_qkv_bias: bool
@@ -32,7 +32,7 @@ class BaseModelConfig(BaseFixedConfig):
 
 @dataclass
 class Llama2ModelConfig(BaseModelConfig):
-    max_model_len: int = 16384
+    max_position_embeddings: int = 16384
     use_gated_mlp: bool = True
     use_bias: bool = False
     use_qkv_bias: bool = False
@@ -72,7 +72,7 @@ class Llama2_7BModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 32
     embedding_dim: int = 4096
     mlp_hidden_dim: int = 11008
-    max_model_len: int = 4096
+    max_position_embeddings: int = 4096
 
     @staticmethod
     def get_name():
@@ -86,7 +86,7 @@ class Llama2_70BModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 8
     embedding_dim: int = 8192
     mlp_hidden_dim: int = 28672
-    max_model_len: int = 4096
+    max_position_embeddings: int = 4096
 
     @staticmethod
     def get_name():
@@ -100,7 +100,7 @@ class Llama3_8BModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 8
     embedding_dim: int = 4096
     mlp_hidden_dim: int = 14336
-    max_model_len: int = 4096
+    max_position_embeddings: int = 4096
     rope_theta: Optional[float] = 500000
     vocab_size: int = 128256
 
@@ -116,7 +116,7 @@ class Llama3_70BModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 8
     embedding_dim: int = 8192
     mlp_hidden_dim: int = 28672
-    max_model_len: int = 8192
+    max_position_embeddings: int = 8192
     rope_theta: Optional[float] = 500000
     vocab_size: int = 128256
 
@@ -127,7 +127,7 @@ class Llama3_70BModelConfig(Llama2ModelConfig):
 
 @dataclass
 class InternLMModelConfig(Llama2ModelConfig):
-    max_model_len: int = 4096
+    max_position_embeddings: int = 4096
     vocab_size: int = 103168
 
 
@@ -146,7 +146,7 @@ class InternLM_20BModelConfig(InternLMModelConfig):
 
 @dataclass
 class InternLM2ModelConfig(Llama2ModelConfig):
-    max_model_len: int = 32768
+    max_position_embeddings: int = 32768
     vocab_size: int = 92544
 
 
@@ -171,7 +171,7 @@ class Phi2ModelConfig(Llama2ModelConfig):
     num_kv_heads: int = 32
     embedding_dim: int = 2560
     mlp_hidden_dim: int = 10240
-    max_model_len: int = 2048
+    max_position_embeddings: int = 2048
     use_gated_mlp: bool = False
     use_bias: bool = True
     use_qkv_bias: bool = True
@@ -192,7 +192,7 @@ class Phi2ModelConfig(Llama2ModelConfig):
 @dataclass
 class QwenModelConfig(Llama2ModelConfig):
     use_qkv_bias: bool = True
-    max_model_len: int = 32768
+    max_position_embeddings: int = 32768
     vocab_size: int = 152064
 
     @staticmethod

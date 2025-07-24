@@ -1,15 +1,9 @@
 from math import ceil
-from typing import List
 
 from vidur.entities.batch import Batch, Request
 from vidur.scheduler.replica_scheduler.base_replica_scheduler import (
     BaseReplicaScheduler,
 )
-from vidur.scheduler.replica_scheduler.replica_scheduler_output import (
-    ReplicaSchedulerOutput,
-)
-from vidur.scheduler.request_queue.base_request_queue import BaseRequestQueue
-from vidur.scheduler.request_queue.request_queue_registry import RequestQueueRegistry
 
 
 class SarathiReplicaScheduler(BaseReplicaScheduler):
@@ -21,45 +15,37 @@ class SarathiReplicaScheduler(BaseReplicaScheduler):
         self._preempted_requests = []
         # For vLLM and its derivatives, we only need to set a loose max batch size
         # Memory requirements are handled explicitly by the scheduler
-        self._max_batch_size = self._config.batch_size_cap
         self._max_micro_batch_size = self._config.batch_size_cap // self._num_stages
         self._watermark_blocks = int(
             self._config.watermark_blocks_fraction * self._config.num_blocks
         )
 
     def _can_allocate_request(self, request: Request) -> bool:
-        is_new_request = request.id not in self._allocation_map
-        if is_new_request:
-            if len(self._allocation_map) >= self._max_batch_size:
-                return False
+        if request.id not in self._allocation_map:
+            # new request
             num_required_blocks = ceil(
-                request.num_prefill_tokens_uncached / self._replica_config.block_size
+                request.num_prefill_tokens / self._config.block_size
             )
-            assert num_required_blocks > 0
             return (
                 self._config.num_blocks
                 - self._num_allocated_blocks
                 - num_required_blocks
                 >= self._watermark_blocks
             )
+
         # vllm requires at least one block to be available
         return self._config.num_blocks - self._num_allocated_blocks >= 1
 
     def _allocate_request(self, request: Request) -> None:
         if request.id not in self._allocation_map:
             # new request
-            assert (
-                len(self._allocation_map) < self._max_batch_size
-            ), f"Cannot allocate more than {self._max_batch_size} (max_batch_size) requests"
             num_required_blocks = ceil(
-                request.num_prefill_tokens_uncached / self._replica_config.block_size
+                request.num_prefill_tokens / self._config.block_size
             )
             self.allocate(request.id, num_required_blocks)
             return
 
-        num_tokens_reserved = (
-            self._allocation_map[request.id] * self._replica_config.block_size
-        ) + request.num_prefill_tokens_cached
+        num_tokens_reserved = self._allocation_map[request.id] * self._config.block_size
         num_tokens_required = max(0, request.num_processed_tokens - num_tokens_reserved)
 
         assert (
@@ -97,103 +83,104 @@ class SarathiReplicaScheduler(BaseReplicaScheduler):
 
         return next_num_tokens
 
-    def _get_next_batch(self, current_time: float) -> ReplicaSchedulerOutput:
-        requests: List[Request] = []
-        num_tokens: List[int] = []
-        skipped_requests: List[Request] = []
-        running_prefills_queue: BaseRequestQueue = RequestQueueRegistry.get_from_str(
-            self._request_queue._config.get_type(),
-            request_queue_config=self._request_queue._config,
-            execution_time_predictor=self._execution_time_predictor,
-        )
-        requeued_requests: List[Request] = []
+    def _get_next_batch(self) -> Batch:
+        requests = []
+        num_tokens = []
+        skipped_requests = []
+        running_prefills = []
         contains_prefill = False
         num_batch_tokens = 0
 
-        # Sort the preempted requests based on the order in request queue
-        # _request_queue is used here purely as a logic provider
-        self._preempted_requests = self._request_queue.sort(self._preempted_requests)
+        # preempted requests could contain multiple requests which have
+        # partial prefills completed, so we need to be careful
+        while self._preempted_requests:
+            if len(requests) == self._max_micro_batch_size:
+                break
 
-        while self._preempted_requests and len(requests) < self._max_micro_batch_size:
-            request = self._preempted_requests.popleft()
+            request = self._preempted_requests.pop(0)
 
             if not request.is_prefill_complete:
-                running_prefills_queue.push(request)
+                running_prefills.append(request)
                 continue
 
             next_num_tokens = self._get_request_next_num_tokens(
                 request, contains_prefill, num_batch_tokens
             )
-            assert next_num_tokens == 1
+
+            if next_num_tokens == 0:
+                skipped_requests.append(request)
+                continue
 
             while not self._can_allocate_request(request):
                 if self._preempted_requests:
-                    victim_request = self._preempted_requests.pop()
+                    victim_request = self._preempted_requests.pop(-1)
                     victim_request.restart()
                     self.free(victim_request.id)
-                    self._request_queue.push(victim_request)
-                    requeued_requests.append(victim_request)
+                    self._request_queue = [victim_request] + self._request_queue
                 else:
                     request.restart()
                     self.free(request.id)
-                    self._request_queue.push(request)
-                    requeued_requests.append(request)
+                    self._request_queue = [request] + self._request_queue
                     break
             else:
                 self._allocate_request(request)
+                assert request.is_prefill_complete
                 num_batch_tokens += next_num_tokens
                 requests.append(request)
                 num_tokens.append(next_num_tokens)
 
-        # TODO(nitinke): Fix assert for pipeline parallelism
-        assert len(self._preempted_requests) == 0
-
-        while len(requests) < self._max_micro_batch_size:
-            is_new_prefill = False
-            if len(self._request_queue) > 0 and len(running_prefills_queue) > 0:
-                if running_prefills_queue.peek() < self._request_queue.peek():
-                    request = running_prefills_queue.pop()
-                else:
-                    request = self._request_queue.pop()
-                    is_new_prefill = True
-            elif len(self._request_queue) > 0:
-                request = self._request_queue.pop()
-                is_new_prefill = True
-            elif len(running_prefills_queue) > 0:
-                request = running_prefills_queue.pop()
-            else:
-                break
-
-            if is_new_prefill and not self._can_allocate_request(request):
-                skipped_requests.append(request)
-                break
+        for request in running_prefills:
+            assert not request.is_prefill_complete
 
             next_num_tokens = self._get_request_next_num_tokens(
                 request, contains_prefill, num_batch_tokens
             )
+
             if next_num_tokens == 0:
                 skipped_requests.append(request)
-                break
-
-            if is_new_prefill:
-                self._allocate_request(request)
+                continue
 
             contains_prefill = True
             num_batch_tokens += next_num_tokens
             requests.append(request)
             num_tokens.append(next_num_tokens)
 
-        for skipped_request in skipped_requests:
-            if skipped_request.scheduled:
-                self._preempted_requests.append(skipped_request)
-            else:
-                self._request_queue.push(skipped_request)
-        skipped_requests = []
-        while len(running_prefills_queue) > 0:
-            request = running_prefills_queue.pop()
-            assert request.num_processed_tokens > 0
-            self._preempted_requests.append(request)
-        return ReplicaSchedulerOutput(
-            Batch(self._replica_id, requests, num_tokens) if requests else None,
-            requeued_requests,
+        # re-add the skipped requests, but make sure that we add them to the
+        # front of the queue so that they are scheduled first and we maintain FIFO ordering
+        self._preempted_requests = skipped_requests + self._preempted_requests
+        self._preempted_requests = sorted(
+            self._preempted_requests, key=lambda req: req.arrived_at
         )
+        skipped_requests = []
+
+        while self._request_queue:
+            if len(self._allocation_map) == self._config.batch_size_cap:
+                break
+
+            if len(requests) == self._max_micro_batch_size:
+                break
+
+            if not self._can_allocate_request(self._request_queue[0]):
+                break
+
+            next_num_tokens = self._get_request_next_num_tokens(
+                self._request_queue[0], contains_prefill, num_batch_tokens
+            )
+
+            if next_num_tokens == 0:
+                break
+
+            request = self._request_queue.pop(0)
+
+            self._allocate_request(request)
+
+            # all new requests will have a prefill
+            contains_prefill = True
+            num_batch_tokens += next_num_tokens
+            requests.append(request)
+            num_tokens.append(next_num_tokens)
+
+        if not requests:
+            return
+
+        return Batch(self._replica_id, requests, num_tokens)

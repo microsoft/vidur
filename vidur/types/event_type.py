@@ -8,8 +8,6 @@ class EventType(BaseIntEnum):
     REQUEST_ARRIVAL = 2
     BATCH_STAGE_END = 3
     BATCH_END = 4
-    PREFILL_END = 5
-    REQUEST_END = 6
-    GLOBAL_SCHEDULE = 7  # push requests event
-    REPLICA_SCHEDULE = 8  # includes pull requests functionality
-    REPLICA_STAGE_SCHEDULE = 9
+    GLOBAL_SCHEDULE = 5
+    REPLICA_SCHEDULE = 6
+    REPLICA_STAGE_SCHEDULE = 7

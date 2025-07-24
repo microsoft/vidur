@@ -165,7 +165,7 @@ cache
 cache_random_forrest
 cache_linear_regression
 cache*
-simulator_outputs
+simulator_output
 wandb
 train.zip
 profiling_outputs
@@ -177,8 +177,3 @@ config_optimizer_output_tmpfs
 profiler_traces*
 experiments/profiling/get_profiled_data_from_trace.ipynb
 env_3
-config_optimizer_output*
-experiments/miscellaneous/request_length_trace_analysis.ipynb
-vidur/config_optimizer/config_explorer/config/config_llama3_8b.yml
-experiments/global_scheduler/get_uniform_trace.ipynb
-prefill_throughput_output

@@ -2,27 +2,11 @@ from vidur.entities.batch import Batch
 from vidur.scheduler.replica_scheduler.base_replica_scheduler import (
     BaseReplicaScheduler,
 )
-from vidur.types.request_queue_type import RequestQueueType
 
 
 class FasterTransformerReplicaScheduler(BaseReplicaScheduler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        assert (
-            self._request_queue._config.get_type() == RequestQueueType.FCFS
-        ), "FasterTransformer scheduler only supports FCFS request queues"
-
-        self._max_blocks_per_sequence = (
-            self._request_generator_config.max_tokens // self._replica_config.block_size
-        )
-        self._max_batch_size = min(
-            self._config.batch_size_cap,
-            self._config.num_blocks // self._max_blocks_per_sequence,
-        )
-        assert (
-            self._max_batch_size > 0
-        ), "Not enough memory to store even a single request"
 
         self._preempted_batches = []
         self._num_running_batches = 0
@@ -69,7 +53,7 @@ class FasterTransformerReplicaScheduler(BaseReplicaScheduler):
             if not self.can_allocate(self._max_blocks_per_sequence):
                 break
 
-            request = self._request_queue.popleft()
+            request = self._request_queue.pop(0)
             self.allocate(request.id, self._max_blocks_per_sequence)
             next_num_tokens = self._get_request_next_num_tokens(request)
             requests.append(request)

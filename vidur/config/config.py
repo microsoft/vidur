@@ -1,10 +1,8 @@
 import json
 import os
-import sys
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, field
 from datetime import datetime
-from math import ceil
 from typing import List, Optional
 
 from vidur.config.base_poly_config import BasePolyConfig
@@ -15,14 +13,12 @@ from vidur.config.node_sku_config import BaseNodeSKUConfig
 from vidur.config.utils import dataclass_to_dict
 from vidur.logger import init_logger
 from vidur.types import (
-    ExecutionTimePredictorCacheMode,
     ExecutionTimePredictorType,
     GlobalSchedulerType,
     ReplicaSchedulerType,
     RequestGeneratorType,
     RequestIntervalGeneratorType,
     RequestLengthGeneratorType,
-    RequestQueueType,
 )
 
 logger = init_logger(__name__)
@@ -30,10 +26,10 @@ logger = init_logger(__name__)
 
 @dataclass
 class BaseRequestIntervalGeneratorConfig(BasePolyConfig):
-    @staticmethod
-    @abstractmethod
-    def get_type():
-        pass
+    seed: int = field(
+        default=42,
+        metadata={"help": "Seed for the random number generator."},
+    )
 
 
 @dataclass
@@ -42,15 +38,10 @@ class BaseRequestLengthGeneratorConfig(BasePolyConfig):
         default=42,
         metadata={"help": "Seed for the random number generator."},
     )
-    max_tokens: Optional[int] = field(
-        default=None,
+    max_tokens: int = field(
+        default=4096,
         metadata={"help": "Maximum tokens."},
     )
-
-    @staticmethod
-    @abstractmethod
-    def get_type():
-        pass
 
 
 @dataclass
@@ -110,18 +101,6 @@ class GammaRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
 
 
 @dataclass
-class UniformRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
-    qps: float = field(
-        default=0.2,
-        metadata={"help": "Queries per second"},
-    )
-
-    @staticmethod
-    def get_type():
-        return RequestIntervalGeneratorType.UNIFORM
-
-
-@dataclass
 class StaticRequestIntervalGeneratorConfig(BaseRequestIntervalGeneratorConfig):
     @staticmethod
     def get_type():
@@ -144,12 +123,6 @@ class TraceRequestLengthGeneratorConfig(BaseRequestLengthGeneratorConfig):
         default=1,
         metadata={
             "help": "Decode scale factor for the trace request length generator."
-        },
-    )
-    preserve_request_order: bool = field(
-        default=True,
-        metadata={
-            "help": "Preserve request order for the trace request length generator."
         },
     )
 
@@ -223,11 +196,6 @@ class BaseRequestGeneratorConfig(BasePolyConfig):
         metadata={"help": "Seed for the random number generator."},
     )
 
-    @staticmethod
-    @abstractmethod
-    def get_type():
-        pass
-
 
 @dataclass
 class SyntheticRequestGeneratorConfig(BaseRequestGeneratorConfig):
@@ -274,68 +242,14 @@ class TraceRequestGeneratorConfig(BaseRequestGeneratorConfig):
         default=1.0,
         metadata={"help": "Time scale factor for the trace request generator."},
     )
-    max_tokens: Optional[int] = field(
-        default=None,
-        metadata={"help": "Maximum tokens for the trace request generator."},
-    )
-    num_requests: Optional[int] = field(
-        default=None,
+    max_tokens: int = field(
+        default=4096,
         metadata={"help": "Maximum tokens for the trace request generator."},
     )
 
     @staticmethod
     def get_type():
-        return RequestGeneratorType.TRACE
-
-
-@dataclass
-class SloConfig:
-    prefill_e2e_time_normalized: Optional[float] = field(
-        default=None,
-        metadata={"help": "Target Normalized TTFT"},
-    )
-    prefill_e2e_time_min: Optional[float] = field(
-        default=None,
-        metadata={"help": "Target Min TTFT"},
-    )
-
-
-@dataclass
-class CacheConfig:
-    block_size: int = field(
-        default=16,
-        metadata={"help": "Block size."},
-    )
-    num_blocks: Optional[int] = field(
-        default=None,
-        metadata={"help": "Number of blocks."},
-    )
-    watermark_blocks_fraction: float = field(
-        default=0.01,
-        metadata={"help": "Watermark blocks fraction."},
-    )
-    memory_margin_fraction: float = field(
-        default=0.1,
-        metadata={"help": "Memory margin fraction."},
-    )
-    enable_prefix_caching: bool = field(
-        default=False,
-        metadata={"help": "Enable prefix caching."},
-    )
-    prefix_caching_hash_algo: str = field(
-        default="builtin",
-        metadata={"help": "Prefix caching hash algorithm."},
-    )
-    num_preallocate_tokens: int = field(
-        default=64,
-        metadata={"help": "Number of preallocate tokens."},
-    )
-    enable_disk_caching: bool = field(
-        default=False, metadata={"help": "Enable caching to disk."}
-    )
-    disk_num_blocks: int = field(
-        default=sys.maxsize, metadata={"help": "Number of blocks in disk cache."}
-    )
+        return RequestGeneratorType.TRACE_REPLAY
 
 
 @dataclass
@@ -344,11 +258,18 @@ class BaseReplicaSchedulerConfig(BasePolyConfig):
         default=128,
         metadata={"help": "Maximum batch size cap."},
     )
-
-    @staticmethod
-    @abstractmethod
-    def get_type():
-        pass
+    block_size: int = field(
+        default=16,
+        metadata={"help": "Block size."},
+    )
+    watermark_blocks_fraction: float = field(
+        default=0.01,
+        metadata={"help": "Watermark blocks fraction."},
+    )
+    num_blocks: Optional[int] = field(
+        default=None,
+        metadata={"help": "Number of blocks."},
+    )
 
 
 @dataclass
@@ -361,6 +282,22 @@ class VllmSchedulerConfig(BaseReplicaSchedulerConfig):
     @staticmethod
     def get_type():
         return ReplicaSchedulerType.VLLM
+
+
+@dataclass
+class LightllmSchedulerConfig(BaseReplicaSchedulerConfig):
+    max_tokens_in_batch: int = field(
+        default=4096,
+        metadata={"help": "Maximum tokens in batch for LightLLM."},
+    )
+    max_waiting_iters: int = field(
+        default=10,
+        metadata={"help": "Maximum waiting iterations for LightLLM."},
+    )
+
+    @staticmethod
+    def get_type():
+        return ReplicaSchedulerType.LIGHTLLM
 
 
 @dataclass
@@ -389,30 +326,6 @@ class SarathiSchedulerConfig(BaseReplicaSchedulerConfig):
     @staticmethod
     def get_type():
         return ReplicaSchedulerType.SARATHI
-
-
-@dataclass
-class VllmV1SchedulerConfig(BaseReplicaSchedulerConfig):
-    chunk_size: int = field(
-        default=512,
-        metadata={"help": "Chunk size for chunked prefill."},
-    )
-
-    @staticmethod
-    def get_type():
-        return ReplicaSchedulerType.VLLM_V1
-
-
-@dataclass
-class VllmV1DiskSchedulerConfig(BaseReplicaSchedulerConfig):
-    chunk_size: int = field(
-        default=512,
-        metadata={"help": "Chunk size for chunked prefill."},
-    )
-
-    @staticmethod
-    def get_type():
-        return ReplicaSchedulerType.VLLM_V1_DISK
 
 
 @dataclass
@@ -481,9 +394,7 @@ class MetricsConfig:
     )
     keep_individual_batch_metrics: bool = field(
         default=False,
-        metadata={
-            "help": "Whether to keep individual batch metrics. This can lead to large disk usage."
-        },
+        metadata={"help": "Whether to keep individual batch metrics."},
     )
     subsamples: Optional[int] = field(
         default=None,
@@ -501,6 +412,10 @@ class MetricsConfig:
         default="simulator_output",
         metadata={"help": "Output directory."},
     )
+    cache_dir: str = field(
+        default="cache",
+        metadata={"help": "Cache directory."},
+    )
 
     def __post_init__(self):
         self.output_dir = (
@@ -514,6 +429,10 @@ class ReplicaConfig:
     model_name: str = field(
         default="meta-llama/Llama-2-7b-hf",
         metadata={"help": "Model name."},
+    )
+    memory_margin_fraction: float = field(
+        default=0.1,
+        metadata={"help": "Memory margin fraction."},
     )
     num_pipeline_stages: int = field(
         default=1,
@@ -544,76 +463,10 @@ class ReplicaConfig:
             self.network_device
         )
 
-        assert self.model_config.num_q_heads % self.tensor_parallel_size == 0
-        assert self.model_config.num_layers % self.num_pipeline_stages == 0
-        assert self.model_config.embedding_dim % self.tensor_parallel_size == 0
-        assert self.model_config.embedding_dim % self.model_config.num_q_heads == 0
-
-        self._num_layers_per_pipeline_stage = (
-            self.model_config.num_layers // self.num_pipeline_stages
-        )
-        self._attention_head_dim = (
-            self.model_config.embedding_dim // self.model_config.num_q_heads
-        )
-        self._q_heads_per_tensor_parallel_worker = (
-            self.model_config.num_q_heads // self.tensor_parallel_size
-        )
-        self._kv_heads_per_tensor_parallel_worker = ceil(
-            self.model_config.num_kv_heads / self.tensor_parallel_size
-        )
-
-    @property
-    def num_layers_per_pipeline_stage(self):
-        return self._num_layers_per_pipeline_stage
-
-    @property
-    def attention_head_dim(self):
-        return self._attention_head_dim
-
-    @property
-    def q_heads_per_tensor_parallel_worker(self):
-        return self._q_heads_per_tensor_parallel_worker
-
-    @property
-    def kv_heads_per_tensor_parallel_worker(self):
-        return self._kv_heads_per_tensor_parallel_worker
-
-
-@dataclass
-class BaseRequestQueueConfig(BasePolyConfig):
-    @staticmethod
-    @abstractmethod
-    def get_type() -> RequestQueueType:
-        pass
-
-
-@dataclass
-class FCFSRequestQueueConfig(BaseRequestQueueConfig):
-    @staticmethod
-    def get_type():
-        return RequestQueueType.FCFS
-
-
-@dataclass
-class EDFRequestQueueConfig(BaseRequestQueueConfig):
-    @staticmethod
-    def get_type():
-        return RequestQueueType.EDF
-
 
 @dataclass
 class BaseGlobalSchedulerConfig(BasePolyConfig):
-    seed: int = field(
-        default=67,
-        metadata={
-            "help": "Seed for the random number generator to be used only in routers."
-        },
-    )
-
-    @staticmethod
-    @abstractmethod
-    def get_type():
-        pass
+    pass
 
 
 @dataclass
@@ -638,141 +491,61 @@ class LORGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
 
 
 @dataclass
-class LOPGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
-    @staticmethod
-    def get_type():
-        return GlobalSchedulerType.LOP
-
-
-@dataclass
-class LOPBinaryGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
-    @staticmethod
-    def get_type():
-        return GlobalSchedulerType.LOP_BINARY
-
-
-@dataclass
-class LOPBatchEndGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
-    @staticmethod
-    def get_type():
-        return GlobalSchedulerType.LOP_BATCH_END
-
-
-@dataclass
-class LOPUncachedGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
-    @staticmethod
-    def get_type():
-        return GlobalSchedulerType.LOP_UNCACHED
-
-
-@dataclass
-class StickyRoundRobinGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
-    @staticmethod
-    def get_type():
-        return GlobalSchedulerType.STICKY_ROUND_ROBIN
-
-
-@dataclass
-class StickyLorGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
-    @staticmethod
-    def get_type():
-        return GlobalSchedulerType.STICKY_LOR
-
-
-@dataclass
-class TolerantStickyLopUncachedGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
-    tolerance_factor: float = field(
-        default=2.0,
-        metadata={"help": "Imbalance tolerance factor."},
-    )
-
-    @staticmethod
-    def get_type():
-        return GlobalSchedulerType.TOLERANT_STICKY_LOP_UNCACHED
-
-
-@dataclass
-class RankedStickyLopUncachedGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
-    top_k: int = field(
-        default=2,
-        metadata={"help": "Top K for the ranked sticky LOP uncached global scheduler."},
-    )
-
-    @staticmethod
-    def get_type():
-        return GlobalSchedulerType.RANKED_STICKY_LOP_UNCACHED
-
-
-@dataclass
 class BaseExecutionTimePredictorConfig(BasePolyConfig):
-    seed: int = field(
-        default=42,
-        metadata={
-            "help": "Seed for making operation runtime predictions reproducible (best effort)."
-        },
-    )
     compute_input_file: str = field(
-        default="../../data/profiling/compute/{DEVICE}/{MODEL}/mlp.csv",
+        default="./data/profiling/compute/{DEVICE}/{MODEL}/mlp.csv",
         metadata={"help": "Path to the compute input file."},
     )
     attention_input_file: str = field(
-        default="../../data/profiling/compute/{DEVICE}/{MODEL}/attention.csv",
+        default="./data/profiling/compute/{DEVICE}/{MODEL}/attention.csv",
         metadata={"help": "Path to the attention input file."},
     )
     all_reduce_input_file: str = field(
-        default="../../data/profiling/network/{NETWORK_DEVICE}/all_reduce.csv",
+        default="./data/profiling/network/{NETWORK_DEVICE}/all_reduce.csv",
         metadata={"help": "Path to the all reduce input file."},
     )
     send_recv_input_file: str = field(
-        default="../../data/profiling/network/{NETWORK_DEVICE}/send_recv.csv",
+        default="./data/profiling/network/{NETWORK_DEVICE}/send_recv.csv",
         metadata={"help": "Path to the send recv input file."},
     )
     cpu_overhead_input_file: str = field(
-        default="../../data/profiling/cpu_overhead/{NETWORK_DEVICE}/{MODEL}/cpu_overheads.csv",
+        default="./data/profiling/cpu_overhead/{NETWORK_DEVICE}/{MODEL}/cpu_overheads.csv",
         metadata={"help": "Path to the cpu overhead input file."},
     )
     k_fold_cv_splits: int = field(
         default=10,
         metadata={"help": "Number of k fold cross validation splits."},
     )
-    cache_mode: str = field(
-        default=ExecutionTimePredictorCacheMode.USE_CACHE,
-        metadata={"help": "Cache access mode for the execution time predictor."},
-    )
-    cache_dir: str = field(
-        default="cache",
-        metadata={"help": "Cache directory."},
+    no_cache: bool = field(
+        default=False,
+        metadata={"help": "Whether to cache prediction models."},
     )
     kv_cache_prediction_granularity: int = field(
         default=64,
         metadata={"help": "KV cache prediction granularity."},
-    )
-    prefill_chunk_size_prediction_granularity: int = field(
-        default=32,
-        metadata={"help": "Prefill chunk size prediction granularity."},
     )
     prediction_max_prefill_chunk_size: int = field(
         default=4096,
         metadata={"help": "Max prefill chunk size for prediction."},
     )
     prediction_max_batch_size: int = field(
-        default=512,
+        default=128,
         metadata={"help": "Max batch size for prediction."},
     )
     prediction_max_tokens_per_request: int = field(
-        default=256 * 1024,
+        default=4096,
         metadata={"help": "Max tokens per request for prediction."},
     )
     attention_decode_batching_overhead_fraction: float = field(
-        default=0.0,
+        default=0.1,
         metadata={"help": "Attention decode batching overhead fraction."},
     )
     attention_prefill_batching_overhead_fraction: float = field(
-        default=0.0,
+        default=0.1,
         metadata={"help": "Attention prefill batching overhead fraction."},
     )
     nccl_cpu_launch_overhead_ms: float = field(
-        default=0.00,
+        default=0.02,
         metadata={"help": "NCCL CPU launch overhead in ms."},
     )
     nccl_cpu_skew_overhead_per_device_ms: float = field(
@@ -787,23 +560,6 @@ class BaseExecutionTimePredictorConfig(BasePolyConfig):
         default=True,
         metadata={"help": "Whether to skip CPU overhead modeling."},
     )
-
-    def __post_init__(self):
-        self._location = os.path.dirname(os.path.abspath(__file__))
-        self.compute_input_file = os.path.join(self._location, self.compute_input_file)
-        self.attention_input_file = os.path.join(
-            self._location, self.attention_input_file
-        )
-        self.all_reduce_input_file = os.path.join(
-            self._location, self.all_reduce_input_file
-        )
-        self.send_recv_input_file = os.path.join(
-            self._location, self.send_recv_input_file
-        )
-        self.cpu_overhead_input_file = os.path.join(
-            self._location, self.cpu_overhead_input_file
-        )
-        self.cache_mode = ExecutionTimePredictorCacheMode.from_str(self.cache_mode)
 
 
 @dataclass
@@ -831,7 +587,7 @@ class LinearRegressionExecutionTimePredictorConfig(BaseExecutionTimePredictorCon
 
 
 @dataclass
-class RandomForestExecutionTimePredictorConfig(BaseExecutionTimePredictorConfig):
+class RandomForrestExecutionTimePredictorConfig(BaseExecutionTimePredictorConfig):
     num_estimators: List[int] = field(
         default_factory=lambda: [250, 500, 750],
         metadata={"help": "Number of estimators for random forest."},
@@ -847,7 +603,7 @@ class RandomForestExecutionTimePredictorConfig(BaseExecutionTimePredictorConfig)
 
     @staticmethod
     def get_type():
-        return ExecutionTimePredictorType.RANDOM_FOREST
+        return ExecutionTimePredictorType.RANDOM_FORREST
 
 
 @dataclass
@@ -857,10 +613,6 @@ class ClusterConfig:
         metadata={"help": "Number of replicas."},
     )
     replica_config: ReplicaConfig = field(default_factory=ReplicaConfig)
-    cache_config: CacheConfig = field(
-        default_factory=CacheConfig,
-        metadata={"help": "Cache config."},
-    )
     global_scheduler_config: BaseGlobalSchedulerConfig = field(
         default_factory=RoundRobinGlobalSchedulerConfig,
         metadata={"help": "Global scheduler config."},
@@ -868,10 +620,6 @@ class ClusterConfig:
     replica_scheduler_config: BaseReplicaSchedulerConfig = field(
         default_factory=SarathiSchedulerConfig,
         metadata={"help": "Replica scheduler config."},
-    )
-    request_queue_config: BaseRequestQueueConfig = field(
-        default_factory=FCFSRequestQueueConfig,
-        metadata={"help": "Request queue config."},
     )
 
 
@@ -898,16 +646,12 @@ class SimulationConfig(ABC):
         metadata={"help": "Request generator config."},
     )
     execution_time_predictor_config: BaseExecutionTimePredictorConfig = field(
-        default_factory=RandomForestExecutionTimePredictorConfig,
+        default_factory=RandomForrestExecutionTimePredictorConfig,
         metadata={"help": "Execution time predictor config."},
     )
     metrics_config: MetricsConfig = field(
         default_factory=MetricsConfig,
         metadata={"help": "Metrics config."},
-    )
-    slo_config: SloConfig = field(
-        default_factory=SloConfig,
-        metadata={"help": "SLO config."},
     )
 
     def __post_init__(self):

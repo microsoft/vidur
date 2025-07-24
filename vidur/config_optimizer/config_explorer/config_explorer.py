@@ -10,9 +10,6 @@ from vidur.config_optimizer.config_explorer.ray_utils import (
     RayParallelRunner,
     run_on_each_node,
 )
-from vidur.logger import init_logger
-
-logger = init_logger(__name__)
 
 
 def run_search(
@@ -62,9 +59,8 @@ class ConfigExplorer:
             self._warmup_cache()
 
         job_configs = JobConfig.generate_job_configs(self.config)
-        logger.info(f"Running {len(job_configs)} searches")
 
-        ray_parallel_runner = RayParallelRunner(self.args.num_threads)
+        ray_parallel_runner = RayParallelRunner()
 
         remote_func = (
             lambda cpu_core_assignment_manager, cpu_core_id, job_config: run_search(

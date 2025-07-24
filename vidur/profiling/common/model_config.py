@@ -17,7 +17,7 @@ class ModelConfig:
         num_kv_heads: int,
         embedding_dim: int,
         mlp_hidden_dim: int,
-        max_model_len: int,
+        max_position_embeddings: int,
         use_gated_mlp: bool,
         use_bias: bool,
         use_qkv_bias: bool,
@@ -37,7 +37,7 @@ class ModelConfig:
         self.num_kv_heads = num_kv_heads
         self.embedding_dim = embedding_dim
         self.mlp_hidden_dim = mlp_hidden_dim
-        self.max_model_len = max_model_len
+        self.max_position_embeddings = max_position_embeddings
         self.use_gated_mlp = use_gated_mlp
         self.vocab_size = vocab_size
         self.use_bias = use_bias

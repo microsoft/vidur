@@ -1,5 +1,3 @@
-from typing import Dict
-
 from vidur.entities.base_entity import BaseEntity
 
 
@@ -199,20 +197,3 @@ class ExecutionTime(BaseEntity):
     def total_time(self) -> float:
         # return in seconds
         return self.model_time + self._get_cpu_overhead() * 1e-3
-
-    def to_dict(self) -> Dict[str, float]:
-        return {
-            "mlp_layer_up_proj_execution_time": self._mlp_layer_up_proj_execution_time,
-            "mlp_layer_down_proj_execution_time": self._mlp_layer_down_proj_execution_time,
-            "mlp_layer_act_execution_time": self._mlp_layer_act_execution_time,
-            "tensor_parallel_communication_time": self._tensor_parallel_communication_time,
-            "mlp_norm_time": self._mlp_norm_time,
-            "attention_layer_pre_proj_execution_time": self._attention_layer_pre_proj_execution_time,
-            "attention_layer_post_proj_execution_time": self._attention_layer_post_proj_execution_time,
-            "attention_rope_execution_time": self._attention_rope_execution_time,
-            "attention_kv_cache_save_execution_time": self._attention_kv_cache_save_execution_time,
-            "attention_decode_execution_time": self._attention_decode_execution_time,
-            "attention_prefill_execution_time": self._attention_prefill_execution_time,
-            "tensor_parallel_communication_time": self._tensor_parallel_communication_time,
-            "attn_norm_time": self._attn_norm_time,
-        }

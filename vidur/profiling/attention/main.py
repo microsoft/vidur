@@ -40,14 +40,12 @@ def parse_args():
         type=str,
         nargs="+",
         default=[
-            # "microsoft/phi-2",
-            # "internlm/internlm-20b",
-            # "Qwen/Qwen-72B",
-            # "meta-llama/Llama-2-7b-hf",
-            # "codellama/CodeLlama-34b-Instruct-hf",
-            # "meta-llama/Llama-2-70b-hf",
-            "meta-llama/Meta-Llama-3-8B",
-            "meta-llama/Meta-Llama-3-70B",
+            "microsoft/phi-2",
+            "internlm/internlm-20b",
+            "Qwen/Qwen-72B",
+            "meta-llama/Llama-2-7b-hf",
+            "codellama/CodeLlama-34b-Instruct-hf",
+            "meta-llama/Llama-2-70b-hf",
         ],
         help="Models to profile",
     )
@@ -59,9 +57,15 @@ def parse_args():
         help="Number of tensor parallel workers to profile",
     )
     parser.add_argument(
+        "--max_model_len",
+        type=int,
+        default=4096,
+        help="Maximum context length model can serve",
+    )
+    parser.add_argument(
         "--max_seq_len",
         type=int,
-        default=256 * 1024,
+        default=4096,
         help="Maximum context length of input",
     )
     parser.add_argument(
@@ -97,12 +101,6 @@ def parse_args():
         type=int,
         default=16,
         help="Block size for paged attention",
-    )
-    parser.add_argument(
-        "--max_chunk_size",
-        type=int,
-        default=4096,
-        help="Maximum chunk size for chunked prefill",
     )
     args = parser.parse_args()
 
@@ -142,7 +140,7 @@ def profile_model(
             model_config,
             parallel_config,
             max_num_blocks,
-            args.max_seq_len,
+            args.max_model_len,
             args.block_size,
             args.attention_backend,
             dtype,
@@ -188,14 +186,12 @@ def main():
         args.max_batch_size,
         args.profile_only_prefill,
         args.profile_only_decode,
-        args.max_chunk_size,
     )
 
     total_combos = {}
     max_num_blocks_dict = {}
     for model in args.models:
         model_config = ModelConfig.from_model_name(model)
-        model_config.max_model_len = args.max_seq_len
         for num_tensor_parallel_workers in args.num_tensor_parallel_workers:
             max_num_blocks = get_max_num_blocks(
                 model_config,

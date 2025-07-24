@@ -5,11 +5,4 @@ from vidur.entities.execution_time import ExecutionTime
 from vidur.entities.replica import Replica
 from vidur.entities.request import Request
 
-__all__ = [
-    Request,
-    Replica,
-    Batch,
-    Cluster,
-    BatchStage,
-    ExecutionTime,
-]
+__all__ = [Request, Replica, Batch, Cluster, BatchStage, ExecutionTime]

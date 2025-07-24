@@ -1,43 +1,15 @@
 clusters:
   - device: h100
-    network_device: h100_dgx
-    gpus_per_node: 8
-  - device: a100
-    network_device: a100_dgx
-    gpus_per_node: 8
-  - device: a40
-    network_device: a40_pair_nvlink
+    num_gpus: 16
     gpus_per_node: 4
+  - device: a100
+    num_gpus: 16
+    gpus_per_node: 4
+  - device: a40
+    num_gpus: 32
+    gpus_per_node: 8
 
-global_schedulers:
-  - scheduler: round_robin
-  - scheduler: random
-  - scheduler: lor
-  - scheduler: lop
-
-replica_schedulers:
-  - scheduler: greedy
-    group_size: 1
-  - scheduler: greedy
-    group_size: max
-  - scheduler: first_fit
-    group_size: 1
-  - scheduler: first_fit
-    group_size: max
-
-request_queues:
-  - name: fcfs
-    queue_provider: fcfs
-  - name: edf_0.5ms
-    queue_provider: edf
-    slo_prefill_e2e_time_normalized: 0.0005
-    slo_prefill_e2e_time_min: 0.1
-  - name: edf_1ms
-    queue_provider: edf
-    slo_prefill_e2e_time_normalized: 0.001
-    slo_prefill_e2e_time_min: 0.1
-
-replica_schedulers:
+schedulers:
   - scheduler: vllm
   - scheduler: sarathi
     chunk_size: 256
@@ -50,118 +22,44 @@ replica_schedulers:
   - scheduler: sarathi
     chunk_size: 4096
 
-slo_configs:
-  - name: nttft_p99_1ms
-    type: and
-    quantile: 0.99
-    slos:
-      - metric: prefill_e2e_time_normalized
-        value: 0.001
-  - name: nttft_1ms_or_ttft_100ms_p99
-    type: or
-    quantile: 0.99
-    slos:
-      - metric: prefill_e2e_time_normalized
-        value: 0.001
-      - metric: prefill_e2e_time
-        value: 0.1
-
 traces:
-  - name: splitwise_conv
-    trace_file: "./data/processed_traces/splitwise_conv.csv"
-    max_seq_len: 16384
-    num_requests: 1600000
-  - name: mix_211
-    trace_file: "./data/processed_traces/mixed_trace_sharegpt_2_arxiv_1_bwb_1.csv"
-    max_seq_len: 16384
-    num_requests: 1600000
-  - name: chat_8k
-    trace_file: "./data/processed_traces/sharegpt_8k_stats_llama2_tokenizer_filtered_8k.csv"
-    max_seq_len: 8192
-    num_requests: 1600000
-  - name: chat_4k
-    trace_file: "./data/processed_traces/lmsys_chat_1m_conversation_stats_llama2_tokenizer_filtered_4k.csv"
+  - name: chat
+    trace_file: "./data/processed_traces/lmsys_chat_1m_conversation_stats_llama2_tokenizer.csv"
     max_seq_len: 4096
-    num_requests: 1600000
-  - name: arxiv_16k
-    trace_file: "./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_16k.csv"
-    max_seq_len: 16384
-    num_requests: 1600000
-  - name: bwb_12k
-    trace_file: "./data/processed_traces/bwb_stats_llama2_tokenizer_filtered_12k.csv"
-    max_seq_len: 12228
-    num_requests: 1600000
+    num_requests: 16000
+    start_qps: 32
+  - name: arxiv
+    trace_file: "./data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv"
+    max_seq_len: 4096
+    num_requests: 16000
+    start_qps: 16
+  - name: bwb
+    trace_file: "./data/processed_traces/bwb_stats_llama2_tokenizer_filtered_v2.csv"
+    max_seq_len: 4096
+    num_requests: 16000
+    start_qps: 8
 
-batch_sizes: [32, 64, 128, 256, 512]
+batch_sizes: [32, 64, 128]
 tp_dimensions: [1, 2, 4, 8]
 pp_dimensions: [1, 2, 4]
 
 models:
-  - name: Meta-Llama-3-8B
-    identifier: meta-llama/Meta-Llama-3-8B
-  - name: Meta-Llama-3-70B
-    identifier: meta-llama/Meta-Llama-3-70B
-    exclude_tp_dims: [1]
-  - name: phi-2
-    identifier: microsoft/phi-2
-    exclude_tp_dims: [2, 4, 8]
+  # - name: phi-2
+  #   identifier: microsoft/phi-2
+  #   exclude_tp_dims: [2, 4, 8]
   - name: llama-2-7b-hf
     identifier: meta-llama/Llama-2-7b-hf
-  - name: internlm-20b
-    identifier: internlm/internlm-20b
-    exclude_tp_dims: [1]
+  # - name: internlm-20b
+  #   identifier: internlm/internlm-20b
+  #   exclude_tp_dims: [1]
   - name: codellama-34b-instruct-hf
     identifier: codellama/CodeLlama-34b-Instruct-hf
-  - name: llama-2-70b-hf
-    identifier: meta-llama/Llama-2-70b-hf
-    exclude_tp_dims: [1]
+  # - name: llama-2-70b-hf
+  #   identifier: meta-llama/Llama-2-70b-hf
+  #   exclude_tp_dims: [1]
+  # - name: qwen-72b
+  #   identifier: Qwen/Qwen-72B
+  #   exclude_tp_dims: [1]
   - name: qwen-72b
     identifier: Qwen/Qwen-72B
     exclude_tp_dims: [1]
-  - name: qwen-72b
-    identifier: Qwen/Qwen-72B
-    exclude_tp_dims: [1]
-
-search_configs:
-  # splitwise_conv
-  - trace: splitwise_conv
-    model: Meta-Llama-3-8B
-    num_replicas: 1
-    qps: 5
-    search_for: qps
-  - trace: splitwise_conv
-    model: Meta-Llama-3-8B
-    num_replicas: 4
-    qps: 20
-    search_for: qps
-  - trace: splitwise_conv
-    model: Meta-Llama-3-8B
-    num_replicas: 16
-    qps: 80
-    search_for: qps
-  - trace: splitwise_conv
-    model: Meta-Llama-3-8B
-    num_replicas: 64
-    qps: 320
-    search_for: qps
-  # chat_8k
-  - trace: chat_8k
-    model: Meta-Llama-3-8B
-    num_replicas: 1
-    qps: 2
-    search_for: qps
-  - trace: chat_8k
-    model: Meta-Llama-3-8B
-    num_replicas: 4
-    qps: 8
-    search_for: qps
-  - trace: chat_8k
-    model: Meta-Llama-3-8B
-    num_replicas: 16
-    qps: 32
-    search_for: qps
-  - trace: chat_8k
-    model: Meta-Llama-3-8B
-    num_replicas: 64
-    qps: 128
-    search_for: qps

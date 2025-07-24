@@ -1,12 +1,9 @@
 import json
-from typing import Dict
 
 from vidur.config import BaseRequestGeneratorConfig, ClusterConfig, MetricsConfig
 from vidur.entities.base_entity import BaseEntity
 from vidur.entities.replica import Replica
 from vidur.logger import init_logger
-from vidur.types.replica_id import ReplicaId
-from vidur.utils.json_encoder import JsonEncoder
 
 logger = init_logger(__name__)
 
@@ -16,6 +13,7 @@ class Cluster(BaseEntity):
         self,
         cluster_config: ClusterConfig,
         metrics_config: MetricsConfig,
+        generator_config: BaseRequestGeneratorConfig,
     ) -> None:
         self._id = Cluster.generate_id()
         self._config = cluster_config
@@ -24,12 +22,10 @@ class Cluster(BaseEntity):
         self._output_dir = metrics_config.output_dir
 
         # Init replica object handles
-        self._replicas: Dict[ReplicaId, Replica] = {}
+        self._replicas = {}
 
         for _ in range(self._config.num_replicas):
-            replica = Replica(
-                replica_config=self._config.replica_config,
-            )
+            replica = Replica(self._config.replica_config, generator_config)
             self._replicas[replica.id] = replica
 
         if metrics_config.write_json_trace:
@@ -43,16 +39,12 @@ class Cluster(BaseEntity):
         return {
             "id": self._id,
             "num_replicas": len(self._replicas),
-            "replicas": [replica.to_dict() for replica in self._replicas.values()],
         }
 
     def _write_cluster_info_to_file(self) -> None:
-        cluster_info = {
-            "id": self._id,
-            "num_replicas": len(self._replicas),
-            "replicas": [replica.to_dict() for replica in self._replicas.values()],
-        }
+        replica_dicts = [replica.to_dict() for replica in self._replicas.values()]
+        cluster_info = {"replicas": replica_dicts}
 
         cluster_file = f"{self._output_dir}/cluster.json"
         with open(cluster_file, "w") as f:
-            json.dump(cluster_info, f, cls=JsonEncoder)
+            json.dump(cluster_info, f)

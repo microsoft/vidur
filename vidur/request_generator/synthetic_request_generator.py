@@ -1,5 +1,4 @@
-from collections import deque
-from typing import Optional
+from typing import List
 
 from vidur.config import SyntheticRequestGeneratorConfig
 from vidur.entities import Request
@@ -10,64 +9,97 @@ from vidur.request_generator.request_interval_generator_registry import (
 from vidur.request_generator.request_length_generator_registry import (
     RequestLengthGeneratorRegistry,
 )
+from vidur.types import RequestIntervalGeneratorType
+from vidur.utils.random import set_seeds
 
 
 class SyntheticRequestGenerator(BaseRequestGenerator):
+
     def __init__(self, config: SyntheticRequestGeneratorConfig):
         super().__init__(config)
 
         self.request_length_generator = RequestLengthGeneratorRegistry.get(
-            self._config.length_generator_config.get_type(),
-            self._config.length_generator_config,
-            self._random_number_generator,
+            self.config.length_generator_config.get_type(),
+            self.config.length_generator_config,
         )
         self.request_interval_generator = RequestIntervalGeneratorRegistry.get(
-            self._config.interval_generator_config.get_type(),
-            self._config.interval_generator_config,
-            self._random_number_generator,
+            self.config.interval_generator_config.get_type(),
+            self.config.interval_generator_config,
         )
-        self.requests = deque()
-        self.last_arrived_at = 0
-        self.num_requests_generated = 0
 
-    # Attempt to generate a new request and append it to the queue of requests
-    def _generate_next_request(self) -> None:
-        if self._config.num_requests is not None:
-            if self.num_requests_generated >= self._config.num_requests:
-                return
-
-        if self._config.duration is not None:
-            if self.last_arrived_at >= self._config.duration:
-                return
-
+    def _generate_next_request(self, last_arrived_at: float) -> Request:
         inter_request_time = (
             self.request_interval_generator.get_next_inter_request_time()
         )
-        assert isinstance(inter_request_time, float)
-        arrived_at = self.last_arrived_at + inter_request_time
-        request_length_output = self.request_length_generator.get_next_num_tokens()
+        if inter_request_time is None:
+            return None
+        arrived_at = last_arrived_at + inter_request_time
 
-        self.last_arrived_at = arrived_at
-        self.num_requests_generated += 1
-        self.requests.append(
-            Request(
-                arrived_at=arrived_at,
-                num_prefill_tokens=request_length_output.num_prefill_tokens,
-                num_decode_tokens=request_length_output.num_decode_tokens,
-                block_hash_ids=request_length_output.block_hash_ids,
-                block_size=request_length_output.block_size,
-                session_id=request_length_output.session_id,
-            )
+        (
+            prefill_tokens,
+            decode_tokens,
+        ) = self.request_length_generator.get_next_num_tokens()
+
+        if prefill_tokens is None or decode_tokens is None:
+            return None
+
+        return Request(
+            arrived_at=arrived_at,
+            num_prefill_tokens=int(prefill_tokens),
+            num_decode_tokens=int(decode_tokens),
         )
 
-    def get_next_request_arrival_time(self) -> Optional[float]:
-        if len(self.requests) == 0:
-            self._generate_next_request()
+    def _generate_requests(self) -> List[Request]:
+        requests = []
 
-        return self.requests[0].arrived_at if len(self.requests) > 0 else None
+        current_time = 0
 
-    def get_next_request(self) -> Optional[Request]:
-        if len(self.requests) == 0:
-            self._generate_next_request()
+        # first priority is duration
+        if self.config.duration is not None:
+            while current_time < self.config.duration:
+                request = self._generate_next_request(current_time)
+                current_time = request.arrived_at
+                requests.append(request)
+        elif self.config.num_requests is not None:
+            for _ in range(self.config.num_requests):
+                request = self._generate_next_request(current_time)
+                current_time = request.arrived_at
+                requests.append(request)
+        else:
+            assert (
+                self.config.interval_generator_config.get_type()
+                == RequestIntervalGeneratorType.TRACE
+            )
 
-        return self.requests.popleft() if len(self.requests) > 0 else None
+            while True:
+                request = self._generate_next_request(current_time)
+                if request is None:
+                    break
+                current_time = request.arrived_at
+                requests.append(request)
+
+        return requests
+
+    def generate_requests(self) -> List[Request]:
+        assert (
+            self.config.duration
+            or self.config.num_requests
+            or self.config.interval_generator_config.get_type()
+            == RequestIntervalGeneratorType.TRACE
+        )
+
+        set_seeds(self.config.seed)
+
+        requests = self._generate_requests()
+
+        # sort requests by arrival time
+        requests.sort(key=lambda x: x.arrived_at)
+        # remove any requests that arrived after the time limit
+        if self.config.duration is not None:
+            requests = [
+                request
+                for request in requests
+                if request.arrived_at < self.config.duration
+            ]
+
+        return requests

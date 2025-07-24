@@ -10,9 +10,6 @@ from vidur.request_generator.static_request_interval_generator import (
 from vidur.request_generator.trace_request_interval_generator import (
     TraceRequestIntervalGenerator,
 )
-from vidur.request_generator.uniform_request_interval_generator import (
-    UniformRequestIntervalGenerator,
-)
 from vidur.types import RequestIntervalGeneratorType
 from vidur.utils.base_registry import BaseRegistry
 
@@ -32,7 +29,4 @@ RequestIntervalGeneratorRegistry.register(
 )
 RequestIntervalGeneratorRegistry.register(
     RequestIntervalGeneratorType.TRACE, TraceRequestIntervalGenerator
-)
-RequestIntervalGeneratorRegistry.register(
-    RequestIntervalGeneratorType.UNIFORM, UniformRequestIntervalGenerator
 )

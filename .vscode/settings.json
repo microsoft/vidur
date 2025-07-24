@@ -3,6 +3,5 @@
         "INTERNLM",
         "QWEN",
         "vidur"
-    ],
-    "python.analysis.fixAll" : ["source.unusedImports"]
+    ]
 }

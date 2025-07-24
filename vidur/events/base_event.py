@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from vidur.metrics import ClusterMetricsStore
+from vidur.metrics import MetricsStore
 from vidur.scheduler import BaseGlobalScheduler
 from vidur.types import EventType
 
@@ -30,40 +30,34 @@ class BaseEvent(ABC):
 
     @property
     def event_type(self):
-        return self._event_type
+        pass
 
     @abstractmethod
     def handle_event(
         self,
         current_time: float,
         scheduler: BaseGlobalScheduler,
-        metrics_store: ClusterMetricsStore,
+        metrics_store: MetricsStore,
     ) -> List["BaseEvent"]:
         pass
 
-    """
-        We give the highest priority to the event with the lowest time.
-        Then request arrival events are given priority over other events.
-        Finally, we give priority to the event with the lowest id for causality.
-    """
-
     def _get_priority_number(self):
-        return (self._time, self.event_type, self._id)
+        return (self._time, self._id, self.event_type)
 
     def __lt__(self, other):
-        assert isinstance(other, BaseEvent)
-        return self._priority_number < other._priority_number
-
-    def __gt__(self, other):
-        assert isinstance(other, BaseEvent)
-        return self._priority_number > other._priority_number
+        if self._time == other._time:
+            if self._event_type == other._event_type:
+                return self._id < other._id
+            return self._event_type < other._event_type
+        else:
+            return self._time < other._time
 
     def __eq__(self, other):
-        assert isinstance(other, BaseEvent)
-        if self._id == other._id:
-            assert self._time == other._time and self._event_type == other._event_type
-            return True
-        return False
+        return (
+            self._time == other._time
+            and self._event_type == other._event_type
+            and self._id == other._id
+        )
 
     def __str__(self) -> str:
         # use to_dict to get a dict representation of the object
