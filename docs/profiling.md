@@ -70,11 +70,12 @@ We need actual GPUs to get profiling data for a new model. Once the profiling is
 
 ## Network (Collectives) profiling
 
-Network profiling is not dependent on the model 🎉. So, we can use the same network profiling data for all models. However, we need to ensure that the network profiling data is available for the node configuration we are using. If not, then we need to profile the network for the device. 1.
+Network profiling is not dependent on the model 🎉. So, we can use the same network profiling data for all models. However, we need to ensure that the network profiling data is available for the node configuration we are using. If not, then we need to profile the network for the device.
 
 For network profiling, the node setup i.e. type of connectivity between the gpus matter. This is why we have the concept of `network_device`. The network_device is an informal name for the network configuration of the node. Eg: `a100_pair_nvlink`, `a100_dgx`, `h100_dgx` etc.
-    1. For tensor parallelism, 4 GPUs are needed for TP4 and 8 GPUs are needed for TP8 etc.
-    2. For pipeline parallelism across nodes, 2 nodes are needed to profile the link between the nodes.
+
+1. For tensor parallelism, 4 GPUs are needed for TP4 and 8 GPUs are needed for TP8 etc.
+2. For pipeline parallelism across nodes, 2 nodes are needed to profile the link between the nodes.
 
 Currently available data include:
 
