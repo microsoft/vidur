@@ -31,6 +31,8 @@ __Instructions on adding a new model to existing or new SKUs can be found [here]
 | `meta-llama/Llama-2-70b-hf` | ✅ | ✅ | ✅ | ✅ |
 | `internlm/internlm-20b` | ✅ | ✅ | ✅ | ✅ |
 | `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
+| `deepseek-ai/DeepSeek-V3` *(MoE)* | ✅ | ✅ | ✅ | ✅ |
+| `mistralai/Mixtral-8x7B-v0.1` *(MoE)* | ✅ | ✅ | ✅ | ✅ |
 
 * All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length by passing additional CLI params:
 
