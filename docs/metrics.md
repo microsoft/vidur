@@ -14,7 +14,7 @@ For every request, we define the following key metrics:
 
 Note that arrival, schedule and completion time refer to a specific point in time, where as, execution, preemption time, scheduling delay refer to period of time.
 
-## Logged Metics
+## Logged Metrics
 
 1. `request_inter_arrival_delay_histogram`: Histogram of difference between arrival times of adjacent requests ($a_{r+1} - a_r$).
 2. `request_num_tokens_histogram`: Histogram of number of tokens (prefill + decode) across all requests.
