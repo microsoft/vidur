@@ -37,8 +37,7 @@ def render_intro_page():
     )
     st.markdown("#### Models")
     st.markdown("We provide the following models for you to explore in Vidur:")
-    st.markdown(
-        """
+    st.markdown("""
         | Model Name | Number of Parameters | Number of Layers | Embedding Size | Number of Attention Heads | Attention Type |
         |------------|-------------|-----------------|---------------|--------------------------|---------------|
         | phi-2 | 2.7B | 32| 2560 | 32 | Multi-Head Attention |
@@ -47,27 +46,23 @@ def render_intro_page():
         | CodeLlama 34B | 34B | 48 | 8192 | 64 | Group-Head Attention |
         | Llama-2 70B | 70B | 80 | 8192 | 64 | Group-Head Attention |
         | Qwen-72B | 72B | 80 | 8192 | 64 | Multi-Head Attention |
-        """
-    )
+        """)
     st.markdown("#### Workloads")
     st.markdown(
         "We provide the following three different workloads for you to explore in Vidur:"
     )
-    st.markdown(
-        """
+    st.markdown("""
         | Dataset                       | Content                                           | Num queries | Num prefill tokens (mean, median, P90) | Num decode tokens (mean, median, P90) | PD Ratio (median, std dev) |
         |-------------------------------|---------------------------------------------------|-----------|--------------------------------------|-------------------------------------|----------------------------|
         | LMSys-Chat-1M-4K      | Natural language conversations | 2M        | 686, 417, 1678                       | 197, 139, 484                       | 2.3, 228                   |
         | Arxiv-Summarization-4K | Summarization of arXiv papers  | 28k       | 2588, 2730, 3702                    | 291, 167, 372                       | 15.7, 16                   |
         | Bilingual-Web-Book-4K  | Document-level English–Chinese translation dataset | 33k       | 1067, 1037, 1453                    | 1612, 1601, 2149                    | 0.65, 0.37                 |
-        """
-    )
+        """)
     st.markdown("")
     add_small_divider()
     st.markdown("### Citation")
     st.markdown("If you use Vidur in your research, please cite the following paper:")
-    st.markdown(
-        """
+    st.markdown("""
         ```
         @article{agrawal2024vidur,
           title={Vidur: A Large-Scale Simulation Framework For LLM Inference},
@@ -76,5 +71,4 @@ def render_intro_page():
           year={2024}
         }
         ```
-        """
-    )
+        """)
