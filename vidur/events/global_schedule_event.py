@@ -39,7 +39,15 @@ class GlobalScheduleEvent(BaseEvent):
             "event_type": self.event_type,
             "replica_set": self._replica_set,
             "request_mapping": [
-                (replica_id, request.id)
+                (replica_id, request.id, getattr(request, "priority", 0))
                 for replica_id, request in self._request_mapping
             ],
         }
+    
+    def to_chrome_trace(self):
+        """
+        Don't emit dispatch events as separate instant events.
+        Dispatch info is already embedded in batch events and request lifecycle.
+        This keeps the trace cleaner and focuses on actual execution.
+        """
+        return []

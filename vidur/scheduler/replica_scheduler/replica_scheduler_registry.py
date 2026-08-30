@@ -13,6 +13,9 @@ from vidur.scheduler.replica_scheduler.sarathi_replica_scheduler import (
 from vidur.scheduler.replica_scheduler.vllm_replica_scheduler import (
     VLLMReplicaScheduler,
 )
+from vidur.scheduler.replica_scheduler.llumlet_replica_scheduler import (
+    LlumletLocalScheduler,
+)
 from vidur.types import ReplicaSchedulerType
 from vidur.utils.base_registry import BaseRegistry
 
@@ -30,3 +33,10 @@ ReplicaSchedulerRegistry.register(ReplicaSchedulerType.VLLM, VLLMReplicaSchedule
 ReplicaSchedulerRegistry.register(
     ReplicaSchedulerType.LIGHTLLM, LightLLMReplicaScheduler
 )
+ReplicaSchedulerRegistry.register(
+    ReplicaSchedulerType.LLUMLET, LlumletLocalScheduler
+)
+ReplicaSchedulerRegistry.register(
+    "llumlet", LlumletLocalScheduler
+)
+

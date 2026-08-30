@@ -1,0 +1,17 @@
+[project]
+name = "llumnix-sim"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "ddsketch>=3.0.1",
+    "fasteners>=0.20",
+    "matplotlib>=3.10.7",
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
+    "scikit-learn>=1.7.2",
+    "seaborn>=0.13.2",
+    "tqdm>=4.67.1",
+    "wandb>=0.23.0",
+]

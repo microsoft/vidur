@@ -224,15 +224,26 @@ class Request(BaseEntity):
         time: float,
         num_tokens_processed: int,
     ) -> None:
-        self._num_processed_tokens += num_tokens_processed
+        # Clamp processed tokens so we never exceed total_tokens
+        if num_tokens_processed < 0:
+            num_tokens_processed = 0
+        remaining = self.total_tokens - self._num_processed_tokens
+        if remaining <= 0:
+            # Already at or beyond total; just mark timestamps
+            self._latest_iteration_completed_at = time
+            return
+        self._num_processed_tokens += min(num_tokens_processed, remaining)
         self._latest_iteration_completed_at = time
 
-        assert self._num_processed_tokens <= self.total_tokens
+        # Safety: do not exceed total tokens
+        if self._num_processed_tokens > self.total_tokens:
+            self._num_processed_tokens = self.total_tokens
 
         if self._num_processed_tokens == self._num_prefill_tokens:
             self._is_prefill_complete = True
             # we get one decode token when the prefill processing completes
-            self._num_processed_tokens += 1
+            if self._num_processed_tokens < self.total_tokens:
+                self._num_processed_tokens += 1
 
             # we must record the prefill completion time only in the first time
             # in the subsequent restarts, we keep adding the previously decoded

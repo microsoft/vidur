@@ -23,6 +23,7 @@ from vidur.config.utils import (
 )
 
 
+
 def topological_sort(dataclass_dependencies: dict) -> list:
     in_degree = defaultdict(int)
     for cls, dependencies in dataclass_dependencies.items():
@@ -148,6 +149,8 @@ def create_flat_dataclass(input_dataclass: Any) -> Any:
     dataclass_dependencies = defaultdict(set)
     metadata_mapping = {}
 
+
+
     def process_dataclass(_input_dataclass, prefix=""):
         if _input_dataclass in processed_classes:
             return
@@ -214,6 +217,10 @@ def create_flat_dataclass(input_dataclass: Any) -> Any:
             metadata_mapping[prefixed_name] = field.metadata
 
     process_dataclass(input_dataclass)
+
+    from vidur.config.config import BaseReplicaSchedulerConfig
+    print("Replica scheduler subclasses:", get_all_subclasses(BaseReplicaSchedulerConfig))
+
 
     meta_fields = meta_fields_without_defaults + meta_fields_with_defaults
     FlatClass = make_dataclass("FlatClass", meta_fields)

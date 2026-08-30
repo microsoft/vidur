@@ -41,7 +41,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
             replica_scheduler_config=replica_scheduler_config,
             metrics_config=metrics_config,
         )
-        os.makedirs(self._cache_dir, exist_ok=True)
+        if not self._config.no_cache:
+            os.makedirs(self._cache_dir, exist_ok=True)
 
         # These overheads are only for GQA models
         self._attention_prefill_batching_overhead_fraction = (
@@ -290,11 +291,11 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         return hashlib.md5(combined_str.encode("utf-8")).hexdigest()[0:8]
 
     def _load_model_from_cache(self, model_name: str, model_hash: str) -> BaseEstimator:
+        if self._config.no_cache:
+            return
         with InterProcessReaderWriterLock(
             f"{self._cache_dir}/{model_hash}_model_lock.file"
         ).read_lock():
-            if self._config.no_cache:
-                return
             # check if model is in cache
             cache_file = f"{self._cache_dir}/{model_name}_{model_hash}.pkl"
             if not os.path.exists(cache_file):
@@ -307,6 +308,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
     def _store_model_in_cache(
         self, model_name: str, model_hash: str, model: BaseEstimator
     ) -> None:
+        if self._config.no_cache:
+            return
         with InterProcessReaderWriterLock(
             f"{self._cache_dir}/{model_hash}_model_lock.file"
         ).write_lock():
@@ -323,6 +326,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         target_col: str,
         model: BaseEstimator,
     ) -> None:
+        if self._config.no_cache:
+            return
         df = df.copy()
 
         # convert the df to list of tuples
@@ -393,6 +398,8 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
     def _store_model_predication_cache(
         self, model_name: str, model_hash: str, predictions: Dict[Tuple, float]
     ) -> None:
+        if self._config.no_cache:
+            return
         with InterProcessReaderWriterLock(
             f"{self._cache_dir}/{model_hash}_prediction_lock.file"
         ).write_lock():
@@ -404,11 +411,11 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
     def _load_model_predication_cache(
         self, model_name: str, model_hash: str
     ) -> Dict[Tuple, float]:
+        if self._config.no_cache:
+            return
         with InterProcessReaderWriterLock(
             f"{self._cache_dir}/{model_hash}_prediction_lock.file"
         ).read_lock():
-            if self._config.no_cache:
-                return
             cache_file = f"{self._cache_dir}/{model_name}_{model_hash}_predictions.pkl"
 
             if not os.path.exists(cache_file):
@@ -440,11 +447,12 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         self._store_model_predication_cache(model_name, model_hash, predictions)
 
-        X["prediction"] = predictions_array
-        X.to_csv(
-            f"{self._cache_dir}/{model_name}_{model_hash}_predictions.csv",
-            index=False,
-        )
+        if not self._config.no_cache:
+            X["prediction"] = predictions_array
+            X.to_csv(
+                f"{self._cache_dir}/{model_name}_{model_hash}_predictions.csv",
+                index=False,
+            )
 
         return predictions
 
@@ -833,6 +841,27 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
 
         return self._predictions["attn_kv_cache_save"][(num_tokens,)]
 
+    def _find_valid_prediction_key(self, predictions_dict: dict, target_key: tuple) -> tuple:
+        """
+        Find a valid key in the predictions dictionary. If exact key doesn't exist,
+        clamp to the largest key with same length to avoid KeyError on out-of-bounds values.
+        """
+        if target_key in predictions_dict:
+            return target_key
+        
+        # Find all keys with same length
+        valid_keys = [k for k in predictions_dict.keys() if len(k) == len(target_key)]
+        if not valid_keys:
+            return target_key  # Fallback, will likely error but with original values
+        
+        # Clamp each dimension independently to the maximum valid value
+        clamped_key = tuple(
+            min(target_key[i], max(k[i] for k in valid_keys if isinstance(k, tuple)))
+            for i in range(len(target_key))
+        )
+        
+        return clamped_key if clamped_key in predictions_dict else valid_keys[0]
+
     def _get_attention_decode_execution_time(self, batch: Batch) -> float:
         (
             decode_batch_size,
@@ -841,9 +870,10 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         if decode_batch_size == 0:
             return 0
 
-        return self._predictions["attn_decode"][
-            (decode_batch_size, decode_avg_kv_cache_size)
-        ] * (
+        key = (decode_batch_size, decode_avg_kv_cache_size)
+        valid_key = self._find_valid_prediction_key(self._predictions["attn_decode"], key)
+        
+        return self._predictions["attn_decode"][valid_key] * (
             1
             + self._attention_decode_batching_overhead_fraction
             * int(decode_batch_size > 1)
@@ -860,9 +890,10 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         agg_kv_cache_size = sum(kv_cache_sizes)
         agg_prefill_chunk_size = sum([x**2 for x in prefill_chunk_sizes]) ** 0.5
 
-        return self._predictions["attn_prefill"][
-            (agg_kv_cache_size, round(agg_prefill_chunk_size) ** 2)
-        ] * (
+        key = (agg_kv_cache_size, round(agg_prefill_chunk_size) ** 2)
+        valid_key = self._find_valid_prediction_key(self._predictions["attn_prefill"], key)
+        
+        return self._predictions["attn_prefill"][valid_key] * (
             1
             + self._attention_prefill_batching_overhead_fraction
             * int(len(prefill_params) > 1)

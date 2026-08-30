@@ -1,4 +1,4 @@
-import plotly.express as px
+import matplotlib.pyplot as plt
 import streamlit as st
 
 from vidur.config_optimizer.analyzer.bottleneck_analyzer import BottleneckAnalyzer
@@ -32,20 +32,17 @@ def render_axis_comparison_bar_chart(
     # treat each x axis as a category
     best_configs_df[f"{axis_col}_str"] = best_configs_df[axis_col].astype(str)
 
-    fig = px.bar(
-        best_configs_df,
-        x=f"{axis_col}_str",
-        y="QPS",
-        color=f"{axis_col}_str",
-        hover_data=list(AXIS_COLS.values()),
-        labels={f"{axis_col}_str": f"{axis_col}"},
-        width=300,
-        height=300,
-    )
+    fig, ax = plt.subplots(figsize=(4, 3))
+    ax.bar(best_configs_df[f"{axis_col}_str"], best_configs_df["QPS"], color="steelblue")
+    ax.set_xlabel(axis_col)
+    ax.set_ylabel("QPS")
+    ax.set_title(f"QPS by {axis_col}")
+    ax.tick_params(axis="x", rotation=45)
+    ax.grid(axis="y", linestyle="--", alpha=0.6)
+    fig.tight_layout()
 
-    fig.update_xaxes(type="category")
-
-    st.plotly_chart(fig)
+    st.pyplot(fig, use_container_width=True)
+    plt.close(fig)
 
     add_small_divider()
 

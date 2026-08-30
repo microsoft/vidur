@@ -5,3 +5,5 @@ class GlobalSchedulerType(BaseIntEnum):
     RANDOM = 1
     ROUND_ROBIN = 2
     LOR = 3
+    LLUMNIX = 4
+    INFAAS = 5

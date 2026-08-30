@@ -10,6 +10,7 @@ from vidur.request_generator.request_length_generator_registry import (
     RequestLengthGeneratorRegistry,
 )
 from vidur.types import RequestIntervalGeneratorType
+from vidur.utils.priority_sampler import PrioritySampler
 from vidur.utils.random import set_seeds
 
 
@@ -26,6 +27,16 @@ class SyntheticRequestGenerator(BaseRequestGenerator):
             self.config.interval_generator_config.get_type(),
             self.config.interval_generator_config,
         )
+        
+        # Initialize priority sampler for multi-level priority assignment
+        self.priority_sampler = None
+        if config.num_priority_levels > 1:
+            self.priority_sampler = PrioritySampler(
+                num_levels=config.num_priority_levels,
+                distribution_type=config.priority_distribution_type,
+                custom_weights=config.priority_weights,
+                seed=config.seed,
+            )
 
     def _generate_next_request(self, last_arrived_at: float) -> Request:
         inter_request_time = (
@@ -43,11 +54,22 @@ class SyntheticRequestGenerator(BaseRequestGenerator):
         if prefill_tokens is None or decode_tokens is None:
             return None
 
-        return Request(
+        req = Request(
             arrived_at=arrived_at,
             num_prefill_tokens=int(prefill_tokens),
             num_decode_tokens=int(decode_tokens),
         )
+
+        # Assign priority using configured distribution sampler
+        # Priority semantics: 0 = highest (critical), num_levels-1 = lowest (background)
+        if self.priority_sampler is not None:
+            req.priority = self.priority_sampler.sample(current_time=arrived_at)
+        else:
+            # Single priority level: all requests have priority 0 (default behavior)
+            req.priority = 0
+
+        return req
+        
 
     def _generate_requests(self) -> List[Request]:
         requests = []

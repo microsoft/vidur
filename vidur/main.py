@@ -10,6 +10,7 @@ def main() -> None:
 
     simulator = Simulator(config)
     simulator.run()
+    simulator._write_output()
 
 
 if __name__ == "__main__":

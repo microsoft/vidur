@@ -34,8 +34,18 @@ class BatchEndEvent(BaseEvent):
         return [ReplicaScheduleEvent(self.time, self._replica_id)]
 
     def to_dict(self):
+        # Determine batch type: prefill if there are prefill tokens and no decode tokens
+        # decode if there are decode tokens and no prefill tokens
+        # mixed if both present
+        batch_type = "mixed"
+        if self._batch.num_prefill_tokens > 0 and self._batch.num_decode_tokens == 0:
+            batch_type = "prefill"
+        elif self._batch.num_prefill_tokens == 0 and self._batch.num_decode_tokens > 0:
+            batch_type = "decode"
+        
         return {
             "time": self.time,
             "event_type": self.event_type,
             "batch_id": self._batch.id,
+            "batch_type": batch_type,
         }

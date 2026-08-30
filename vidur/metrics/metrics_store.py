@@ -3,7 +3,7 @@ from functools import reduce
 from typing import Dict, List
 
 import pandas as pd
-import plotly_express as px
+import matplotlib.pyplot as plt
 import wandb
 
 from vidur.config import SimulationConfig
@@ -294,12 +294,15 @@ class MetricsStore:
                 step=0,
             )
         if self._config.store_plots:
-            fig = px.bar(
-                x=list(data.keys()),
-                y=list(data.values()),
-                labels={"x": x_label, "y": y_label},
-            )
-            fig.write_image(f"{base_path}/{plot_name}.png")
+            fig, ax = plt.subplots()
+            ax.bar(list(data.keys()), list(data.values()), color="steelblue")
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label)
+            ax.set_title(plot_name)
+            ax.tick_params(axis="x", rotation=45)
+            fig.tight_layout()
+            fig.savefig(f"{base_path}/{plot_name}.png")
+            plt.close(fig)
 
     def _store_operation_metrics(self, base_plot_path: str):
         if not self._config.store_operation_metrics:
@@ -685,7 +688,59 @@ class MetricsStore:
         if not self._config.store_utilization_metrics:
             return
 
+        # Dynamically expand metrics arrays if replica_id exceeds current tracking
+        self._ensure_replica_metrics_exist(replica_id)
+        
         self._replica_memory_usage[replica_id - 1].put(time, memory_usage_percent)
+
+    def _ensure_replica_metrics_exist(self, replica_id: int) -> None:
+        """
+        Ensure metrics arrays are large enough to track the given replica_id.
+        This supports dynamic scale-out by expanding metrics on-demand.
+        
+        Args:
+            replica_id: 1-based replica identifier
+        """
+        required_size = replica_id
+        current_size = len(self._replica_memory_usage)
+        
+        if required_size > current_size:
+            # Expand all replica-level metrics arrays
+            for _ in range(current_size, required_size):
+                # Add memory usage tracking
+                self._replica_memory_usage.append(
+                    SeriesAverageMeter(
+                        TIME_STR,
+                        MEMORY_USAGE_STR,
+                        self._config.save_table_to_wandb,
+                    )
+                )
+                self._replica_memory_usage[-1].put(0, 0)
+                
+                # Add busy time and MFU tracking for each stage
+                self._replica_busy_time.append([])
+                self._replica_mfu.append([])
+                
+                for stage_idx in range(self._num_pipeline_stages):
+                    self._replica_busy_time[-1].append(
+                        SeriesAverageMeter(
+                            TIME_STR,
+                            BUSY_TIME_PERCENT,
+                            self._config.save_table_to_wandb,
+                        )
+                    )
+                    self._replica_busy_time[-1][stage_idx].put(0, 0)
+                    
+                    self._replica_mfu[-1].append(
+                        SeriesAverageMeter(
+                            TIME_STR,
+                            UTILIZATION_STR,
+                            save_table_to_wandb=self._config.save_table_to_wandb,
+                        )
+                    )
+                    self._replica_mfu[-1][stage_idx].put(0, 0)
+            
+            logger.info(f"[MetricsStore] Expanded replica metrics from {current_size} to {required_size} replicas")
 
     @if_write_metrics
     def on_replica_stage_schedule(
@@ -699,6 +754,9 @@ class MetricsStore:
         if not self._config.store_utilization_metrics:
             return
 
+        # Dynamically expand metrics arrays if replica_id exceeds current tracking
+        self._ensure_replica_metrics_exist(replica_id)
+        
         self._replica_busy_time[replica_id - 1][stage_id - 1].put(time, 100)
         mfu = self._mfu_calculator.get_mfu(batch_stage)
         self._replica_mfu[replica_id - 1][stage_id - 1].put(time, mfu)
@@ -819,3 +877,14 @@ class MetricsStore:
             return
         self._replica_busy_time[replica_id - 1][stage_id - 1].put(time, 0)
         self._replica_mfu[replica_id - 1][stage_id - 1].put(time, 0)
+    
+    def on_request_migration(
+        self, request_id: int, source_replica_id: int, target_replica_id: int, 
+        kv_cache_blocks: int, time: float
+    ) -> None:
+        """Track request migration event for Llumnix scheduler."""
+        # For now, just log it. Could extend with metrics tracking if needed.
+        logger.info(
+            f"Migration tracked: request {request_id} from replica {source_replica_id} "
+            f"to {target_replica_id}, {kv_cache_blocks} blocks at {time}s"
+        )

@@ -1,6 +1,5 @@
+import matplotlib.pyplot as plt
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objs as go
 import streamlit as st
 from paretoset import paretoset
 
@@ -23,64 +22,39 @@ def plot_pareto_curve(df, metric, percentile, slo):
     paretoset_mask = paretoset(df[[metric_col, "QPS per Dollar"]], sense=["min", "max"])
     pareto_df = df[paretoset_mask]
 
-    fig = go.Figure()
-
-    # Scatter plot for all configurations
-    configs_trace = px.scatter(
-        df,
-        x=metric_col,
-        y="QPS per Dollar",
-        hover_data=list(AXIS_COLS.values()),
+    fig, ax = plt.subplots()
+    ax.scatter(
+        df[metric_col],
+        df["QPS per Dollar"],
+        color="blue",
+        alpha=0.7,
+        label="Configs",
     )
-    # set the color of the scatter plot to blue
-    configs_trace["data"][0]["marker"]["color"] = "blue"
-    fig.add_trace(configs_trace["data"][0])
 
-    # Pareto frontier
-    # sort the pareto_df by metric_col
     pareto_df = pareto_df.sort_values(metric_col)
+    if not pareto_df.empty:
+        ax.plot(
+            pareto_df[metric_col],
+            pareto_df["QPS per Dollar"],
+            color="orange",
+            marker="o",
+            linestyle="-",
+            label="Pareto Frontier",
+        )
 
-    pareto_trace = px.line(
-        pareto_df,
-        x=metric_col,
-        y="QPS per Dollar",
-        hover_data=list(AXIS_COLS.values()),
-    )
-    pareto_trace["data"][0]["line"]["color"] = "orange"
-    fig.add_trace(pareto_trace["data"][0])
+    ax.axvline(slo, color="red", linestyle="--", label="SLO Limit")
+    ax.axvspan(0, slo, color="green", alpha=0.05, label="SLO Compliant")
 
-    # SLO line
-    fig.add_vline(
-        x=slo,
-        line=dict(
-            color="Red",
-        ),
-        name="SLO Limit",
-    )
+    ax.set_xlim(0, slo * 1.25)
+    ax.set_title(f"Pareto Curve for {metric} vs. QPS per Dollar")
+    ax.set_xlabel(f"{metric} - P{percentile}")
+    ax.set_ylabel("QPS per Dollar")
+    ax.grid(True, linestyle="--", alpha=0.6)
+    ax.legend()
+    fig.tight_layout()
 
-    # add a vrect for the SLO compliant region
-    fig.add_vrect(
-        x0=0, x1=slo, fillcolor="green", opacity=0.05, layer="below", line_width=0
-    )
-
-    # set x limit to slo * 1.25 times
-    fig.update_xaxes(range=[0, slo * 1.25])
-
-    # Layout
-    fig.update_layout(
-        title=f"Pareto Curve for {metric} vs. QPS per Dollar",
-        xaxis_title=f"{metric} - P{percentile}",
-        yaxis_title="QPS per Dollar",
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01,
-        ),
-    )
-
-    # Display
-    st.plotly_chart(fig, use_container_width=True)
+    st.pyplot(fig, use_container_width=True)
+    plt.close(fig)
 
 
 def plot_metrics_scatter(
@@ -95,83 +69,53 @@ def plot_metrics_scatter(
     ]
     # convert the best config to a dataframe
     best_config = pd.DataFrame([best_config])
+    best_x = best_config[metric_1_col].iloc[0]
+    best_y = best_config[metric_2_col].iloc[0]
 
-    fig = go.Figure()
+    fig, ax = plt.subplots()
 
-    configs_trace = px.scatter(
-        df,
-        x=metric_1_col,
-        y=metric_2_col,
-        hover_data=list(AXIS_COLS.values()),
-        color="QPS per Dollar",
-    )
-    fig.add_trace(configs_trace["data"][0])
-
-    # Best configuration
-    best_config_trace = px.scatter(
-        best_config,
-        x=metric_1_col,
-        y=metric_2_col,
-        hover_data=list(AXIS_COLS.values()),
-    )
-    # set the color of the best config to orange
-    best_config_trace["data"][0]["marker"]["color"] = "orange"
-    # set maker to star
-    best_config_trace["data"][0]["marker"]["symbol"] = "star"
-    # enlarge the size of the marker
-    best_config_trace["data"][0]["marker"]["size"] = 12
-    fig.add_trace(best_config_trace["data"][0])
-
-    # SLO lines
-    fig.add_shape(
-        type="line",
-        x0=slo_1,
-        y0=0,
-        y1=slo_2 * 1.25,
-        x1=slo_1,
-        line=dict(color="Red"),
-        name=f"SLO Limit for {metric_1}",
-    )
-    fig.add_shape(
-        type="line",
-        x0=0,
-        x1=slo_1 * 1.25,
-        y0=slo_2,
-        y1=slo_2,
-        line=dict(color="Red"),
-        name=f"SLO Limit for {metric_2}",
+    scatter = ax.scatter(
+        df[metric_1_col],
+        df[metric_2_col],
+        c=df["QPS per Dollar"],
+        cmap="viridis",
+        alpha=0.8,
+        label="Configs",
     )
 
-    # set x and y limits
-    fig.update_xaxes(range=[0, slo_1 * 1.25])
-    fig.update_yaxes(range=[0, slo_2 * 1.25])
-
-    # Highlighting SLO compliant area
-    fig.add_shape(
-        type="rect",
-        x0=0,
-        y0=0,
-        x1=slo_1,
-        y1=slo_2,
-        fillcolor="green",
-        opacity=0.05,
-        layer="below",
-        line_width=0,
+    ax.scatter(
+        best_x,
+        best_y,
+        color="orange",
+        marker="*",
+        s=160,
+        edgecolor="black",
+        linewidth=1,
+        label="Best Config",
     )
 
-    # Layout
-    fig.update_layout(
-        title=f"{metric_1} vs. {metric_2} Colored by QPS per Dollar",
-        xaxis_title=f"{metric_1} - P{percentile_1}",
-        yaxis_title=f"{metric_2} - P{percentile_2}",
-        coloraxis_colorbar=dict(
-            title="QPS per Dollar",
-            title_side="right",
-        ),
-    )
+    ax.axvline(slo_1, color="red", linestyle="--", label=f"{metric_1} SLO")
+    ax.axhline(slo_2, color="red", linestyle=":", label=f"{metric_2} SLO")
 
-    # Display
-    st.plotly_chart(fig, use_container_width=True)
+    ax.axvspan(0, slo_1, color="green", alpha=0.05)
+    ax.axhspan(0, slo_2, color="green", alpha=0.05)
+
+    ax.set_xlim(0, slo_1 * 1.25)
+    ax.set_ylim(0, slo_2 * 1.25)
+
+    ax.set_title(f"{metric_1} vs. {metric_2} Colored by QPS per Dollar")
+    ax.set_xlabel(f"{metric_1} - P{percentile_1}")
+    ax.set_ylabel(f"{metric_2} - P{percentile_2}")
+    ax.grid(True, linestyle="--", alpha=0.6)
+    legend = ax.legend()
+    legend.set_title("")
+
+    cbar = fig.colorbar(scatter, ax=ax)
+    cbar.set_label("QPS per Dollar")
+
+    fig.tight_layout()
+    st.pyplot(fig, use_container_width=True)
+    plt.close(fig)
 
 
 def plot_pareto_curve_under_slos(

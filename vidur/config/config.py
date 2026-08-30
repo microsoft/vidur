@@ -15,6 +15,7 @@ from vidur.logger import init_logger
 from vidur.types import (
     ExecutionTimePredictorType,
     GlobalSchedulerType,
+    PriorityDistributionType,
     ReplicaSchedulerType,
     RequestGeneratorType,
     RequestIntervalGeneratorType,
@@ -215,6 +216,18 @@ class SyntheticRequestGeneratorConfig(BaseRequestGeneratorConfig):
         default=None,
         metadata={"help": "Duration of the synthetic request generator."},
     )
+    num_priority_levels: int = field(
+        default=1,
+        metadata={"help": "Number of priority levels to assign to synthetic requests. 0=highest priority."},
+    )
+    priority_distribution_type: int = field(
+        default=PriorityDistributionType.ROUND_ROBIN,
+        metadata={"help": "Distribution type for assigning priorities (ROUND_ROBIN=1, UNIFORM=2, NORMAL=3, POWER_LAW=4, ENTERPRISE=5, BURSTIER=6, TIME_OF_DAY=7, TRAFFIC_CLASS=8)."},
+    )
+    priority_weights: Optional[List[float]] = field(
+        default=None,
+        metadata={"help": "Custom weights for each priority level (must sum to 1.0). If None, uses distribution-specific defaults."},
+    )
 
     def __post_init__(self):
         self.max_tokens = self.length_generator_config.max_tokens
@@ -245,6 +258,18 @@ class TraceRequestGeneratorConfig(BaseRequestGeneratorConfig):
     max_tokens: int = field(
         default=4096,
         metadata={"help": "Maximum tokens for the trace request generator."},
+    )
+    num_priority_levels: int = field(
+        default=1,
+        metadata={"help": "Number of priority levels. If trace has priority column, this is ignored."},
+    )
+    priority_distribution_type: int = field(
+        default=PriorityDistributionType.UNIFORM,
+        metadata={"help": "Distribution for synthetic priorities if trace lacks priority column."},
+    )
+    priority_weights: Optional[List[float]] = field(
+        default=None,
+        metadata={"help": "Custom priority weights if trace lacks priority column."},
     )
 
     @staticmethod
@@ -326,6 +351,21 @@ class SarathiSchedulerConfig(BaseReplicaSchedulerConfig):
     @staticmethod
     def get_type():
         return ReplicaSchedulerType.SARATHI
+    
+@dataclass
+class LlumletSchedulerConfig(BaseReplicaSchedulerConfig):
+    max_tokens_in_batch: int = field(
+        default=2048,
+        metadata={"help": "Maximum tokens per batch for Llumnlet."},
+    )
+    headroom_decay_mode: str = field(
+        default="exponential",
+        metadata={"help": "Headroom decay mode: 'linear' or 'exponential'. Controls how headroom decreases across priority levels."},
+    )
+
+    @staticmethod
+    def get_type():
+        return ReplicaSchedulerType.LLUMLET
 
 
 @dataclass
@@ -488,6 +528,122 @@ class LORGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
     @staticmethod
     def get_type():
         return GlobalSchedulerType.LOR
+
+
+@dataclass
+class LlumnixGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
+
+    num_priority_levels: int = field(
+        default=2, metadata={"help": "Number of priority levels for llumnix."}
+    )
+    
+    enable_migration: bool = field(
+        default=False, metadata={"help": "Enable live instance migration for load balancing."}
+    )
+    
+    rebalance_interval: float = field(
+        default=1.0, metadata={"help": "Time between rebalancing checks (seconds)."}
+    )
+    
+    load_imbalance_threshold: float = field(
+        default=0.3, metadata={"help": "Trigger rebalancing when load std dev exceeds this."}
+    )
+    
+    load_metric_alpha: float = field(
+        default=1.0, metadata={"help": "Weight for queue length in load calculation."}
+    )
+    
+    load_metric_beta: float = field(
+        default=1.0, metadata={"help": "Weight for running requests in load calculation."}
+    )
+    
+    load_metric_gamma: float = field(
+        default=1.0, metadata={"help": "Weight for memory usage in load calculation."}
+    )
+    
+    network_bandwidth_gbps: float = field(
+        default=100.0, metadata={"help": "Network bandwidth for KV cache migration (Gbps)."}
+    )
+    
+    migration_overhead_ms: float = field(
+        default=5.0, metadata={"help": "Fixed overhead per migration (milliseconds)."}
+    )
+    
+    autoscale_low: float = field(
+        default=-0.5, metadata={"help": "Scale out if average freeness falls below this."}
+    )
+    
+    autoscale_high: float = field(
+        default=1.5, metadata={"help": "Scale in if average freeness rises above this."}
+    )
+    
+    autoscale_interval: float = field(
+        default=1.0, metadata={"help": "Interval for checking autoscaling conditions (seconds)."}
+    )
+
+    @staticmethod
+    def get_type():
+        return GlobalSchedulerType.LLUMNIX
+
+
+@dataclass
+class InfaasGlobalSchedulerConfig(BaseGlobalSchedulerConfig):
+    alpha: float = field(
+        default=1.0,
+        metadata={"help": "Weight for queue-based component of the cost metric."},
+    )
+    beta: float = field(
+        default=1.0,
+        metadata={"help": "Weight for predicted service time in the cost metric."},
+    )
+    gamma: float = field(
+        default=1.0,
+        metadata={"help": "Weight for overload/interference penalty in the cost metric."},
+    )
+    target_latency_ms: float = field(
+        default=1000.0,
+        metadata={"help": "Soft SLO target per request (milliseconds)."},
+    )
+    ewma_alpha: float = field(
+        default=0.6,
+        metadata={"help": "Smoothing factor (0-1) for EWMA latency estimates."},
+    )
+    overload_latency_factor: float = field(
+        default=1.3,
+        metadata={"help": "Threshold factor for overload detection vs. target latency."},
+    )
+    interference_latency_factor: float = field(
+        default=1.15,
+        metadata={"help": "Threshold factor for interference detection at low queue depth."},
+    )
+    queue_depth_threshold: int = field(
+        default=2,
+        metadata={
+            "help": "Queue depth above which high latency is treated as overload."
+        },
+    )
+    interference_queue_threshold: int = field(
+        default=1,
+        metadata={
+            "help": "Queue depth treated as 'small' when detecting interference."
+        },
+    )
+    overload_cooldown: int = field(
+        default=3,
+        metadata={
+            "help": "Number of completions/time steps to keep a replica in OVERLOADED before reconsidering."
+        },
+    )
+    interference_cooldown: int = field(
+        default=2,
+        metadata={
+            "help": "Number of completions/time steps to keep a replica in INTERFERED before reconsidering."
+        },
+    )
+
+    @staticmethod
+    def get_type():
+        return GlobalSchedulerType.INFAAS
 
 
 @dataclass

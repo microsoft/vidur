@@ -1,6 +1,6 @@
-import numpy as np
-import plotly.graph_objs as go
+import matplotlib.pyplot as plt
 import streamlit as st
+from pandas.plotting import parallel_coordinates
 
 from vidur.config_optimizer.analyzer.bottleneck_analyzer import BottleneckAnalyzer
 from vidur.config_optimizer.analyzer.constants import AXIS_COLS, AXIS_COLS_LONG_TO_SHORT
@@ -48,66 +48,73 @@ def get_best_configs(
 
 
 def plot_parallel_coordinates(best_configs_df):
-    best_configs_df["trace"] = (
+    best_configs_df = best_configs_df.sort_values(["Model", "cost"])
+    best_configs_df["Trace Label"] = (
         best_configs_df["Model"]
-        + "<br>"
+        + " / "
         + best_configs_df["Trace"]
-        + "<br>"
+        + " / "
         + best_configs_df["capacity_per_dollar_str"]
         + " QPS/$"
     )
-    best_configs_df = best_configs_df.sort_values(["Model", "cost"])
-    best_configs_df["trace_id"] = (
-        best_configs_df.groupby(["Model", "cost"]).ngroup() + 1
-    )
-    labels = {**AXIS_COLS_LONG_TO_SHORT, "trace": "Trace"}
 
-    dimensions = []
+    axis_cols = list(AXIS_COLS.values())
+    encoded_df = best_configs_df[["Trace Label"] + axis_cols].copy()
 
-    for label_col, label_name in labels.items():
-        if label_name == "Trace":
-            dimension = go.parcats.Dimension(
-                values=best_configs_df[label_col],
-                label=label_name,
-                categoryorder="array",
-                categoryarray=best_configs_df["trace"].to_list(),
-            )
+    categorical_mappings = {}
+    for col in axis_cols:
+        if encoded_df[col].dtype == object:
+            encoded_df[col] = encoded_df[col].astype("category")
+            categorical_mappings[col] = list(encoded_df[col].cat.categories)
+            encoded_df[col] = encoded_df[col].cat.codes
         else:
-            dimension = go.parcats.Dimension(
-                values=best_configs_df[label_col],
-                label=label_name,
-                categoryorder="category ascending",
-            )
-        dimensions.append(dimension)
+            categorical_mappings[col] = None
 
-    # Create parcats trace
-    color = np.log(best_configs_df["trace_id"])
-
-    fig = go.Figure(
-        data=[
-            go.Parcats(
-                dimensions=dimensions,
-                line={
-                    "color": color,
-                    "colorscale": "agsunset",
-                },
-                hoverinfo="skip",
-                labelfont={
-                    "size": 18,
-                },
-                tickfont={
-                    "size": 16,
-                },
-                arrangement="freeform",
-            )
-        ]
+    fig, ax = plt.subplots(figsize=(12, max(4, len(best_configs_df))))
+    parallel_coordinates(
+        encoded_df,
+        class_column="Trace Label",
+        colormap="tab10",
+        linewidth=2,
+        alpha=0.7,
+        ax=ax,
     )
-    # reduce the width of the plot
-    fig.update_layout(width=1100, height=100 * len(best_configs_df))
-    # remove padding from left and add to right
-    fig.update_layout(margin=dict(l=0, r=50, t=30, b=20))
 
-    st.plotly_chart(fig, use_container_width=True)
+    ax.set_title("Configuration Comparison")
+    ax.set_xticks(range(len(axis_cols)))
+    ax.set_xticklabels(
+        [AXIS_COLS_LONG_TO_SHORT[col] for col in axis_cols],
+        rotation=45,
+        ha="right",
+    )
+    ax.grid(True, linestyle="--", alpha=0.6)
+    ax.legend(
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left",
+        title="Trace",
+        fontsize=9,
+    )
+
+    # Show how categorical columns were encoded to keep the plot interpretable.
+    note_lines = []
+    for col, categories in categorical_mappings.items():
+        if categories:
+            mapping_str = ", ".join(f"{idx}={val}" for idx, val in enumerate(categories))
+            note_lines.append(f"{AXIS_COLS_LONG_TO_SHORT[col]}: {mapping_str}")
+    if note_lines:
+        fig.text(
+            0.01,
+            0.01,
+            "Categorical encodings -> " + " | ".join(note_lines),
+            ha="left",
+            va="bottom",
+            fontsize=9,
+            wrap=True,
+        )
+
+    fig.tight_layout()
+    st.pyplot(fig, use_container_width=True)
+    plt.close(fig)
 
 
 def render_config_panels(df, bottleneck_analyzer):

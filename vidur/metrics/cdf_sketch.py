@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import plotly_express as px
+import matplotlib.pyplot as plt
 import wandb
 from ddsketch.ddsketch import DDSketch
 
@@ -138,13 +138,20 @@ class CDFSketch:
             )
 
         if self._save_plots:
-            fig = px.line(
-                df,
-                x=self._metric_name,
-                y="cdf",
-                markers=True,
-                labels={"x": x_axis_label},
+            fig, ax = plt.subplots()
+            ax.plot(
+                df[self._metric_name],
+                df["cdf"],
+                marker="o",
+                linestyle="-",
+                color="red",
+                markersize=2,
             )
-            fig.update_traces(marker=dict(color="red", size=2))
-            fig.write_image(f"{path}/{plot_name}.png")
+            ax.set_xlabel(x_axis_label)
+            ax.set_ylabel("CDF")
+            ax.set_title(plot_name)
+            ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.7)
+            fig.tight_layout()
+            fig.savefig(f"{path}/{plot_name}.png")
+            plt.close(fig)
         self._save_df(df, path, plot_name)

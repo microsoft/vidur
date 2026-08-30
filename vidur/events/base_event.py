@@ -8,6 +8,8 @@ from vidur.types import EventType
 
 class BaseEvent(ABC):
     _id = 0
+    global_scheduler_ref = None  # Will be set by simulator
+    cluster_ref = None  # Will be set by simulator for scale-out
 
     def __init__(self, time: float, event_type: EventType):
         self._time = time

@@ -31,4 +31,24 @@ class RequestArrivalEvent(BaseEvent):
             "time": self.time,
             "event_type": self.event_type,
             "request": self._request.id,
+            "priority": getattr(self._request, "priority", 0),
         }
+    
+    def to_chrome_trace(self):
+        """Emit request arrival with priority to Chrome trace."""
+        priority = getattr(self._request, "priority", 0)
+        return [{
+            "name": f"Request {self._request.id} Arrival (P{priority})",
+            "cat": "request_lifecycle",
+            "ph": "i",  # Instant event
+            "ts": self.time * 1e6,
+            "pid": -1,  # Global scope
+            "tid": 0,
+            "s": "g",
+            "args": {
+                "request_id": self._request.id,
+                "priority": priority,
+                "num_prefill_tokens": self._request.num_prefill_tokens,
+                "num_decode_tokens": self._request.num_decode_tokens,
+            }
+        }]

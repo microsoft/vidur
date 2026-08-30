@@ -48,3 +48,18 @@ class Cluster(BaseEntity):
         cluster_file = f"{self._output_dir}/cluster.json"
         with open(cluster_file, "w") as f:
             json.dump(cluster_info, f)
+
+    def add_replica(self, generator_config: BaseRequestGeneratorConfig) -> Replica:
+        """
+        Dynamically add a new replica to the cluster for scale-out.
+
+        Args:
+            generator_config: Request generator configuration for replica initialization
+
+        Returns:
+            The newly created Replica instance
+        """
+        replica = Replica(self._config.replica_config, generator_config)
+        self._replicas[replica.id] = replica
+        logger.info(f"[Cluster] Added new replica {replica.id} (total replicas: {len(self._replicas)})")
+        return replica

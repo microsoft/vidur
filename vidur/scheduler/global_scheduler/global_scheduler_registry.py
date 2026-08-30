@@ -5,6 +5,12 @@ from vidur.scheduler.global_scheduler.random_global_scheduler import (
 from vidur.scheduler.global_scheduler.round_robin_global_scheduler import (
     RoundRobinGlobalScheduler,
 )
+from vidur.scheduler.global_scheduler.llumnix_global_scheduler import (
+    LlumnixGlobalScheduler,
+)
+from vidur.scheduler.global_scheduler.infaas_global_scheduler import (
+    InfaasGlobalScheduler,
+)
 from vidur.types import GlobalSchedulerType
 from vidur.utils.base_registry import BaseRegistry
 
@@ -20,3 +26,5 @@ GlobalSchedulerRegistry.register(
     GlobalSchedulerType.ROUND_ROBIN, RoundRobinGlobalScheduler
 )
 GlobalSchedulerRegistry.register(GlobalSchedulerType.LOR, LORGlobalScheduler)
+GlobalSchedulerRegistry.register(GlobalSchedulerType.LLUMNIX, LlumnixGlobalScheduler)
+GlobalSchedulerRegistry.register(GlobalSchedulerType.INFAAS, InfaasGlobalScheduler)

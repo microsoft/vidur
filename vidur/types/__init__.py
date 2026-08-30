@@ -6,6 +6,7 @@ from vidur.types.execution_time_predictor_type import ExecutionTimePredictorType
 from vidur.types.global_scheduler_type import GlobalSchedulerType
 from vidur.types.node_sku_type import NodeSKUType
 from vidur.types.norm_type import NormType
+from vidur.types.priority_distribution_type import PriorityDistributionType
 from vidur.types.replica_scheduler_type import ReplicaSchedulerType
 from vidur.types.request_generator_type import RequestGeneratorType
 from vidur.types.request_interval_generator_type import RequestIntervalGeneratorType
@@ -24,4 +25,5 @@ __all__ = [
     NormType,
     ActivationType,
     BaseIntEnum,
+    PriorityDistributionType,
 ]

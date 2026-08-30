@@ -1,9 +1,9 @@
 from collections import defaultdict
 from typing import Optional
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly_express as px
 import wandb
 
 from vidur.logger import init_logger
@@ -199,15 +199,22 @@ class DataSeries:
             )
 
         if self._save_plots:
-            fig = px.line(
-                df,
-                x=self._x_name,
-                y=self._y_name,
-                markers=True,
-                labels={"x": y_axis_label},
+            fig, ax = plt.subplots()
+            ax.plot(
+                df[self._x_name],
+                df[self._y_name],
+                marker="o",
+                linestyle="-",
+                color="red",
+                markersize=2,
             )
-            fig.update_traces(marker=dict(color="red", size=2))
-            fig.write_image(f"{path}/{plot_name}.png")
+            ax.set_xlabel(self._x_name)
+            ax.set_ylabel(y_axis_label)
+            ax.set_title(plot_name)
+            ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.7)
+            fig.tight_layout()
+            fig.savefig(f"{path}/{plot_name}.png")
+            plt.close(fig)
 
         self._save_df(df, path, plot_name)
 
@@ -248,11 +255,22 @@ class DataSeries:
             )
 
         if self._save_plots:
-            fig = px.line(
-                df, x=self._y_name, y="cdf", markers=True, labels={"x": y_axis_label}
+            fig, ax = plt.subplots()
+            ax.plot(
+                df[self._y_name],
+                df["cdf"],
+                marker="o",
+                linestyle="-",
+                color="red",
+                markersize=2,
             )
-            fig.update_traces(marker=dict(color="red", size=2))
-            fig.write_image(f"{path}/{plot_name}.png")
+            ax.set_xlabel(y_axis_label)
+            ax.set_ylabel("CDF")
+            ax.set_title(plot_name)
+            ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.7)
+            fig.tight_layout()
+            fig.savefig(f"{path}/{plot_name}.png")
+            plt.close(fig)
         self._save_df(df, path, plot_name)
 
     def plot_histogram(self, path: str, plot_name: str) -> None:
@@ -291,8 +309,14 @@ class DataSeries:
             )
 
         if self._save_plots:
-            fig = px.histogram(df, x=self._y_name, nbins=25)
-            fig.write_image(f"{path}/{plot_name}.png")
+            fig, ax = plt.subplots()
+            ax.hist(df[self._y_name], bins=25, color="steelblue", edgecolor="black")
+            ax.set_xlabel(self._y_name)
+            ax.set_ylabel("Count")
+            ax.set_title(plot_name)
+            fig.tight_layout()
+            fig.savefig(f"{path}/{plot_name}.png")
+            plt.close(fig)
 
     def plot_differential(self, path: str, plot_name: str) -> None:
         if len(self._data_series) == 0:
@@ -331,8 +355,21 @@ class DataSeries:
             )
 
         if self._save_plots:
-            fig = px.line(df, x=self._x_name, y=differential_col_name, markers=True)
-            fig.update_traces(marker=dict(color="red", size=2))
-            fig.write_image(f"{path}/{plot_name}.png")
+            fig, ax = plt.subplots()
+            ax.plot(
+                df[self._x_name],
+                df[differential_col_name],
+                marker="o",
+                linestyle="-",
+                color="red",
+                markersize=2,
+            )
+            ax.set_xlabel(self._x_name)
+            ax.set_ylabel(differential_col_name)
+            ax.set_title(plot_name)
+            ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.7)
+            fig.tight_layout()
+            fig.savefig(f"{path}/{plot_name}.png")
+            plt.close(fig)
 
         self._save_df(df, path, plot_name)

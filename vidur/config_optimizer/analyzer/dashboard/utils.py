@@ -1,4 +1,4 @@
-import plotly.express as px
+import matplotlib.pyplot as plt
 import randomname
 import streamlit as st
 
@@ -89,26 +89,24 @@ def plot_cdf(config_df, y, y_name, color):
     ).cumcount()
 
     with chart_col:
-        fig = px.line(
-            config_df,
-            x="cdf_x",
-            y="cdf_series",
-            color=color,
-            labels={"cdf_series": y_name, "cdf_x": "CDF"},
-            title=f"{y_name}",
-        )
+        fig, ax = plt.subplots()
+        for label, group in config_df.groupby(color):
+            ax.plot(
+                group["cdf_x"],
+                group["cdf_series"],
+                label=label,
+                linewidth=2,
+            )
 
-        fig.update_layout(
-            font=dict(size=14),
-            legend=dict(
-                title_font=dict(size=16),
-                font=dict(size=14),
-            ),
-            xaxis_title=y_name,
-            yaxis_title="CDF",
-        )
+        ax.set_xlabel(y_name)
+        ax.set_ylabel("CDF")
+        ax.set_title(y_name)
+        ax.grid(True, linestyle="--", alpha=0.6)
+        ax.legend(title=color, fontsize=10)
 
-        st.plotly_chart(fig, use_container_width=True)
+        fig.tight_layout()
+        st.pyplot(fig, use_container_width=True)
+        plt.close(fig)
 
 
 def write_best_config(
