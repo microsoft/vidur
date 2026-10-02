@@ -82,6 +82,9 @@ class Simulator:
     def _write_output(self) -> None:
         logger.info("Writing output")
 
+        if self._scheduler.failover_manager.write_report():
+            logger.info("Failover report written")
+
         self._metric_store.plot()
         logger.info("Metrics written")
 
@@ -105,6 +108,8 @@ class Simulator:
 
         for request in requests:
             self._add_event(RequestArrivalEvent(request.arrived_at, request))
+
+        self._add_events(self._scheduler.failover_manager.get_initial_events())
 
     def _set_time(self, time: float) -> None:
         self._time = time

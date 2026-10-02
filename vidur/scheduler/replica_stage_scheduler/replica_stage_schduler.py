@@ -24,8 +24,16 @@ class ReplicaStageScheduler:
     def is_last_stage(self) -> bool:
         return self._is_last_stage
 
+    @property
+    def is_busy(self) -> bool:
+        return self._is_busy
+
     def is_empty(self) -> bool:
         return len(self._batch_queue) == 0
+
+    def reset(self) -> None:
+        self._batch_queue = []
+        self._is_busy = False
 
     def add_batch(self, batch: Batch) -> None:
         self._batch_queue.append(batch)

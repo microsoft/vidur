@@ -22,8 +22,14 @@ class BatchEndEvent(BaseEvent):
     ) -> List[BaseEvent]:
         from vidur.events.replica_schedule_event import ReplicaScheduleEvent
 
-        self._batch.on_batch_end(self.time)
         replica_scheduler = scheduler.get_replica_scheduler(self._replica_id)
+        if replica_scheduler.is_stale(self._batch):
+            return []
+
+        failover_manager = scheduler.failover_manager
+        failover_manager.on_before_batch_end(self._batch)
+
+        self._batch.on_batch_end(self.time)
         replica_scheduler.on_batch_end(self._batch)
 
         memory_usage_percent = replica_scheduler.memory_usage_percent
@@ -31,7 +37,11 @@ class BatchEndEvent(BaseEvent):
             self.time, self._batch, self._replica_id, memory_usage_percent
         )
 
-        return [ReplicaScheduleEvent(self.time, self._replica_id)]
+        failover_events = failover_manager.on_batch_end(
+            self.time, self._replica_id, self._batch
+        )
+
+        return [ReplicaScheduleEvent(self.time, self._replica_id)] + failover_events
 
     def to_dict(self):
         return {

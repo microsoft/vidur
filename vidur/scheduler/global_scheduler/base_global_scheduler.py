@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 from vidur.config import SimulationConfig
 from vidur.entities import Replica, Request
 from vidur.execution_time_predictor import ExecutionTimePredictorRegistry
+from vidur.failover import FailoverManager
 from vidur.scheduler.replica_scheduler.replica_scheduler_registry import (
     ReplicaSchedulerRegistry,
 )
@@ -36,6 +37,23 @@ class BaseGlobalScheduler(ABC):
             for replica_id, replica in replicas.items()
         }
         self._request_queue = []
+        # replicas that are not known to have failed; only these receive requests
+        self._routable_replica_ids = set(replicas.keys())
+        self._failover_manager = FailoverManager(config, self)
+
+    @property
+    def failover_manager(self) -> FailoverManager:
+        return self._failover_manager
+
+    @property
+    def routable_replica_ids(self) -> List[int]:
+        return sorted(self._routable_replica_ids)
+
+    def set_replica_routable(self, replica_id: int, routable: bool) -> None:
+        if routable:
+            self._routable_replica_ids.add(replica_id)
+        else:
+            self._routable_replica_ids.discard(replica_id)
 
     def sort_requests(self) -> None:
         self._request_queue.sort(key=lambda request: request._arrived_at)

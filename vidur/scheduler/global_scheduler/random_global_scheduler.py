@@ -10,8 +10,9 @@ class RandomGlobalScheduler(BaseGlobalScheduler):
         self.sort_requests()
 
         request_mapping = []
-        while self._request_queue:
+        replica_ids = self.routable_replica_ids
+        while self._request_queue and replica_ids:
             request = self._request_queue.pop(0)
-            replica_id = randint(1, self._num_replicas) - 1
+            replica_id = replica_ids[randint(1, len(replica_ids)) - 1]
             request_mapping.append((replica_id, request))
         return request_mapping

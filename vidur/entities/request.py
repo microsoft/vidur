@@ -38,6 +38,11 @@ class Request(BaseEntity):
         self._num_prefill_tokens = num_prefill_tokens
         self._num_decode_tokens = num_decode_tokens
         self._num_processed_tokens = num_processed_tokens
+        # lengths as generated, unaffected by restarts
+        self._initial_num_prefill_tokens = num_prefill_tokens
+        self._initial_num_decode_tokens = num_decode_tokens
+        # draft tokens verified alongside each decode token (speculative decoding)
+        self._num_speculative_tokens = 0
 
         self._scheduled_at = 0
         self._execution_time = 0
@@ -160,8 +165,31 @@ class Request(BaseEntity):
         return self._num_prefill_tokens / self._num_decode_tokens
 
     @property
+    def initial_num_prefill_tokens(self) -> int:
+        return self._initial_num_prefill_tokens
+
+    @property
+    def initial_num_decode_tokens(self) -> int:
+        return self._initial_num_decode_tokens
+
+    @property
     def num_processed_tokens(self) -> int:
         return self._num_processed_tokens
+
+    @property
+    def num_speculative_tokens(self) -> int:
+        return self._num_speculative_tokens
+
+    @num_speculative_tokens.setter
+    def num_speculative_tokens(self, num_speculative_tokens: int) -> None:
+        self._num_speculative_tokens = num_speculative_tokens
+
+    @property
+    def num_tokens_per_decode_iteration(self) -> int:
+        return min(
+            1 + self._num_speculative_tokens,
+            self.total_tokens - self._num_processed_tokens,
+        )
 
     @property
     def total_tokens(self) -> int:
@@ -293,17 +321,30 @@ class Request(BaseEntity):
 
     def restart(self):
         logger.debug(f"Restarting request {self._id}")
+        self.restore_from_checkpoint(0)
 
-        # when we restart the request, we can process all the previously
-        # decoded tokens in parallel (i.e., we can prefill all the tokens)
-        total_tokens = self._num_prefill_tokens + self._num_decode_tokens
-        self._num_prefill_tokens = self._num_processed_tokens
-        self._num_decode_tokens = total_tokens - self._num_prefill_tokens
+    def restore_from_checkpoint(self, num_checkpointed_tokens: int) -> None:
+        """Resume with only the first `num_checkpointed_tokens` tokens of KV cache.
 
-        self._num_processed_tokens = 0
+        The remaining processed tokens are recomputed. Once the prefill is done,
+        all previously decoded tokens are known, so they are folded into the
+        prefill and recomputed in parallel.
+        """
+        if self._is_prefill_complete:
+            total_tokens = self._num_prefill_tokens + self._num_decode_tokens
+            self._num_prefill_tokens = self._num_processed_tokens
+            self._num_decode_tokens = total_tokens - self._num_prefill_tokens
+
+        self._num_processed_tokens = min(
+            num_checkpointed_tokens, self._num_processed_tokens
+        )
+        self._is_prefill_complete = (
+            self._is_prefill_complete
+            and self._num_processed_tokens == self._num_prefill_tokens
+        )
         self._scheduled = False
         self._preempted = False
         self._completed = False
-        self._is_prefill_complete = False
+        self._num_speculative_tokens = 0
 
         self._num_restarts += 1

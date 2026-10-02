@@ -125,6 +125,16 @@ or to get information on all parameters,
 python -m vidur.main -h
 ```
 
+## Simulating Failures
+
+Vidur can inject replica failures and compare recovery policies (Stop-and-Restart, Fixed-Checkpointing and [LUMEN](https://arxiv.org/abs/2606.17787)), e.g. for two Qwen-72B 4-stage pipelines:
+
+```sh
+bash examples/failover/qwen72b_2x_pp4.sh
+```
+
+See [docs/failover.md](docs/failover.md) for the failure model, the policies and their parameters.
+
 ## Simulator Output
 
 * The metrics will be logged to wandb directly and a copy will be stored in the `simulator_output/<TIMESTAMP>` directory. __A description of all the logged metrics can be found [here](docs/metrics.md).__

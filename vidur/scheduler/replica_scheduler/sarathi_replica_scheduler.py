@@ -34,7 +34,9 @@ class SarathiReplicaScheduler(BaseReplicaScheduler):
             )
 
         # vllm requires at least one block to be available
-        return self._config.num_blocks - self._num_allocated_blocks >= 1
+        return self._config.num_blocks - self._num_allocated_blocks >= max(
+            1, self._get_num_blocks_to_extend(request)
+        )
 
     def _allocate_request(self, request: Request) -> None:
         if request.id not in self._allocation_map:
@@ -45,17 +47,12 @@ class SarathiReplicaScheduler(BaseReplicaScheduler):
             self.allocate(request.id, num_required_blocks)
             return
 
-        num_tokens_reserved = self._allocation_map[request.id] * self._config.block_size
-        num_tokens_required = max(0, request.num_processed_tokens - num_tokens_reserved)
+        num_blocks = self._get_num_blocks_to_extend(request)
 
-        assert (
-            num_tokens_required == 0 or num_tokens_required == 1
-        ), f"num_tokens_required: {num_tokens_required}"
-
-        if num_tokens_required == 0:
+        if num_blocks == 0:
             return
 
-        self.allocate(request.id, 1)
+        self.allocate(request.id, num_blocks)
 
     def on_batch_end(self, batch: Batch) -> None:
         self._num_running_batches -= 1
@@ -72,7 +69,7 @@ class SarathiReplicaScheduler(BaseReplicaScheduler):
         assert not request.completed
 
         if request.is_prefill_complete:
-            return 1
+            return request.num_tokens_per_decode_iteration
 
         next_num_tokens = min(
             request.num_prefill_tokens - request.num_processed_tokens,

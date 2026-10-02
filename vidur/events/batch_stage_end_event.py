@@ -29,6 +29,7 @@ class BatchStageEndEvent(BaseEvent):
 
         self._batch = batch
         self._batch_stage = batch_stage
+        self._is_stale = False
 
     def handle_event(
         self, scheduler: BaseGlobalScheduler, metrics_store: MetricsStore
@@ -36,6 +37,11 @@ class BatchStageEndEvent(BaseEvent):
         from vidur.events.batch_end_event import BatchEndEvent
         from vidur.events.batch_stage_arrival_event import BatchStageArrivalEvent
         from vidur.events.replica_stage_schedule_event import ReplicaStageScheduleEvent
+
+        if scheduler.get_replica_scheduler(self._replica_id).is_stale(self._batch):
+            # the replica failed while this stage was running
+            self._is_stale = True
+            return []
 
         scheduler.get_replica_stage_scheduler(
             self._replica_id, self._stage_id
@@ -83,4 +89,7 @@ class BatchStageEndEvent(BaseEvent):
         }
 
     def to_chrome_trace(self) -> dict:
+        if self._is_stale:
+            return None
+
         return self._batch_stage.to_chrome_trace(self.time)

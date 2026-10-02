@@ -3,6 +3,7 @@ from vidur.types.base_int_enum import BaseIntEnum
 from vidur.types.device_sku_type import DeviceSKUType
 from vidur.types.event_type import EventType
 from vidur.types.execution_time_predictor_type import ExecutionTimePredictorType
+from vidur.types.failure_recovery_policy_type import FailureRecoveryPolicyType
 from vidur.types.global_scheduler_type import GlobalSchedulerType
 from vidur.types.node_sku_type import NodeSKUType
 from vidur.types.norm_type import NormType
@@ -14,6 +15,7 @@ from vidur.types.request_length_generator_type import RequestLengthGeneratorType
 __all__ = [
     EventType,
     ExecutionTimePredictorType,
+    FailureRecoveryPolicyType,
     GlobalSchedulerType,
     RequestGeneratorType,
     RequestLengthGeneratorType,

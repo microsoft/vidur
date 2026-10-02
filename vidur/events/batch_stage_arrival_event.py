@@ -23,6 +23,9 @@ class BatchStageArrivalEvent(BaseEvent):
     ) -> List[BaseEvent]:
         from vidur.events.replica_stage_schedule_event import ReplicaStageScheduleEvent
 
+        if scheduler.get_replica_scheduler(self._replica_id).is_stale(self._batch):
+            return []
+
         scheduler.get_replica_stage_scheduler(
             self._replica_id, self._stage_id
         ).add_batch(self._batch)

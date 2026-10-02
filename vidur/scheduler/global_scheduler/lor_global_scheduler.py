@@ -18,10 +18,11 @@ class LORGlobalScheduler(BaseGlobalScheduler):
         pending_requests_map = {
             replica_scheduler.replica_id: replica_scheduler.num_pending_requests
             for replica_scheduler in self._replica_schedulers.values()
+            if replica_scheduler.replica_id in self._routable_replica_ids
         }
 
         # using a very simple implementation here, to keep wiring simple
-        while self._request_queue:
+        while self._request_queue and pending_requests_map:
             request = self._request_queue.pop(0)
             replica_id = min(pending_requests_map.items(), key=lambda x: x[1])[0]
             pending_requests_map[replica_id] += 1

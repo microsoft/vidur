@@ -860,9 +860,19 @@ class SklearnExecutionTimePredictor(BaseExecutionTimePredictor):
         agg_kv_cache_size = sum(kv_cache_sizes)
         agg_prefill_chunk_size = sum([x**2 for x in prefill_chunk_sizes]) ** 0.5
 
-        return self._predictions["attn_prefill"][
-            (agg_kv_cache_size, round(agg_prefill_chunk_size) ** 2)
-        ] * (
+        agg_key = (agg_kv_cache_size, round(agg_prefill_chunk_size) ** 2)
+        if agg_key in self._predictions["attn_prefill"]:
+            prefill_time = self._predictions["attn_prefill"][agg_key]
+        else:
+            # the combined context is beyond the predicted range, e.g. many long
+            # requests recomputing short suffixes after a failure; cost each
+            # request's chunk on its own instead
+            prefill_time = sum(
+                self._predictions["attn_prefill"][(kv_cache_size, chunk_size**2)]
+                for kv_cache_size, chunk_size in prefill_params
+            )
+
+        return prefill_time * (
             1
             + self._attention_prefill_batching_overhead_fraction
             * int(len(prefill_params) > 1)

@@ -48,6 +48,12 @@ class Batch(BaseEntity):
 
         self._total_num_tokens_rounded = (self._total_num_tokens + 7) // 8 * 8
 
+        # tokens each request actually advances by; differs from num_tokens only
+        # when speculative draft tokens are rejected during verification
+        self._num_committed_tokens = num_tokens
+        # incarnation of the replica that created the batch, see BaseReplicaScheduler
+        self._replica_epoch = 0
+
         self._scheduled_at = None
         self._completed_at = None
         self._scheduled = False
@@ -68,6 +74,22 @@ class Batch(BaseEntity):
     @property
     def total_num_tokens(self) -> int:
         return self._total_num_tokens
+
+    @property
+    def num_committed_tokens(self) -> List[int]:
+        return self._num_committed_tokens
+
+    @num_committed_tokens.setter
+    def num_committed_tokens(self, num_committed_tokens: List[int]) -> None:
+        self._num_committed_tokens = num_committed_tokens
+
+    @property
+    def replica_epoch(self) -> int:
+        return self._replica_epoch
+
+    @replica_epoch.setter
+    def replica_epoch(self, replica_epoch: int) -> None:
+        self._replica_epoch = replica_epoch
 
     @property
     def num_prefill_tokens(self) -> int:
@@ -125,7 +147,7 @@ class Batch(BaseEntity):
         self._completed = True
         self._completed_at = time
 
-        for request, num_tokens in zip(self._requests, self._num_tokens):
+        for request, num_tokens in zip(self._requests, self._num_committed_tokens):
             request.on_batch_end(time, num_tokens)
 
     @property

@@ -14,6 +14,7 @@ from vidur.config.utils import dataclass_to_dict
 from vidur.logger import init_logger
 from vidur.types import (
     ExecutionTimePredictorType,
+    FailureRecoveryPolicyType,
     GlobalSchedulerType,
     ReplicaSchedulerType,
     RequestGeneratorType,
@@ -624,6 +625,153 @@ class ClusterConfig:
 
 
 @dataclass
+class FailureConfig:
+    """Worker failure injection and recovery (see docs/failover.md).
+
+    A worker is one replica (e.g. one 4-stage pipeline). A failure of any of
+    its stages takes the whole replica down and loses its GPU-resident KV cache.
+    """
+
+    recovery_policy: str = field(
+        default="none",
+        metadata={
+            "help": "Failure recovery policy: none, stop_and_restart, fixed_checkpointing or lumen."
+        },
+    )
+    failure_times: List[float] = field(
+        default_factory=list,
+        metadata={"help": "Simulation times (in seconds) at which failures happen."},
+    )
+    failure_replica_ids: List[int] = field(
+        default_factory=list,
+        metadata={
+            "help": "Replica that fails at each failure time. Defaults to replica 0 for every failure."
+        },
+    )
+    failure_stage_ids: List[int] = field(
+        default_factory=list,
+        metadata={
+            "help": "Pipeline stage that fails at each failure time (reported only; the whole replica goes down)."
+        },
+    )
+    detection_delay_s: float = field(
+        default=1.0,
+        metadata={"help": "Time between a failure and its detection, in seconds."},
+    )
+    model_reload_time_s: Optional[float] = field(
+        default=None,
+        metadata={
+            "help": "Time to bring the failed replica back after detection, in seconds. "
+            "If unset, it is engine_restart_overhead_s + per-device weight bytes / weight_load_bandwidth_gb_per_s."
+        },
+    )
+    engine_restart_overhead_s: float = field(
+        default=15.0,
+        metadata={
+            "help": "Fixed restart cost (process restart, NCCL init, CUDA graph capture), in seconds."
+        },
+    )
+    weight_load_bandwidth_gb_per_s: float = field(
+        default=4.0,
+        metadata={
+            "help": "Per-device model weight loading bandwidth in GB/s. All stages load their shards in parallel."
+        },
+    )
+    checkpoint_bandwidth_gb_per_s: float = field(
+        default=25.0,
+        metadata={
+            "help": "Per-replica bandwidth for streaming KV checkpoints to the holder's host memory, in GB/s."
+        },
+    )
+    checkpoint_granularity_tokens: int = field(
+        default=16,
+        metadata={"help": "KV checkpoints are streamed in units of this many tokens."},
+    )
+    restore_bandwidth_gb_per_s_per_device: float = field(
+        default=20.0,
+        metadata={
+            "help": "Host-to-GPU bandwidth per device used to restore KV checkpoints, in GB/s."
+        },
+    )
+    holder_failure_loses_checkpoints: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether a failed replica also loses the KV checkpoints it holds for other replicas."
+        },
+    )
+    lumen_load_aware_checkpointing: bool = field(
+        default=True,
+        metadata={
+            "help": "LUMEN: place each KV checkpoint on the replica with the least expected recovery load "
+            "(otherwise on the fixed ring neighbour)."
+        },
+    )
+    lumen_locality_aware_scheduling: bool = field(
+        default=True,
+        metadata={
+            "help": "LUMEN: resume interrupted requests on their checkpoint holder, redirecting the smallest "
+            "checkpointed prefixes when the holder is overloaded (otherwise no KV reuse)."
+        },
+    )
+    lumen_speculative_recovery: bool = field(
+        default=True,
+        metadata={
+            "help": "LUMEN: load a draft model on the recovering replica and use it to speculate for "
+            "decode requests on surviving replicas until the full model is reloaded."
+        },
+    )
+    lumen_overload_threshold: float = field(
+        default=0.9,
+        metadata={
+            "help": "LUMEN: a replica is overloaded when its projected KV token demand exceeds this fraction of its KV capacity."
+        },
+    )
+    draft_model_load_time_s: float = field(
+        default=3.0,
+        metadata={
+            "help": "LUMEN: time to load the draft model after detection, in seconds."
+        },
+    )
+    speculative_num_draft_tokens: int = field(
+        default=4,
+        metadata={"help": "LUMEN: draft tokens proposed per verification step."},
+    )
+    speculative_acceptance_rate: float = field(
+        default=0.7,
+        metadata={"help": "LUMEN: probability that each draft token is accepted."},
+    )
+    draft_token_latency_s: float = field(
+        default=0.008,
+        metadata={"help": "LUMEN: draft model latency per drafted token, in seconds."},
+    )
+    draft_prefill_time_per_token_s: float = field(
+        default=0.00002,
+        metadata={
+            "help": "LUMEN: draft model time per context token when a request is first handed to it, in seconds."
+        },
+    )
+    speculative_max_requests: int = field(
+        default=128,
+        metadata={
+            "help": "LUMEN: maximum number of requests a recovering replica's draft model serves at once."
+        },
+    )
+
+    def __post_init__(self):
+        self.recovery_policy_type = FailureRecoveryPolicyType.from_str(
+            self.recovery_policy
+        )
+        if self.failure_times and not self.failure_replica_ids:
+            self.failure_replica_ids = [0] * len(self.failure_times)
+        if self.failure_times and not self.failure_stage_ids:
+            self.failure_stage_ids = [0] * len(self.failure_times)
+        assert len(self.failure_replica_ids) == len(self.failure_times)
+        assert len(self.failure_stage_ids) == len(self.failure_times)
+        assert self.checkpoint_granularity_tokens > 0
+        assert 0 <= self.speculative_acceptance_rate <= 1
+
+
+@dataclass
 class SimulationConfig(ABC):
     seed: int = field(
         default=42,
@@ -652,6 +800,10 @@ class SimulationConfig(ABC):
     metrics_config: MetricsConfig = field(
         default_factory=MetricsConfig,
         metadata={"help": "Metrics config."},
+    )
+    failure_config: FailureConfig = field(
+        default_factory=FailureConfig,
+        metadata={"help": "Failure injection and recovery config."},
     )
 
     def __post_init__(self):

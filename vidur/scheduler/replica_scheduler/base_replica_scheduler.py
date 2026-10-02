@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from math import ceil
 from typing import List
 
 from vidur.config import (
@@ -54,6 +55,13 @@ class BaseReplicaScheduler(ABC):
         self._num_allocated_blocks = 0
         self._allocation_map = {}
 
+        # failure handling: a failed replica schedules nothing, and every failure
+        # starts a new epoch so batches from before the failure can be discarded
+        self._is_alive = True
+        self._epoch = 0
+        # requests waiting for speculative drafts, see hold_requests
+        self._num_held_requests = 0
+
         self._replica_stage_schedulers = {
             stage_id: ReplicaStageScheduler(
                 replica.id,
@@ -80,23 +88,95 @@ class BaseReplicaScheduler(ABC):
     def memory_usage_percent(self) -> int:
         return (self._num_allocated_blocks * 100) / self._config.num_blocks
 
+    @property
+    def kv_token_capacity(self) -> int:
+        return self._config.num_blocks * self._config.block_size
+
+    @property
+    def num_allocated_tokens(self) -> int:
+        return self._num_allocated_blocks * self._config.block_size
+
+    @property
+    def num_queued_tokens(self) -> int:
+        return sum(request.num_prefill_tokens for request in self._request_queue)
+
+    @property
+    def is_alive(self) -> bool:
+        return self._is_alive
+
+    @property
+    def epoch(self) -> int:
+        return self._epoch
+
+    def is_stale(self, batch: Batch) -> bool:
+        return batch.replica_epoch != self._epoch
+
     def is_empty(self) -> bool:
         return (
             self.num_pending_requests == 0
             and len(self._allocation_map) == 0
+            and self._num_held_requests == 0
             and all(
                 stage_scheduler.is_empty()
                 for stage_scheduler in self._replica_stage_schedulers.values()
             )
         )
 
+    def reset(self) -> None:
+        self._request_queue = []
+        self._num_allocated_blocks = 0
+        self._allocation_map = {}
+        self._num_held_requests = 0
+        self._preempted_requests = []
+        self._num_running_batches = 0
+        for stage_scheduler in self._replica_stage_schedulers.values():
+            stage_scheduler.reset()
+
+    def fail(self) -> None:
+        self._is_alive = False
+        self._epoch += 1
+        self.reset()
+
+    def recover(self) -> None:
+        self._is_alive = True
+
+    def hold_requests(self, requests: List[Request]) -> None:
+        # take running requests out of scheduling until release_requests
+        request_ids = {request.id for request in requests}
+        self._preempted_requests = [
+            request
+            for request in self._preempted_requests
+            if request.id not in request_ids
+        ]
+        self._num_held_requests += len(requests)
+
+    def release_requests(self, requests: List[Request]) -> None:
+        self._num_held_requests -= len(requests)
+        self._preempted_requests.extend(requests)
+
     def _get_request_next_num_tokens(self, request: Request) -> int:
         assert not request.completed
 
         if request.is_prefill_complete:
-            return 1
+            return request.num_tokens_per_decode_iteration
 
-        return request.num_prefill_tokens
+        return request.num_prefill_tokens - request.num_processed_tokens
+
+    def _get_num_blocks_to_extend(self, request: Request) -> int:
+        # blocks a running request needs before its next iteration, including
+        # room for the speculative tokens it verifies
+        num_tokens_reserved = self._allocation_map[request.id] * self._config.block_size
+        num_tokens_required = max(
+            0,
+            request.num_processed_tokens
+            + request.num_speculative_tokens
+            - num_tokens_reserved,
+        )
+        assert (
+            num_tokens_required <= 1 or request.num_speculative_tokens > 0
+        ), f"num_tokens_required: {num_tokens_required}"
+
+        return ceil(num_tokens_required / self._config.block_size)
 
     def add_request(self, request: Request) -> None:
         self._request_queue.append(request)
@@ -136,10 +216,14 @@ class BaseReplicaScheduler(ABC):
 
     def on_schedule(self) -> List[Batch]:
         scheduled_batches = []
+        if not self._is_alive:
+            return scheduled_batches
+
         while self._num_running_batches < self._num_stages:
             batch = self._get_next_batch()
             if not batch:
                 break
+            batch.replica_epoch = self._epoch
             scheduled_batches.append(batch)
             self._num_running_batches += 1
         return scheduled_batches
