@@ -212,3 +212,120 @@ class Qwen72BModelConfig(QwenModelConfig):
     @staticmethod
     def get_name():
         return "Qwen/Qwen-72B"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Mixture-of-Experts (MoE) model configs
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+@dataclass
+class BaseMoEModelConfig(BaseModelConfig):
+    """Base class for Mixture-of-Experts models.
+
+    Adds the MoE topology (expert count, top-k routing, per-expert FFN width)
+    and, for DeepSeek-style models, the Multi-head Latent Attention (MLA)
+    dimensions that determine the KV cache footprint.
+
+    Vidur does not ship operator profiling data for MoE models, so these
+    configs cannot drive the execution time predictor yet. They are used for
+    sizing, e.g. the KV transfer volume in the disaggregated P/D simulator.
+    """
+
+    # MoE topology
+    num_experts: int = 0
+    num_active_experts: int = 0  # top-k per token
+    expert_intermediate_dim: int = 0  # per-expert FFN hidden dim
+    num_shared_experts: int = 0  # DeepSeek-style always-active experts
+
+    # Multi-head Latent Attention (MLA), used by DeepSeek models
+    kv_lora_rank: int = 0  # 0 means standard MHA/GQA, >0 means MLA
+    q_lora_rank: Optional[int] = None
+    qk_rope_head_dim: int = 0  # decoupled RoPE key dim cached alongside the latent
+
+    @staticmethod
+    def get_name():
+        return None
+
+
+@dataclass
+class DeepSeekV3ModelConfig(BaseMoEModelConfig):
+    """Model configuration for DeepSeek-V3 (671B total, 37B active per token).
+
+    Architecture reference: DeepSeek-V3 Technical Report (2024).
+    - 61 transformer layers
+    - Multi-head Latent Attention (MLA): kv_lora_rank=512, q_lora_rank=1536
+    - 256 routed experts + 1 shared expert per MoE layer
+    - Top-8 routing (8 experts activated per token)
+    - Expert intermediate dim: 2048 per expert
+    - Dense layers 0–2 use standard MLP (not MoE)
+    - MLA caches kv_lora_rank + qk_rope_head_dim = 576 values per token per layer
+    """
+
+    # Attention
+    num_layers: int = 61
+    num_q_heads: int = 128
+    num_kv_heads: int = 128
+    embedding_dim: int = 7168
+    mlp_hidden_dim: int = 18432  # dense MLP used in first 3 layers
+    max_position_embeddings: int = 131072
+    use_gated_mlp: bool = True
+    use_bias: bool = False
+    use_qkv_bias: bool = False
+    activation: ActivationType = ActivationType.SILU
+    norm: NormType = NormType.RMS_NORM
+    post_attn_norm: bool = True
+    vocab_size: int = 129280
+    rope_theta: Optional[float] = 10000.0
+    is_neox_style: Optional[bool] = True
+
+    # MoE
+    num_experts: int = 256
+    num_active_experts: int = 8
+    expert_intermediate_dim: int = 2048
+    num_shared_experts: int = 1
+
+    # MLA
+    kv_lora_rank: int = 512
+    q_lora_rank: Optional[int] = 1536
+    qk_rope_head_dim: int = 64
+
+    @staticmethod
+    def get_name():
+        return "deepseek-ai/DeepSeek-V3"
+
+
+@dataclass
+class MixtralModelConfig(BaseMoEModelConfig):
+    """Model configuration for Mixtral 8x7B (Mistral AI).
+
+    Architecture reference: Mixtral of Experts (Jiang et al., 2024).
+    - Standard sparse MoE: 8 experts, top-2 routing per token
+    - No MLA (standard grouped-query attention)
+    """
+
+    num_layers: int = 32
+    num_q_heads: int = 32
+    num_kv_heads: int = 8
+    embedding_dim: int = 4096
+    mlp_hidden_dim: int = 14336  # per-expert FFN hidden dim
+    max_position_embeddings: int = 32768
+    use_gated_mlp: bool = True
+    use_bias: bool = False
+    use_qkv_bias: bool = False
+    activation: ActivationType = ActivationType.SILU
+    norm: NormType = NormType.RMS_NORM
+    post_attn_norm: bool = False
+    vocab_size: int = 32000
+    rope_theta: Optional[float] = 1000000.0
+    is_neox_style: Optional[bool] = True
+
+    # MoE
+    num_experts: int = 8
+    num_active_experts: int = 2
+    expert_intermediate_dim: int = 14336
+    num_shared_experts: int = 0
+
+    @staticmethod
+    def get_name():
+        return "mistralai/Mixtral-8x7B-v0.1"

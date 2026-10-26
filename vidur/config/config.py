@@ -675,3 +675,22 @@ class SimulationConfig(ABC):
         config_dict = dataclass_to_dict(self)
         with open(f"{self.metrics_config.output_dir}/config.json", "w") as f:
             json.dump(config_dict, f, indent=4)
+
+
+@dataclass
+class DisaggregatedSimulationConfig(SimulationConfig):
+    num_prefill_replicas: int = field(
+        default=1,
+        metadata={"help": "Number of prefill-only replicas."},
+    )
+    num_decode_replicas: int = field(
+        default=1,
+        metadata={"help": "Number of decode-only replicas."},
+    )
+    kv_transfer_bandwidth_gb_per_s: float = field(
+        default=50.0,
+        metadata={
+            "help": "Outbound KV transfer bandwidth per prefill replica in GB/s, "
+            "aggregated over its tensor parallel workers."
+        },
+    )
