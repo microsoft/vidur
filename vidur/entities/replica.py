@@ -103,7 +103,7 @@ class Replica(BaseEntity):
 
     @property
     def per_device_flops(self) -> float:
-        return self._device_config.fp16_tflops * 2**40
+        return self._device_config.fp16_tflops * 1e12
 
     def to_dict(self) -> dict:
         return {
